@@ -306,6 +306,26 @@
             border-bottom: none;
         }
 
+        /* 勝敗列のスタイル */
+        .result-cell {
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .result-win {
+            color: #28a745;
+            background: #d4edda;
+        }
+
+        .result-lose {
+            color: #fd7e14;
+            background: #fff3cd;
+        }
+
+        .result-draw {
+            color: #666;
+        }
+
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -646,7 +666,7 @@
 
             <div class="form-group">
                 <label for="opponent">対戦チーム名 <span class="required">*</span></label>
-                <input type="text" id="opponent" name="opponent" placeholder="例：西が丘" required />
+                <input type="text" id="opponent" name="opponent" placeholder="例：西が岡" required />
             </div>
 
             <div class="form-group">
@@ -759,8 +779,7 @@
 
     <script>
         // ===== 設定: ここにGoogle Apps Script URLを設定してください =====
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_MGRBNGxQ6jN8moauD6n8o73TXh2oj3gOkiPwAQq3CnPpdSoqRNVRNmWV0amVnx93/exec';
-        // 例: const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby.../exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye14S2FIyZsXir7_S0ZeWGNxigrp9OVIfC-Ht9hs71pcAIP-BwSm1JJES5TVe1Qam7/exec';
         // ============================================================
 
         // LocalStorageから値を読み込み
@@ -897,6 +916,7 @@
                                 <th>対戦チーム</th>
                                 <th>南ヶ丘</th>
                                 <th>対戦相手</th>
+                                <th>勝敗</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -907,6 +927,17 @@
                 // 日付をスラッシュ区切りに変換
                 const formattedDate = formatDateForDisplay(row.date);
                 
+                // 勝敗に応じたクラスを決定
+                const result = String(row.result || '').trim();
+                let resultClass = 'result-cell';
+                if (result === '勝' || result === '勝ち') {
+                    resultClass += ' result-win';
+                } else if (result === '負' || result === '負け') {
+                    resultClass += ' result-lose';
+                } else if (result === '引き分け' || result === '分') {
+                    resultClass += ' result-draw';
+                }
+                
                 html += `
                     <tr>
                         <td>${escapeHtml(formattedDate)}</td>
@@ -915,6 +946,7 @@
                         <td>${escapeHtml(row.opponent)}</td>
                         <td>${escapeHtml(row.scoreMinamiGaoka)}</td>
                         <td>${escapeHtml(row.scoreOpponent)}</td>
+                        <td class="${resultClass}">${escapeHtml(result)}</td>
                         <td>
                             <div class="action-btns">
                                 <button class="edit-btn" onclick='openEditModal(${JSON.stringify(row)})'>編集</button>
