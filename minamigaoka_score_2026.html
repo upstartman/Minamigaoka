@@ -90,8 +90,32 @@
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-size: 14px;
+        }
+
+        .year-link {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .year-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 15px;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .year-link a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .form-group {
@@ -637,6 +661,9 @@
     <div class="container">
         <h1>🏀 試合結果入力フォーム(2026年度)</h1>
         <p class="subtitle">南ヶ丘MBCの試合データを記録/閲覧</p>
+        <div class="year-link">
+            <a href="https://upstartman.github.io/minamigaoka/minamigaoka_score.html" target="_blank">📅 2025年度データ</a>
+        </div>
 
         <!-- タブナビゲーション -->
         <div class="tabs">
