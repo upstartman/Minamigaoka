@@ -552,6 +552,37 @@
             transform: translateY(-1px);
         }
 
+        .image-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .upload-image-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .upload-image-btn:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+
+        .view-image-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .view-image-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
         /* モーダル */
         .modal {
             display: none;
@@ -815,9 +846,62 @@
         </div>
     </div>
 
+    <!-- 画像アップロードモーダル -->
+    <div id="imageUploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📷 スコアシート画像を追加</h2>
+                <button class="close-btn" onclick="closeImageUploadModal()">&times;</button>
+            </div>
+            <div id="imageUploadInfo" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;"></div>
+            <input type="hidden" id="imageUploadRowIndex">
+            
+            <div class="form-group">
+                <label for="imageFileInput">画像を選択 <span class="required">*</span></label>
+                <input type="file" id="imageFileInput" accept="image/*" required style="padding: 10px; border: 2px dashed #667eea; border-radius: 8px;" />
+                <p style="margin-top: 8px; font-size: 12px; color: #666;">JPG, PNG, JPEG形式の画像をアップロードできます</p>
+            </div>
+            
+            <div id="imagePreviewContainer" style="display: none; margin: 15px 0;">
+                <label>プレビュー:</label>
+                <div style="max-width: 100%; max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #f8f9fa;">
+                    <img id="imagePreview" style="max-width: 100%; height: auto;" />
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="modal-btn secondary" onclick="closeImageUploadModal()">キャンセル</button>
+                <button type="button" class="modal-btn primary" onclick="uploadImage()">アップロード</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像表示モーダル -->
+    <div id="imageViewModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>📷 スコアシート画像</h2>
+                <button class="close-btn" onclick="closeImageViewModal()">&times;</button>
+            </div>
+            <div id="imageViewInfo" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;"></div>
+            <input type="hidden" id="imageViewRowIndex">
+            <input type="hidden" id="imageViewUrl">
+            
+            <div style="max-width: 100%; max-height: 600px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; background: #f8f9fa; margin: 15px 0;">
+                <img id="imageViewDisplay" style="max-width: 100%; height: auto;" />
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="modal-btn secondary" onclick="closeImageViewModal()">閉じる</button>
+                <a id="imageDownloadLink" class="modal-btn primary" download style="text-decoration: none; display: inline-block;">ダウンロード</a>
+                <button type="button" class="modal-btn upload-image-btn" onclick="replaceImage()">📷 画像を変更</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== 設定: ここにGoogle Apps Script URLを設定してください =====
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiKgS3Ypl5bBU-9_GkWakdedOWaeYPlHSL9ZPU9IFPW3S_QBvovEvmPDxskeH5Pf2z/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlmXXiwmqJMfE5DnTKqKip8NEnUu-F0-zab0C3Y0kpi2m0r5laEsxa2dYdwZL6TrSD/exec';
         // ============================================================
 
         // LocalStorageから値を読み込み
@@ -976,6 +1060,7 @@
                                 <th>南ヶ丘</th>
                                 <th>対戦相手</th>
                                 <th>勝敗</th>
+                                <th>画像</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -1009,6 +1094,12 @@
                         <td>${escapeHtml(row.scoreMinamiGaoka)}</td>
                         <td>${escapeHtml(row.scoreOpponent)}</td>
                         <td class="${resultClass}">${escapeHtml(result)}</td>
+                        <td>
+                            ${row.imageUrl ? 
+                                `<button class="image-btn view-image-btn" onclick='viewImage("${row.imageUrl}", ${JSON.stringify(row)})'>📷 表示</button>` : 
+                                `<button class="image-btn upload-image-btn" onclick='openImageUploadModal(${JSON.stringify(row)})'>📷 追加</button>`
+                            }
+                        </td>
                         <td>
                             <div class="action-btns">
                                 <button class="edit-btn" onclick='openEditModal(${JSON.stringify(row)})'>編集</button>
@@ -1393,6 +1484,8 @@
         window.onclick = function(event) {
             const editModal = document.getElementById('editModal');
             const deleteModal = document.getElementById('deleteModal');
+            const imageUploadModal = document.getElementById('imageUploadModal');
+            const imageViewModal = document.getElementById('imageViewModal');
             
             if (event.target == editModal) {
                 closeEditModal();
@@ -1400,6 +1493,183 @@
             if (event.target == deleteModal) {
                 closeDeleteModal();
             }
+            if (event.target == imageUploadModal) {
+                closeImageUploadModal();
+            }
+            if (event.target == imageViewModal) {
+                closeImageViewModal();
+            }
+        }
+
+        // ===== 画像アップロード関連の関数 =====
+        
+        // 画像アップロードモーダルを開く
+        function openImageUploadModal(rowData) {
+            const modal = document.getElementById('imageUploadModal');
+            const infoDiv = document.getElementById('imageUploadInfo');
+            const rowIndexInput = document.getElementById('imageUploadRowIndex');
+            const fileInput = document.getElementById('imageFileInput');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            
+            // 行番号を保存
+            rowIndexInput.value = rowData.rowIndex;
+            
+            // 試合情報を表示
+            infoDiv.innerHTML = `
+                <strong>試合情報:</strong><br>
+                日付: ${escapeHtml(formatDateForDisplay(rowData.date))} ${escapeHtml(rowData.endTime)}<br>
+                大会名: ${escapeHtml(rowData.tournament)}<br>
+                対戦相手: ${escapeHtml(rowData.opponent)}
+            `;
+            
+            // ファイル入力とプレビューをリセット
+            fileInput.value = '';
+            previewContainer.style.display = 'none';
+            
+            // モーダルを表示
+            modal.style.display = 'block';
+        }
+        
+        // 画像アップロードモーダルを閉じる
+        function closeImageUploadModal() {
+            const modal = document.getElementById('imageUploadModal');
+            modal.style.display = 'none';
+        }
+        
+        // ファイル選択時のプレビュー表示
+        document.getElementById('imageFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('imagePreview');
+                    const container = document.getElementById('imagePreviewContainer');
+                    preview.src = event.target.result;
+                    container.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 画像をアップロード
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageFileInput');
+            const rowIndex = document.getElementById('imageUploadRowIndex').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showMessage('画像ファイルを選択してください', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // ファイルサイズチェック（10MB以下）
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('ファイルサイズが大きすぎます（10MB以下にしてください）', 'error');
+                return;
+            }
+            
+            try {
+                // ファイルをBase64に変換
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64Data = e.target.result;
+                    
+                    // Google Apps Scriptに送信
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'upload_image',
+                            rowIndex: parseInt(rowIndex),
+                            imageData: base64Data,
+                            fileName: file.name,
+                            mimeType: file.type
+                        }),
+                        mode: 'no-cors'
+                    });
+                    
+                    // アップロード成功
+                    showMessage('画像をアップロードしました！', 'success');
+                    closeImageUploadModal();
+                    
+                    // プレビューを更新
+                    setTimeout(() => {
+                        loadPreviewData();
+                    }, 1000);
+                };
+                reader.readAsDataURL(file);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('画像のアップロードに失敗しました', 'error');
+            }
+        }
+        
+        // 画像を表示
+        function viewImage(imageUrl, rowData) {
+            const modal = document.getElementById('imageViewModal');
+            const infoDiv = document.getElementById('imageViewInfo');
+            const rowIndexInput = document.getElementById('imageViewRowIndex');
+            const imageUrlInput = document.getElementById('imageViewUrl');
+            const imageDisplay = document.getElementById('imageViewDisplay');
+            const downloadLink = document.getElementById('imageDownloadLink');
+            
+            // 行番号とURLを保存
+            rowIndexInput.value = rowData.rowIndex;
+            imageUrlInput.value = imageUrl;
+            
+            // 試合情報を表示
+            infoDiv.innerHTML = `
+                <strong>試合情報:</strong><br>
+                日付: ${escapeHtml(formatDateForDisplay(rowData.date))} ${escapeHtml(rowData.endTime)}<br>
+                大会名: ${escapeHtml(rowData.tournament)}<br>
+                対戦相手: ${escapeHtml(rowData.opponent)}
+            `;
+            
+            // 画像を表示
+            imageDisplay.src = imageUrl;
+            downloadLink.href = imageUrl;
+            downloadLink.download = `scoresheet_${rowData.date}_${rowData.opponent}.jpg`;
+            
+            // モーダルを表示
+            modal.style.display = 'block';
+        }
+        
+        // 画像表示モーダルを閉じる
+        function closeImageViewModal() {
+            const modal = document.getElementById('imageViewModal');
+            modal.style.display = 'none';
+        }
+        
+        // 画像を変更（既存の画像を置き換え）
+        function replaceImage() {
+            const rowIndex = document.getElementById('imageViewRowIndex').value;
+            const rowData = { rowIndex: parseInt(rowIndex) };
+            
+            // 画像表示モーダルを閉じる
+            closeImageViewModal();
+            
+            // 画像アップロードモーダルを開く
+            // 現在のデータを再取得してから開く
+            const previewContent = document.getElementById('previewContent');
+            // データを取得し直してからモーダルを開く（簡易的に再読み込み）
+            setTimeout(() => {
+                loadPreviewData().then(() => {
+                    // データが更新されたら、該当行のデータを見つけて画像アップロードモーダルを開く
+                    // ここでは簡易的に行番号だけで処理
+                    const simpleRowData = {
+                        rowIndex: parseInt(rowIndex),
+                        date: '',
+                        endTime: '',
+                        tournament: '（画像を変更中）',
+                        opponent: ''
+                    };
+                    openImageUploadModal(simpleRowData);
+                });
+            }, 100);
         }
     </script>
 </body>
