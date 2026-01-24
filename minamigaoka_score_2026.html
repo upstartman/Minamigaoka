@@ -132,6 +132,7 @@
 
         input[type="text"],
         input[type="date"],
+        input[type="time"],
         input[type="number"] {
             width: 100%;
             padding: 12px 15px;
@@ -144,10 +145,17 @@
 
         input[type="text"]:focus,
         input[type="date"]:focus,
+        input[type="time"]:focus,
         input[type="number"]:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .datetime-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
         }
 
         .score-group {
@@ -675,8 +683,11 @@
         <div id="formTab" class="tab-content active">
             <form id="matchForm">
             <div class="form-group">
-                <label for="date">日付 <span class="required">*</span></label>
-                <input type="date" id="date" name="date" required />
+                <label for="date">日付・試合終了時間 <span class="required">*</span></label>
+                <div class="datetime-group">
+                    <input type="date" id="date" name="date" required />
+                    <input type="time" id="endTime" name="endTime" required placeholder="試合終了時間" />
+                </div>
             </div>
 
             <div class="form-group">
@@ -745,8 +756,11 @@
                 <input type="hidden" id="editRowIndex">
                 
                 <div class="form-group">
-                    <label for="editDate">日付 <span class="required">*</span></label>
-                    <input type="date" id="editDate" required />
+                    <label for="editDate">日付と試合終了時間 <span class="required">*</span></label>
+                    <div class="datetime-group">
+                        <input type="date" id="editDate" required />
+                        <input type="time" id="editEndTime" required />
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -803,7 +817,7 @@
 
     <script>
         // ===== 設定: ここにGoogle Apps Script URLを設定してください =====
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJgGb_zUf9fzfF8rTXzJy7PhUHoEGVWI7KXDBq11bX9kzt-QbDZhcly8xdjSxkLbbM/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiKgS3Ypl5bBU-9_GkWakdedOWaeYPlHSL9ZPU9IFPW3S_QBvovEvmPDxskeH5Pf2z/exec';
         // ============================================================
 
         // LocalStorageから値を読み込み
@@ -822,6 +836,12 @@
             // 今日の日付をデフォルトで設定
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
+
+            // 現在時刻を試合終了時間のデフォルト値として設定
+            const now = new Date();
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                              now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('endTime').value = currentTime;
 
             // URL情報を表示
             displayScriptUrl();
@@ -870,7 +890,21 @@
 
                 if (result.status === 'success') {
                     if (result.data && result.data.length > 0) {
-                        displayPreviewData(result.data, result.stats);
+                        // 日付と試合終了時間でソート（新しい順）
+                        const sortedData = result.data.sort((a, b) => {
+                            // 日付文字列をYYYY-MM-DD形式に正規化
+                            const dateA = a.date.replace(/\//g, '-');
+                            const dateB = b.date.replace(/\//g, '-');
+                            
+                            // 日付と時間を組み合わせて比較
+                            const datetimeA = dateA + ' ' + (a.endTime || '00:00');
+                            const datetimeB = dateB + ' ' + (b.endTime || '00:00');
+                            
+                            // 降順ソート（新しいものが上）
+                            return datetimeB.localeCompare(datetimeA);
+                        });
+                        
+                        displayPreviewData(sortedData, result.stats);
                         dataCount.textContent = `${result.count}件のデータ`;
                     } else {
                         showPreviewEmpty();
@@ -935,6 +969,7 @@
                         <thead>
                             <tr>
                                 <th>日付</th>
+                                <th>終了時間</th>
                                 <th>大会名</th>
                                 <th>会場</th>
                                 <th>対戦チーム</th>
@@ -950,6 +985,8 @@
             data.forEach(row => {
                 // 日付をスラッシュ区切りに変換
                 const formattedDate = formatDateForDisplay(row.date);
+                // 時刻をHH:MM形式にフォーマット
+                const formattedTime = formatTimeForDisplay(row.endTime);
                 
                 // 勝敗に応じたクラスを決定
                 const result = String(row.result || '').trim();
@@ -965,6 +1002,7 @@
                 html += `
                     <tr>
                         <td>${escapeHtml(formattedDate)}</td>
+                        <td>${escapeHtml(formattedTime)}</td>
                         <td>${escapeHtml(row.tournament)}</td>
                         <td>${escapeHtml(row.venue)}</td>
                         <td>${escapeHtml(row.opponent)}</td>
@@ -1055,6 +1093,34 @@
             }
         }
 
+        // 時刻をHH:MM形式でフォーマット
+        function formatTimeForDisplay(timeStr) {
+            if (!timeStr || timeStr === '') return '';
+            
+            try {
+                // 既にHH:MM形式の場合はそのまま返す
+                if (/^\d{1,2}:\d{2}$/.test(timeStr)) {
+                    return timeStr;
+                }
+                
+                // ISO形式（1899-12-30T06:26:00.000Zなど）の場合
+                if (typeof timeStr === 'string' && timeStr.includes('T')) {
+                    const date = new Date(timeStr);
+                    if (!isNaN(date.getTime())) {
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${hours}:${minutes}`;
+                    }
+                }
+                
+                // その他の場合はそのまま返す
+                return timeStr;
+            } catch (error) {
+                console.error('Time formatting error:', error);
+                return timeStr;
+            }
+        }
+
         // 空のデータ表示
         function showPreviewEmpty() {
             const previewContent = document.getElementById('previewContent');
@@ -1123,6 +1189,7 @@
             const formData = {
                 action: 'add',
                 date: document.getElementById('date').value,
+                endTime: document.getElementById('endTime').value,
                 tournament: document.getElementById('tournament').value,
                 venue: document.getElementById('venue').value,
                 opponent: document.getElementById('opponent').value,
@@ -1156,6 +1223,12 @@
                 // 日付を今日に戻す
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('date').value = today;
+
+                // 現在時刻を試合終了時間にリセット
+                const now = new Date();
+                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                                  now.getMinutes().toString().padStart(2, '0');
+                document.getElementById('endTime').value = currentTime;
 
                 // プレビュータブが開いている場合は更新
                 setTimeout(() => {
@@ -1199,6 +1272,7 @@
         function openEditModal(row) {
             document.getElementById('editRowIndex').value = row.rowIndex;
             document.getElementById('editDate').value = row.date.replace(/\//g, '-');
+            document.getElementById('editEndTime').value = row.endTime || '';
             document.getElementById('editTournament').value = row.tournament;
             document.getElementById('editVenue').value = row.venue;
             document.getElementById('editOpponent').value = row.opponent;
@@ -1226,6 +1300,7 @@
                 action: 'edit',
                 rowIndex: parseInt(document.getElementById('editRowIndex').value),
                 date: document.getElementById('editDate').value,
+                endTime: document.getElementById('editEndTime').value,
                 tournament: document.getElementById('editTournament').value,
                 venue: document.getElementById('editVenue').value,
                 opponent: document.getElementById('editOpponent').value,
@@ -1261,9 +1336,10 @@
         function openDeleteModal(row) {
             document.getElementById('deleteRowIndex').value = row.rowIndex;
             
+            const dateDisplay = row.date + (row.endTime ? ' ' + row.endTime : '');
             const preview = document.getElementById('deletePreview');
             preview.innerHTML = `
-                <p style="margin: 5px 0;"><strong>日付:</strong> ${escapeHtml(row.date)}</p>
+                <p style="margin: 5px 0;"><strong>日付:</strong> ${escapeHtml(dateDisplay)}</p>
                 <p style="margin: 5px 0;"><strong>大会名:</strong> ${escapeHtml(row.tournament)}</p>
                 <p style="margin: 5px 0;"><strong>対戦チーム:</strong> ${escapeHtml(row.opponent)}</p>
                 <p style="margin: 5px 0;"><strong>スコア:</strong> ${escapeHtml(row.scoreMinamiGaoka)} - ${escapeHtml(row.scoreOpponent)}</p>
