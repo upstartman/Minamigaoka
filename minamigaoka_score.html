@@ -659,20 +659,26 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏀 試合結果入力フォーム(2025年度)</h1>
+        <h1>🏀 南ヶ丘MBC試合結果記録アプリ(2025年度)</h1>
         <p class="subtitle">南ヶ丘MBCの試合データを記録/閲覧</p>
         <div class="year-link">
             <a href="https://upstartman.github.io/minamigaoka/minamigaoka_score_2026.html" target="_blank">📅 2026年度データ</a>
         </div>
+        <div class="year-link">
+            <a href="https://youtube.com/playlist?list=PLpQLKhKt0bVLFcCulOTLxv7M3orfU1_iG&si=EkTkFlnivNJeQ8W4" target="_blank">🎥 南ヶ丘MBC (2025年) 大会試合</a>
+        </div>
+        <div class="year-link">
+            <a href="https://youtube.com/playlist?list=PLpQLKhKt0bVIm54PezkFCuG0eW7CdToro&si=mYgX2qR6QhSbBETJ" target="_blank">🎥 南ヶ丘MBC (2025年) 練習試合</a>
+        </div>
 
         <!-- タブナビゲーション -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('form')">📝 データ入力</button>
-            <button class="tab" onclick="switchTab('preview')">📊 データ閲覧</button>
+            <button class="tab" onclick="switchTab('form')" disabled style="opacity: 0.5; cursor: not-allowed;">📝 データ入力</button>
+            <button class="tab active" onclick="switchTab('preview')">📊 データ閲覧</button>
         </div>
 
         <!-- データ入力タブ -->
-        <div id="formTab" class="tab-content active">
+        <div id="formTab" class="tab-content">
             <form id="matchForm">
             <div class="form-group">
                 <label for="date">日付 <span class="required">*</span></label>
@@ -713,7 +719,7 @@
         </div>
 
         <!-- データプレビュータブ -->
-        <div id="previewTab" class="tab-content">
+        <div id="previewTab" class="tab-content active">
             <div class="preview-header">
                 <button class="reload-btn" onclick="loadPreviewData()">🔄 更新</button>
             </div>
