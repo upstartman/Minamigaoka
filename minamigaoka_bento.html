@@ -96,7 +96,8 @@
         .form-group input[type="text"],
         .form-group input[type="date"],
         .form-group input[type="number"],
-        .form-group input[type="password"] {
+        .form-group input[type="password"],
+        .form-group select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -105,7 +106,8 @@
             transition: border-color 0.3s;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -262,54 +264,17 @@
             border-radius: 5px;
         }
 
-        .summary-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .summary-table {
-            width: 100%;
-            margin-top: 15px;
-        }
-
-        .summary-table th,
-        .summary-table td {
-            padding: 10px;
-            text-align: left;
-        }
-
-        .total-row {
-            font-weight: bold;
-            font-size: 1.2em;
-            border-top: 2px solid #333;
-        }
-
-        .user-orders {
+        .buttons-container {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
-        }
-
-        .user-order-item {
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #e0e0e0;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
             color: #666;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            font-size: 1.1em;
         }
 
         .success {
@@ -317,35 +282,77 @@
             color: #155724;
             padding: 15px;
             border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .summary-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .summary-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .user-order-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .user-order {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .user-order h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .user-order ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .user-order li {
+            padding: 5px 0;
+            color: #666;
+        }
+
+        .back-link {
+            display: inline-block;
             margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
         }
 
-        .back-btn {
-            margin-bottom: 20px;
+        .back-link:hover {
+            text-decoration: underline;
         }
 
-        #addMenuBtn {
-            margin-top: 10px;
-        }
-
-        .buttons-container {
+        .admin-actions {
+            margin-top: 15px;
             display: flex;
             gap: 10px;
-            margin-top: 20px;
         }
 
-        @media (max-width: 768px) {
-            .menu-item {
-                flex-direction: column;
-            }
-
-            .buttons-container {
-                flex-direction: column;
-            }
-
-            .order-table {
-                font-size: 0.9em;
-            }
+        .admin-actions button {
+            font-size: 0.9em;
+            padding: 8px 15px;
         }
     </style>
 </head>
@@ -354,310 +361,377 @@
         <div class="header">
             <h1>🍱 お弁当注文システム</h1>
             <div class="mode-selector">
-                <button class="mode-btn active" onclick="switchMode('user')">利用者モード</button>
-                <button class="mode-btn" onclick="switchMode('admin')">管理者モード</button>
+                <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
+                <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
             </div>
         </div>
 
         <div class="content">
             <!-- 利用者モード -->
             <div id="userMode" class="section active">
-                <div id="userOrderList">
-                    <h2>注文可能なお弁当</h2>
-                    <div id="orderListContainer" class="order-list">
+                <div id="orderListSection" class="section active">
+                    <h2>注文する日付を選択</h2>
+                    <div id="orderList" class="order-list">
                         <div class="loading">読み込み中...</div>
                     </div>
                 </div>
 
-                <div id="userOrderForm" class="section">
-                    <button class="btn btn-secondary back-btn" onclick="backToOrderList()">← 一覧に戻る</button>
-                    <h2 id="orderFormTitle"></h2>
+                <div id="orderFormSection" class="section">
+                    <a href="#" class="back-link" onclick="showOrderList(); return false;">← 日付選択に戻る</a>
                     <div id="orderFormContent"></div>
                 </div>
             </div>
 
             <!-- 管理者モード -->
             <div id="adminMode" class="section">
-                <div id="adminPanel" class="section active">
-                    <h2>管理者パネル</h2>
-                    <button class="btn btn-secondary" onclick="showCreateOrder()">新規注文ページ作成</button>
-                    <button class="btn btn-secondary" onclick="showOrderManagement()">注文管理</button>
-                    
-                    <div id="createOrderSection" class="section" style="margin-top: 30px;">
-                        <h3>新規注文ページ作成</h3>
-                        
-                        <!-- 過去のページからコピー -->
-                        <div class="form-group">
-                            <label>過去のページからコピー (オプション)</label>
-                            <select id="copyFromOrder" onchange="loadMenusFromOrder()">
-                                <option value="">-- 新規作成 --</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>日付</label>
-                            <input type="date" id="newOrderDate">
-                        </div>
-                        <div class="form-group">
-                            <label>メニュー</label>
-                            <div class="menu-items" id="menuItems">
-                                <div class="menu-item">
-                                    <input type="text" placeholder="メニュー名" class="menu-name">
-                                    <input type="number" placeholder="価格" class="menu-price" min="0">
-                                </div>
+                <div id="adminMenuSection" class="section active">
+                    <h2>管理メニュー</h2>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="showCreateOrderPage()">新規注文ページ作成</button>
+                        <button class="btn" onclick="showOrderManagement()">注文管理</button>
+                    </div>
+                </div>
+
+                <div id="createOrderSection" class="section">
+                    <a href="#" class="back-link" onclick="showAdminMenu(); return false;">← メニューに戻る</a>
+                    <h2>新規注文ページ作成</h2>
+                    <div class="form-group">
+                        <label>過去のページからコピー（オプション）</label>
+                        <select id="copyFromOrder" onchange="loadMenusFromOrder()">
+                            <option value="">-- 新規作成 --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="newOrderDate">
+                    </div>
+                    <div class="form-group">
+                        <label>お店の名前（オプション）</label>
+                        <input type="text" id="newShopName" placeholder="例: ほっともっと、ほっかほっか亭">
+                    </div>
+                    <div class="form-group">
+                        <label>メニュー</label>
+                        <div class="menu-items" id="menuItems">
+                            <div class="menu-item">
+                                <input type="text" placeholder="メニュー名" class="menu-name">
+                                <input type="number" placeholder="価格" class="menu-price" min="0">
                             </div>
-                            <button class="btn btn-secondary" id="addMenuBtn" onclick="addMenuItem()">+ メニュー追加</button>
                         </div>
+                        <button class="btn btn-secondary" onclick="addMenuItem()">+ メニュー追加</button>
+                    </div>
+                    <div class="buttons-container">
                         <button class="btn" onclick="createOrderPage()">作成</button>
-                        <div id="createOrderMessage"></div>
+                        <button class="btn btn-secondary" onclick="showAdminMenu()">キャンセル</button>
                     </div>
+                    <div id="createOrderMessage"></div>
+                </div>
 
-                    <div id="orderManagementSection" class="section" style="margin-top: 30px;">
-                        <h3>注文管理</h3>
-                        <div id="adminOrderListContainer"></div>
-                    </div>
+                <div id="orderManagementSection" class="section">
+                    <a href="#" class="back-link" onclick="showAdminMenu(); return false;">← メニューに戻る</a>
+                    <h2>注文管理</h2>
+                    <div id="adminOrderList"></div>
+                </div>
 
-                    <div id="orderDetailSection" class="section" style="margin-top: 30px;">
-                        <button class="btn btn-secondary back-btn" onclick="showOrderManagement()">← 一覧に戻る</button>
-                        <div id="orderDetailContent"></div>
-                    </div>
+                <div id="orderDetailSection" class="section">
+                    <a href="#" class="back-link" onclick="showOrderManagement(); return false;">← 注文管理に戻る</a>
+                    <div id="orderDetailContent"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // API設定
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxVi-B9OxgEd5sJmRTFWL68sEid4kaHvtm6WRPLaSKKrZ7cSJPtN3AMmPLKiLIViUPHJw/exec';
-        
+        // API URL（デプロイしたGoogle Apps ScriptのURL）
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxShYvxn14ojRkRKk6gU91PI7frEgQHJVTUFTzLC7I2Imy_GDTr_Vn1hsiPQD3t7vEoBw/exec';
+
         let currentMode = 'user';
         let currentOrderId = null;
 
         // モード切り替え
         function switchMode(mode) {
             currentMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
             event.target.classList.add('active');
+
+            // セクションの表示切り替え
+            document.getElementById('userMode').classList.remove('active');
+            document.getElementById('adminMode').classList.remove('active');
 
             if (mode === 'user') {
                 document.getElementById('userMode').classList.add('active');
-                document.getElementById('adminMode').classList.remove('active');
-                loadOrderList();
+                // 利用者モードに切り替えたら、最初から読み込み直す
+                showOrderList();
             } else {
-                document.getElementById('userMode').classList.remove('active');
                 document.getElementById('adminMode').classList.add('active');
-                loadAdminOrderList();
+                showAdminMenu();
             }
         }
 
-        // API呼び出し（GETリクエストに変更してCORS回避）
-        async function callAPI(action, data = {}) {
+        // 日付をそのまま返す（Apps Scriptから取得した日付をそのまま表示）
+        function formatDate(dateString) {
+            return dateString || '';
+        }
+
+        // API呼び出し（GETリクエスト）
+        async function callAPI(action, params = {}) {
             try {
-                // データをJSON文字列に変換してクエリパラメータに追加
-                const params = new URLSearchParams({
-                    action: action,
-                    data: JSON.stringify(data)
-                });
+                const url = new URL(API_URL);
+                url.searchParams.append('action', action);
+                if (Object.keys(params).length > 0) {
+                    url.searchParams.append('data', JSON.stringify(params));
+                }
                 
-                const url = `${API_URL}?${params.toString()}`;
-                const response = await fetch(url);
-                
+                const response = await fetch(url.toString());
                 const result = await response.json();
                 return result;
             } catch (error) {
                 console.error('API Error:', error);
-                return { success: false, message: 'ネットワークエラーが発生しました' };
+                return { success: false, message: error.toString() };
             }
         }
 
-        // 利用者モード: 注文一覧読み込み
+        // 注文リスト表示（利用者向け）
         async function loadOrderList() {
-            const container = document.getElementById('orderListContainer');
+            const container = document.getElementById('orderList');
             container.innerHTML = '<div class="loading">読み込み中...</div>';
 
             const result = await callAPI('getOrderPages');
-            
+
             if (result.success) {
-                if (result.data.length === 0) {
-                    container.innerHTML = '<p>現在注文可能なお弁当はありません</p>';
-                } else {
-                    container.innerHTML = '';
-                    result.data.forEach(order => {
-                        const card = document.createElement('div');
-                        card.className = 'order-card';
-                        card.onclick = () => showOrderForm(order.orderId);
-                        
-                        const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
-                        const statusText = order.status === 'open' ? '受付中' : '締切';
-                        
-                        card.innerHTML = `
+                // 日付の新しい順にソート（文字列比較でYYYY-MM-DD形式を直接比較）
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+
+                if (sortedData.length === 0) {
+                    container.innerHTML = '<p>現在注文可能な日付はありません。</p>';
+                    return;
+                }
+
+                let html = '';
+                sortedData.forEach(order => {
+                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    
+                    html += `
+                        <div class="order-card" onclick="${order.status === 'open' ? `showOrderForm('${order.orderId}')` : ''}">
                             <div class="order-card-header">
-                                <div class="order-date">${order.orderDate}</div>
-                                <div class="status-badge ${statusClass}">${statusText}</div>
+                                <div class="order-date">${formattedDate}${shopInfo}</div>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
                             <div class="order-card-body">
-                                ${order.menus.map(m => m.name).join(' / ')}
+                                メニュー: ${order.menus.map(m => m.name).join(', ')}
                             </div>
-                        `;
-                        
-                        container.appendChild(card);
-                    });
-                }
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
             } else {
                 container.innerHTML = `<div class="error">${result.message}</div>`;
             }
         }
 
-        // 利用者モード: 注文フォーム表示
+        // 注文リストを表示
+        function showOrderList() {
+            document.getElementById('orderListSection').classList.add('active');
+            document.getElementById('orderFormSection').classList.remove('active');
+            // 最新データを読み込み
+            loadOrderList();
+        }
+
+        // 注文フォーム表示
         async function showOrderForm(orderId) {
             currentOrderId = orderId;
             
-            document.getElementById('userOrderList').classList.remove('active');
-            document.getElementById('userOrderForm').classList.add('active');
-            
-            const titleEl = document.getElementById('orderFormTitle');
-            const contentEl = document.getElementById('orderFormContent');
-            
-            contentEl.innerHTML = '<div class="loading">読み込み中...</div>';
-            
+            document.getElementById('orderListSection').classList.remove('active');
+            document.getElementById('orderFormSection').classList.add('active');
+
+            const container = document.getElementById('orderFormContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
             const result = await callAPI('getOrderDetail', { orderId: orderId });
-            
+
             if (result.success) {
                 const orderPage = result.data.orderPage;
-                const orders = result.data.orders;
+                const formattedDate = formatDate(orderPage.orderDate);
+                const shopInfo = orderPage.shopName ? ` - ${orderPage.shopName}` : '';
                 
-                titleEl.textContent = `${orderPage.orderDate} の注文`;
-                
-                const isOpen = orderPage.status === 'open';
-                
-                let formHTML = `
+                // ユーザー一覧を取得
+                const userListResult = await callAPI('getUserList', { orderId: orderId });
+                const existingUsers = userListResult.success ? userListResult.data : [];
+
+                let html = `
+                    <h2>${formattedDate}${shopInfo}の注文</h2>
                     <div class="form-group">
-                        <label>お名前</label>
-                        <input type="text" id="userName" placeholder="お名前を入力" ${!isOpen ? 'disabled' : ''}>
-                    </div>
-                    <table class="order-table">
-                        <thead>
-                            <tr>
-                                <th>メニュー</th>
-                                <th>価格</th>
-                                <th>数量</th>
-                                <th>小計</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orderTableBody">
+                        <label>名前</label>
+                        <select id="userNameSelect" onchange="handleUserSelection()">
+                            <option value="">-- 新規入力 --</option>
                 `;
                 
+                existingUsers.forEach(user => {
+                    html += `<option value="${user}">${user}</option>`;
+                });
+                
+                html += `
+                        </select>
+                    </div>
+                    <div class="form-group" id="userNameInputGroup">
+                        <label>名前を入力</label>
+                        <input type="text" id="userName" placeholder="山田太郎">
+                    </div>
+                    <div class="form-group">
+                        <label>注文内容</label>
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th>メニュー</th>
+                                    <th>価格</th>
+                                    <th>数量</th>
+                                    <th>小計</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderTableBody">
+                `;
+
                 orderPage.menus.forEach((menu, index) => {
-                    formHTML += `
+                    html += `
                         <tr>
                             <td>${menu.name}</td>
                             <td>¥${menu.price.toLocaleString()}</td>
                             <td>
                                 <input type="number" 
-                                       class="order-quantity" 
-                                       data-menu-name="${menu.name}" 
-                                       data-price="${menu.price}" 
-                                       min="0" 
-                                       value="0"
-                                       ${!isOpen ? 'disabled' : ''}
-                                       onchange="updateSubtotal()">
+                                    id="quantity_${index}" 
+                                    data-menu-name="${menu.name}"
+                                    data-price="${menu.price}"
+                                    min="0" 
+                                    value="0"
+                                    onchange="updateTotal()">
                             </td>
-                            <td class="subtotal" data-index="${index}">¥0</td>
+                            <td id="subtotal_${index}">¥0</td>
                         </tr>
                     `;
                 });
-                
-                formHTML += `
-                        </tbody>
-                        <tfoot>
-                            <tr class="total-row">
-                                <td colspan="3">合計</td>
-                                <td id="totalAmount">¥0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+
+                html += `
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">合計</th>
+                                    <th id="orderTotal">¥0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="submitOrder()">注文する</button>
+                    </div>
+                    <div id="orderMessage"></div>
                 `;
-                
-                if (isOpen) {
-                    formHTML += `
-                        <div class="buttons-container">
-                            <button class="btn" onclick="submitOrder()">注文する</button>
-                            <button class="btn btn-secondary" onclick="loadMyOrder()">自分の注文を読み込む</button>
-                        </div>
-                    `;
-                } else {
-                    formHTML += '<div class="error">この注文は締め切られています</div>';
-                }
-                
-                formHTML += '<div id="submitMessage"></div>';
-                
-                contentEl.innerHTML = formHTML;
+
+                container.innerHTML = html;
             } else {
-                contentEl.innerHTML = `<div class="error">${result.message}</div>`;
+                container.innerHTML = `<div class="error">${result.message}</div>`;
             }
         }
 
-        // 小計と合計の更新
-        function updateSubtotal() {
-            const quantities = document.querySelectorAll('.order-quantity');
-            let total = 0;
-            
-            quantities.forEach((input, index) => {
-                const price = parseFloat(input.dataset.price);
-                const quantity = parseInt(input.value) || 0;
-                const subtotal = price * quantity;
-                
-                document.querySelector(`.subtotal[data-index="${index}"]`).textContent = 
-                    `¥${subtotal.toLocaleString()}`;
-                
-                total += subtotal;
-            });
-            
-            document.getElementById('totalAmount').textContent = `¥${total.toLocaleString()}`;
+        // ユーザー選択時の処理
+        async function handleUserSelection() {
+            const select = document.getElementById('userNameSelect');
+            const selectedUser = select.value;
+            const userNameInput = document.getElementById('userName');
+            const userNameInputGroup = document.getElementById('userNameInputGroup');
+
+            if (selectedUser === '') {
+                // 新規入力の場合
+                userNameInputGroup.style.display = 'block';
+                userNameInput.value = '';
+                // 数量を0にリセット
+                resetQuantities();
+            } else {
+                // 既存ユーザーを選択した場合
+                userNameInputGroup.style.display = 'none';
+                userNameInput.value = selectedUser;
+                // 前回の注文内容を読み込む
+                await loadPreviousOrder(selectedUser);
+            }
         }
 
-        // 自分の注文を読み込む
-        async function loadMyOrder() {
-            const userName = prompt('お名前を入力してください');
-            if (!userName) return;
-            
+        // 前回の注文内容を読み込む
+        async function loadPreviousOrder(userName) {
             const result = await callAPI('getOrderDetail', { orderId: currentOrderId });
             
             if (result.success) {
-                const orders = result.data.orders.filter(o => o.userName === userName);
+                const orders = result.data.orders;
                 
-                if (orders.length === 0) {
-                    alert('注文が見つかりませんでした');
-                    return;
-                }
+                // まず全ての数量を0にリセット
+                resetQuantities();
                 
-                document.getElementById('userName').value = userName;
-                
-                const quantities = document.querySelectorAll('.order-quantity');
-                quantities.forEach(input => {
-                    const menuName = input.dataset.menuName;
-                    const order = orders.find(o => o.menuName === menuName);
-                    input.value = order ? order.quantity : 0;
+                // 該当ユーザーの注文を探して数量を設定
+                orders.forEach(order => {
+                    if (order.userName === userName) {
+                        const inputs = document.querySelectorAll('[data-menu-name]');
+                        inputs.forEach(input => {
+                            if (input.dataset.menuName === order.menuName) {
+                                input.value = order.quantity;
+                            }
+                        });
+                    }
                 });
                 
-                updateSubtotal();
+                // 合計を更新
+                updateTotal();
             }
+        }
+
+        // 数量を0にリセット
+        function resetQuantities() {
+            const inputs = document.querySelectorAll('[data-menu-name]');
+            inputs.forEach(input => {
+                input.value = 0;
+            });
+            updateTotal();
+        }
+
+        // 合計計算
+        function updateTotal() {
+            let total = 0;
+            const inputs = document.querySelectorAll('[data-menu-name]');
+            
+            inputs.forEach((input, index) => {
+                const quantity = parseInt(input.value) || 0;
+                const price = parseFloat(input.dataset.price);
+                const subtotal = quantity * price;
+                
+                document.getElementById(`subtotal_${index}`).textContent = `¥${subtotal.toLocaleString()}`;
+                total += subtotal;
+            });
+
+            document.getElementById('orderTotal').textContent = `¥${total.toLocaleString()}`;
         }
 
         // 注文送信
         async function submitOrder() {
-            const userName = document.getElementById('userName').value.trim();
-            
+            const messageEl = document.getElementById('orderMessage');
+            const userNameSelect = document.getElementById('userNameSelect');
+            const userNameInput = document.getElementById('userName');
+            const userName = userNameInput.value.trim();
+
             if (!userName) {
-                document.getElementById('submitMessage').innerHTML = 
-                    '<div class="error">お名前を入力してください</div>';
+                messageEl.innerHTML = '<div class="error">名前を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
-            
+
             const orderItems = [];
-            const quantities = document.querySelectorAll('.order-quantity');
+            const inputs = document.querySelectorAll('[data-menu-name]');
             
-            quantities.forEach(input => {
+            inputs.forEach(input => {
                 const quantity = parseInt(input.value) || 0;
                 if (quantity > 0) {
                     orderItems.push({
@@ -667,54 +741,57 @@
                     });
                 }
             });
-            
+
             if (orderItems.length === 0) {
-                document.getElementById('submitMessage').innerHTML = 
-                    '<div class="error">数量を1つ以上入力してください</div>';
+                messageEl.innerHTML = '<div class="error">数量を1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
-            
+
             const result = await callAPI('submitOrder', {
                 orderId: currentOrderId,
                 userName: userName,
                 orderItems: orderItems
             });
-            
+
             if (result.success) {
-                document.getElementById('submitMessage').innerHTML = 
-                    '<div class="success">注文を受け付けました!</div>';
+                messageEl.innerHTML = '<div class="success">注文を送信しました！</div>';
+                setTimeout(() => {
+                    // 注文完了後、日付選択画面に戻る
+                    showOrderList();
+                }, 1500);
             } else {
-                document.getElementById('submitMessage').innerHTML = 
-                    `<div class="error">${result.message}</div>`;
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
             }
         }
 
-        // 一覧に戻る
-        function backToOrderList() {
-            document.getElementById('userOrderList').classList.add('active');
-            document.getElementById('userOrderForm').classList.remove('active');
-            loadOrderList();
-        }
-
-        // 新規注文ページ作成セクション表示
-        function showCreateOrder() {
-            document.getElementById('createOrderSection').classList.add('active');
+        // 管理者メニュー表示
+        function showAdminMenu() {
+            document.getElementById('adminMenuSection').classList.add('active');
+            document.getElementById('createOrderSection').classList.remove('active');
             document.getElementById('orderManagementSection').classList.remove('active');
             document.getElementById('orderDetailSection').classList.remove('active');
-            
-            // 日付を今日に設定
-            document.getElementById('newOrderDate').valueAsDate = new Date();
-            
-            // コピー元候補を読み込む
-            loadCopyOrderList();
         }
 
-        // 注文管理セクション表示
-        function showOrderManagement() {
-            document.getElementById('createOrderSection').classList.remove('active');
-            document.getElementById('orderManagementSection').classList.add('active');
-            document.getElementById('orderDetailSection').classList.remove('active');
-            loadAdminOrderList();
+        // 新規注文ページ作成画面表示
+        async function showCreateOrderPage() {
+            document.getElementById('adminMenuSection').classList.remove('active');
+            document.getElementById('createOrderSection').classList.add('active');
+            
+            // コピー元候補をロード
+            await loadCopyOrderList();
+            
+            // フォームをリセット
+            document.getElementById('newOrderDate').value = '';
+            document.getElementById('newShopName').value = '';
+            document.getElementById('menuItems').innerHTML = `
+                <div class="menu-item">
+                    <input type="text" placeholder="メニュー名" class="menu-name">
+                    <input type="number" placeholder="価格" class="menu-price" min="0">
+                </div>
+            `;
+            document.getElementById('createOrderMessage').innerHTML = '';
         }
 
         // メニュー項目追加
@@ -732,97 +809,110 @@
 
         // 注文ページ作成
         async function createOrderPage() {
+            const messageEl = document.getElementById('createOrderMessage');
             const orderDate = document.getElementById('newOrderDate').value;
-            
+            const shopName = document.getElementById('newShopName').value.trim();
+
             if (!orderDate) {
-                document.getElementById('createOrderMessage').innerHTML = 
-                    '<div class="error">日付を入力してください</div>';
+                messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
-            
+
             const menuItems = document.querySelectorAll('#menuItems .menu-item');
             const menus = [];
-            
+
             menuItems.forEach(item => {
                 const name = item.querySelector('.menu-name').value.trim();
                 const price = parseFloat(item.querySelector('.menu-price').value);
-                
+
                 if (name && price > 0) {
                     menus.push({ name: name, price: price });
                 }
             });
-            
+
             if (menus.length === 0) {
-                document.getElementById('createOrderMessage').innerHTML = 
-                    '<div class="error">メニューを1つ以上入力してください</div>';
+                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
-            
+
             const result = await callAPI('createOrderPage', {
                 orderDate: orderDate,
+                shopName: shopName,
                 menus: menus
             });
-            
+
             if (result.success) {
-                document.getElementById('createOrderMessage').innerHTML = 
-                    '<div class="success">注文ページを作成しました!</div>';
-                
-                // フォームをリセット
-                document.getElementById('menuItems').innerHTML = `
-                    <div class="menu-item">
-                        <input type="text" placeholder="メニュー名" class="menu-name">
-                        <input type="number" placeholder="価格" class="menu-price" min="0">
-                    </div>
-                `;
-                document.getElementById('copyFromOrder').value = '';
+                messageEl.innerHTML = '<div class="success">注文ページを作成しました！</div>';
+                setTimeout(() => {
+                    showAdminMenu();
+                }, 1500);
             } else {
-                document.getElementById('createOrderMessage').innerHTML = 
-                    `<div class="error">${result.message}</div>`;
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
             }
         }
 
-        // 管理者: 注文一覧読み込み
+        // 注文管理画面表示
+        async function showOrderManagement() {
+            document.getElementById('adminMenuSection').classList.remove('active');
+            document.getElementById('orderManagementSection').classList.add('active');
+            document.getElementById('orderDetailSection').classList.remove('active');
+            
+            // 最新データを読み込み
+            await loadAdminOrderList();
+        }
+
+        // 管理者用注文リスト読み込み
         async function loadAdminOrderList() {
-            const container = document.getElementById('adminOrderListContainer');
+            const container = document.getElementById('adminOrderList');
             container.innerHTML = '<div class="loading">読み込み中...</div>';
 
             const result = await callAPI('getOrderPages');
-            
+
             if (result.success) {
-                if (result.data.length === 0) {
-                    container.innerHTML = '<p>注文ページがありません</p>';
-                } else {
-                    container.innerHTML = '';
-                    result.data.forEach(order => {
-                        const card = document.createElement('div');
-                        card.className = 'order-card';
-                        
-                        const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
-                        const statusText = order.status === 'open' ? '受付中' : '締切';
-                        
-                        card.innerHTML = `
+                // 日付の新しい順にソート（文字列比較でYYYY-MM-DD形式を直接比較）
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+
+                if (sortedData.length === 0) {
+                    container.innerHTML = '<p>注文ページがありません。</p>';
+                    return;
+                }
+
+                let html = '';
+                sortedData.forEach(order => {
+                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    
+                    html += `
+                        <div class="order-card">
                             <div class="order-card-header">
-                                <div class="order-date">${order.orderDate}</div>
-                                <div class="status-badge ${statusClass}">${statusText}</div>
+                                <div class="order-date">${formattedDate}${shopInfo}</div>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
                             <div class="order-card-body">
-                                ${order.menus.map(m => m.name).join(' / ')}
+                                メニュー: ${order.menus.map(m => m.name).join(', ')}
                             </div>
-                            <div class="buttons-container" style="margin-top: 15px;">
-                                <button class="btn btn-secondary" onclick="event.stopPropagation(); showOrderDetail('${order.orderId}')">詳細</button>
-                                <button class="btn btn-danger" onclick="event.stopPropagation(); deleteOrderPage('${order.orderId}')">削除</button>
+                            <div class="admin-actions">
+                                <button class="btn" onclick="showOrderDetail('${order.orderId}')">詳細</button>
+                                <button class="btn" onclick="showEditOrderPage('${order.orderId}')">編集</button>
+                                <button class="btn btn-danger" onclick="deleteOrderPage('${order.orderId}')">削除</button>
                             </div>
-                        `;
-                        
-                        container.appendChild(card);
-                    });
-                }
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
             } else {
                 container.innerHTML = `<div class="error">${result.message}</div>`;
             }
         }
 
-        // 管理者: 注文詳細表示
+        // 注文詳細表示
         async function showOrderDetail(orderId) {
             currentOrderId = orderId;
             
@@ -835,35 +925,41 @@
             const result = await callAPI('getOrderSummary', { orderId: orderId });
             
             if (result.success) {
-                const data = result.data;
-                const orderPage = data.orderPage;
+                const orderPage = result.data.orderPage;
+                const menuSummary = result.data.menuSummary;
+                const userOrders = result.data.userOrders;
+                const totalAmount = result.data.totalAmount;
+                const formattedDate = formatDate(orderPage.orderDate);
+                const shopInfo = orderPage.shopName ? ` - ${orderPage.shopName}` : '';
                 
                 let html = `
-                    <h2>${orderPage.orderDate} の注文詳細</h2>
-                    <p>ステータス: <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}">${orderPage.status === 'open' ? '受付中' : '締切'}</span></p>
+                    <h2>${formattedDate}${shopInfo}の注文詳細</h2>
+                    <p>ステータス: <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}">${orderPage.status === 'open' ? '受付中' : '締切済'}</span></p>
                 `;
                 
                 if (orderPage.status === 'open') {
                     html += '<button class="btn btn-danger" onclick="closeOrder()">この注文を締め切る</button>';
+                } else {
+                    html += '<button class="btn btn-success" onclick="reopenOrder()">締切を取り消す（受付中に戻す）</button>';
                 }
                 
                 // メニュー別集計
                 html += `
                     <div class="summary-section">
                         <h3>メニュー別集計</h3>
-                        <table class="summary-table">
+                        <table class="order-table">
                             <thead>
                                 <tr>
                                     <th>メニュー</th>
                                     <th>単価</th>
-                                    <th>注文数</th>
-                                    <th>金額</th>
+                                    <th>数量</th>
+                                    <th>小計</th>
                                 </tr>
                             </thead>
                             <tbody>
                 `;
                 
-                data.menuSummary.forEach(menu => {
+                menuSummary.forEach(menu => {
                     html += `
                         <tr>
                             <td>${menu.menuName}</td>
@@ -877,9 +973,9 @@
                 html += `
                             </tbody>
                             <tfoot>
-                                <tr class="total-row">
-                                    <td colspan="3">合計金額</td>
-                                    <td>¥${data.totalAmount.toLocaleString()}</td>
+                                <tr>
+                                    <th colspan="3">合計</th>
+                                    <th>¥${totalAmount.toLocaleString()}</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -887,12 +983,14 @@
                 `;
                 
                 // ユーザー別注文
-                html += '<div class="user-orders"><h3>ユーザー別注文</h3>';
+                html += '<div class="user-order-section"><h3>ユーザー別注文</h3>';
                 
-                for (const [userName, orders] of Object.entries(data.userOrders)) {
+                for (let userName in userOrders) {
+                    const orders = userOrders[userName];
                     let userTotal = 0;
+                    
                     html += `
-                        <div class="user-order-item">
+                        <div class="user-order">
                             <h4>${userName}</h4>
                             <ul>
                     `;
@@ -929,6 +1027,26 @@
             
             if (result.success) {
                 alert('注文を締め切りました');
+                // 詳細画面を再読み込み
+                showOrderDetail(currentOrderId);
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        }
+
+        // 締切を取り消す（受付中に戻す）
+        async function reopenOrder() {
+            if (!confirm('締切を取り消して受付中に戻しますか?')) {
+                return;
+            }
+            
+            const result = await callAPI('reopenOrder', {
+                orderId: currentOrderId
+            });
+            
+            if (result.success) {
+                alert('受付中に戻しました');
+                // 詳細画面を再読み込み
                 showOrderDetail(currentOrderId);
             } else {
                 alert(`エラー: ${result.message}`);
@@ -944,11 +1062,19 @@
             if (result.success && result.data.length > 0) {
                 select.innerHTML = '<option value="">-- 新規作成 --</option>';
                 
-                result.data.forEach(order => {
+                // 日付の新しい順にソート（文字列比較でYYYY-MM-DD形式を直接比較）
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+                
+                sortedData.forEach(order => {
                     const option = document.createElement('option');
                     option.value = order.orderId;
-                    option.textContent = `${order.orderDate} - ${order.menus.map(m => m.name).join(', ')}`;
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    option.textContent = `${formattedDate}${shopInfo} - ${order.menus.map(m => m.name).join(', ')}`;
                     option.dataset.menus = JSON.stringify(order.menus);
+                    option.dataset.shopName = order.shopName || '';
                     select.appendChild(option);
                 });
             }
@@ -961,6 +1087,7 @@
             
             if (!selectedOption.value) {
                 // 新規作成を選択した場合はリセット
+                document.getElementById('newShopName').value = '';
                 document.getElementById('menuItems').innerHTML = `
                     <div class="menu-item">
                         <input type="text" placeholder="メニュー名" class="menu-name">
@@ -971,6 +1098,11 @@
             }
             
             const menus = JSON.parse(selectedOption.dataset.menus);
+            const shopName = selectedOption.dataset.shopName || '';
+            
+            // お店の名前を設定
+            document.getElementById('newShopName').value = shopName;
+            
             const container = document.getElementById('menuItems');
             container.innerHTML = '';
             
@@ -998,9 +1130,130 @@
             
             if (result.success) {
                 alert('注文ページを削除しました');
+                // 注文管理画面を再読み込み
                 loadAdminOrderList();
             } else {
                 alert(`エラー: ${result.message}`);
+            }
+        }
+
+        // 注文ページ編集画面を表示
+        async function showEditOrderPage(orderId) {
+            currentOrderId = orderId;
+            
+            document.getElementById('orderManagementSection').classList.remove('active');
+            document.getElementById('orderDetailSection').classList.add('active');
+            
+            const container = document.getElementById('orderDetailContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+            
+            const result = await callAPI('getOrderDetail', { orderId: orderId });
+            
+            if (result.success) {
+                const orderPage = result.data.orderPage;
+                const formattedDate = formatDate(orderPage.orderDate);
+                
+                let html = `
+                    <h2>注文ページ編集</h2>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="editOrderDate" value="${formattedDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>お店の名前（オプション）</label>
+                        <input type="text" id="editShopName" value="${orderPage.shopName || ''}" placeholder="例: ほっともっと、ほっかほっか亭">
+                    </div>
+                    <div class="form-group">
+                        <label>メニュー</label>
+                        <div class="menu-items" id="editMenuItems">
+                `;
+                
+                orderPage.menus.forEach(menu => {
+                    html += `
+                        <div class="menu-item">
+                            <input type="text" placeholder="メニュー名" class="menu-name" value="${menu.name}">
+                            <input type="number" placeholder="価格" class="menu-price" min="0" value="${menu.price}">
+                            <button onclick="this.parentElement.remove()">削除</button>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                        <button class="btn btn-secondary" onclick="addEditMenuItem()">+ メニュー追加</button>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="saveEditOrderPage()">保存</button>
+                        <button class="btn btn-secondary" onclick="showOrderManagement()">キャンセル</button>
+                    </div>
+                    <div id="editOrderMessage"></div>
+                `;
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        }
+
+        // 編集画面でメニュー項目を追加
+        function addEditMenuItem() {
+            const container = document.getElementById('editMenuItems');
+            const menuItem = document.createElement('div');
+            menuItem.className = 'menu-item';
+            menuItem.innerHTML = `
+                <input type="text" placeholder="メニュー名" class="menu-name">
+                <input type="number" placeholder="価格" class="menu-price" min="0">
+                <button onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(menuItem);
+        }
+
+        // 注文ページの編集を保存
+        async function saveEditOrderPage() {
+            const messageEl = document.getElementById('editOrderMessage');
+            const orderDate = document.getElementById('editOrderDate').value;
+            const shopName = document.getElementById('editShopName').value.trim();
+            
+            if (!orderDate) {
+                messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            
+            const menuItems = document.querySelectorAll('#editMenuItems .menu-item');
+            const menus = [];
+            
+            menuItems.forEach(item => {
+                const name = item.querySelector('.menu-name').value.trim();
+                const price = parseFloat(item.querySelector('.menu-price').value);
+                
+                if (name && price > 0) {
+                    menus.push({ name: name, price: price });
+                }
+            });
+            
+            if (menus.length === 0) {
+                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            
+            const result = await callAPI('editOrderPage', {
+                orderId: currentOrderId,
+                orderDate: orderDate,
+                shopName: shopName,
+                menus: menus
+            });
+            
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">注文ページを更新しました</div>';
+                setTimeout(() => {
+                    // 更新後、注文管理画面に戻る
+                    showOrderManagement();
+                }, 1500);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
             }
         }
 
