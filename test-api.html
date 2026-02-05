@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>API接続テスト</title>
+</head>
+<body>
+    <h1>API接続テスト</h1>
+    <button onclick="testAPI()">APIをテスト</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw99aEwnqrBV62B6bFepdLtR9TvchARTU4J3iPfl95tj3knDqSwbFp5e_pX4UT8hWdAiQ/exec';
+        
+        async function testAPI() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'テスト中...';
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'エラー: ' + error.message;
+            }
+        }
+        
+        // ページロード時に自動実行
+        window.onload = testAPI;
+    </script>
+</body>
+</html>
