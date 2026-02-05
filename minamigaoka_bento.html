@@ -428,7 +428,7 @@
 
     <script>
         // API設定
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwF8hsJaZmIAkF_bof7FcR-f5EGruRj5vSYDBMXgZsjDmy5S9HNp2pVV_gM3EfO85qCEQ/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxVi-B9OxgEd5sJmRTFWL68sEid4kaHvtm6WRPLaSKKrZ7cSJPtN3AMmPLKiLIViUPHJw/exec';
         
         let currentMode = 'user';
         let currentOrderId = null;
@@ -450,19 +450,17 @@
             }
         }
 
-        // API呼び出し
+        // API呼び出し（GETリクエストに変更してCORS回避）
         async function callAPI(action, data = {}) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: action,
-                        ...data
-                    })
+                // データをJSON文字列に変換してクエリパラメータに追加
+                const params = new URLSearchParams({
+                    action: action,
+                    data: JSON.stringify(data)
                 });
+                
+                const url = `${API_URL}?${params.toString()}`;
+                const response = await fetch(url);
                 
                 const result = await response.json();
                 return result;
