@@ -209,7 +209,7 @@
         }
 
         .order-date {
-            font-size: 1.2em;
+            font-size: 1em;
             font-weight: bold;
             color: #333;
         }
@@ -353,6 +353,42 @@
         .admin-actions button {
             font-size: 0.9em;
             padding: 8px 15px;
+        }
+
+        /* スマートフォン向けのスタイル調整 */
+        @media (max-width: 768px) {
+            .order-date {
+                font-size: 0.9em;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .status-badge {
+                font-size: 0.8em;
+                padding: 4px 12px;
+            }
+            
+            .order-card-body {
+                font-size: 0.9em;
+            }
+        }
+
+        /* より小さい画面向けの調整 */
+        @media (max-width: 480px) {
+            .order-date {
+                font-size: 0.85em;
+            }
+            
+            .header h1 {
+                font-size: 1.3em;
+            }
+            
+            .mode-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
