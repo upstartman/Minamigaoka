@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お弁当注文システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .mode-btn {
+            padding: 12px 30px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="number"],
+        .form-group input[type="password"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .menu-items {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .menu-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .menu-item input {
+            flex: 1;
+        }
+
+        .menu-item button {
+            padding: 8px 15px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .order-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .order-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .order-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .order-date {
+            font-size: 1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-open {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .order-card-body {
+            color: #666;
+        }
+
+        .order-form-container {
+            margin-top: 20px;
+        }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .order-table th,
+        .order-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .order-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .order-table input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .summary-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .summary-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .user-order-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .user-order {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .user-order h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .user-order ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .user-order li {
+            padding: 5px 0;
+            color: #666;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .admin-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .admin-actions button {
+            font-size: 0.9em;
+            padding: 8px 15px;
+        }
+
+        /* スマートフォン向けのスタイル調整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .order-date {
+                font-size: 0.9em;
+            }
+            
+            .status-badge {
+                font-size: 0.8em;
+                padding: 4px 12px;
+            }
+            
+            .order-card {
+                padding: 15px;
+            }
+            
+            .order-card-body {
+                font-size: 0.9em;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            
+            .form-group label {
+                font-size: 0.95em;
+            }
+            
+            .form-group input[type="text"],
+            .form-group input[type="date"],
+            .form-group input[type="number"],
+            .form-group input[type="password"],
+            .form-group select {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .order-table th,
+            .order-table td {
+                padding: 10px 8px;
+                font-size: 0.9em;
+            }
+            
+            .order-table input[type="number"] {
+                width: 60px;
+                padding: 6px;
+                font-size: 14px;
+            }
+            
+            h2 {
+                font-size: 1.3em;
+            }
+            
+            h3 {
+                font-size: 1.1em;
+            }
+            
+            .admin-actions {
+                flex-wrap: wrap;
+            }
+            
+            .admin-actions button {
+                font-size: 0.85em;
+                padding: 6px 12px;
+            }
+        }
+
+        /* より小さい画面向けの調整 */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .header {
+                padding: 15px 10px;
+                margin-bottom: 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.3em;
+                margin-bottom: 8px;
+            }
+            
+            .content {
+                padding: 15px 10px;
+            }
+            
+            .mode-btn {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+            
+            .order-date {
+                font-size: 0.85em;
+            }
+            
+            .status-badge {
+                font-size: 0.75em;
+                padding: 3px 10px;
+            }
+            
+            .order-card {
+                padding: 12px;
+            }
+            
+            .order-card-body {
+                font-size: 0.85em;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group label {
+                font-size: 0.9em;
+                margin-bottom: 6px;
+            }
+            
+            .form-group input[type="text"],
+            .form-group input[type="date"],
+            .form-group input[type="number"],
+            .form-group input[type="password"],
+            .form-group select {
+                padding: 8px;
+                font-size: 13px;
+            }
+            
+            .order-table {
+                font-size: 0.85em;
+            }
+            
+            .order-table th,
+            .order-table td {
+                padding: 8px 5px;
+            }
+            
+            .order-table input[type="number"] {
+                width: 50px;
+                padding: 5px;
+                font-size: 13px;
+            }
+            
+            h2 {
+                font-size: 1.2em;
+                margin-bottom: 15px;
+            }
+            
+            h3 {
+                font-size: 1em;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .buttons-container .btn {
+                width: 100%;
+            }
+            
+            .admin-actions button {
+                font-size: 0.8em;
+                padding: 5px 10px;
+            }
+            
+            .back-link {
+                font-size: 0.9em;
+                margin-bottom: 15px;
+            }
+            
+            .menu-item {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .menu-item input {
+                width: 100%;
+            }
+            
+            .menu-item button {
+                width: 100%;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍱 お弁当注文システム</h1>
+            <div class="mode-selector">
+                <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
+                <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 利用者モード -->
+            <div id="userMode" class="section active">
+                <div id="orderListSection" class="section active">
+                    <h2>注文する日付を選択</h2>
+                    <div id="orderList" class="order-list">
+                        <div class="loading">読み込み中...</div>
+                    </div>
+                </div>
+
+                <div id="orderFormSection" class="section">
+                    <a href="#" class="back-link" onclick="showOrderList(); return false;">← 日付選択に戻る</a>
+                    <div id="orderFormContent"></div>
+                </div>
+            </div>
+
+            <!-- 管理者モード -->
+            <div id="adminMode" class="section">
+                <div id="orderManagementSection" class="section active">
+                    <h2>注文管理</h2>
+                    <div class="create-button-container" style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="showCreateOrderPage()">＋ 新規注文ページ作成</button>
+                    </div>
+                    <div id="adminOrderList"></div>
+                </div>
+
+                <div id="createOrderSection" class="section">
+                    <a href="#" class="back-link" onclick="showOrderManagement(); return false;">← 注文管理に戻る</a>
+                    <h2>新規注文ページ作成</h2>
+                    <div class="form-group">
+                        <label>過去のページからコピー（オプション）</label>
+                        <select id="copyFromOrder" onchange="loadMenusFromOrder()">
+                            <option value="">-- 新規作成 --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="newOrderDate">
+                    </div>
+                    <div class="form-group">
+                        <label>お店の名前（オプション）</label>
+                        <input type="text" id="newShopName" placeholder="例: ほっともっと、ほっかほっか亭">
+                    </div>
+                    <div class="form-group">
+                        <label>メニュー</label>
+                        <div class="menu-items" id="menuItems">
+                            <div class="menu-item">
+                                <input type="text" placeholder="メニュー名" class="menu-name">
+                                <input type="number" placeholder="価格" class="menu-price" min="0">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="addMenuItem()">+ メニュー追加</button>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="createOrderPage()">作成</button>
+                        <button class="btn btn-secondary" onclick="showAdminMenu()">キャンセル</button>
+                    </div>
+                    <div id="createOrderMessage"></div>
+                </div>
+
+                <div id="orderDetailSection" class="section">
+                    <a href="#" class="back-link" onclick="showOrderManagement(); return false;">← 注文管理に戻る</a>
+                    <div id="orderDetailContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            addDoc, 
+            getDoc, 
+            getDocs, 
+            updateDoc, 
+            deleteDoc, 
+            query, 
+            where, 
+            orderBy,
+            Timestamp 
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyACgA83z7xBWICIFLUK1_AwDFL9_EXRJW8",
+            authDomain: "minamigaoka-bento.firebaseapp.com",
+            projectId: "minamigaoka-bento",
+            storageBucket: "minamigaoka-bento.firebasestorage.app",
+            messagingSenderId: "160499455872",
+            appId: "1:160499455872:web:7ac0b1f07770cc6d121365"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentMode = 'user';
+        let currentOrderId = null;
+
+        // UUID生成
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // 日付をそのまま返す
+        function formatDate(dateString) {
+            return dateString || '';
+        }
+
+        // モード切り替え
+        window.switchMode = function(mode) {
+            currentMode = mode;
+            
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // セクションの表示切り替え
+            document.getElementById('userMode').classList.remove('active');
+            document.getElementById('adminMode').classList.remove('active');
+
+            if (mode === 'user') {
+                document.getElementById('userMode').classList.add('active');
+                showOrderList();
+            } else {
+                document.getElementById('adminMode').classList.add('active');
+                showOrderManagement();
+            }
+        };
+
+        // ======================================
+        // Firebase Firestore API 関数
+        // ======================================
+
+        // 注文ページ一覧取得
+        async function getOrderPages() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'orderPages'));
+                const orderPages = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    orderPages.push({
+                        orderId: doc.id,
+                        orderDate: data.orderDate,
+                        shopName: data.shopName || '',
+                        menus: data.menus || [],
+                        status: data.status,
+                        createdAt: data.createdAt
+                    });
+                });
+
+                // 作成日時の新しい順にソート
+                orderPages.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                    return dateB - dateA;
+                });
+
+                return { success: true, data: orderPages };
+            } catch (error) {
+                console.error('getOrderPages error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文ページ作成
+        async function createOrderPageAPI(params) {
+            try {
+                const docRef = await addDoc(collection(db, 'orderPages'), {
+                    orderDate: params.orderDate,
+                    shopName: params.shopName || '',
+                    menus: params.menus,
+                    status: 'open',
+                    createdAt: Timestamp.now()
+                });
+
+                return { 
+                    success: true, 
+                    message: 'Order page created successfully',
+                    data: { orderId: docRef.id, orderDate: params.orderDate }
+                };
+            } catch (error) {
+                console.error('createOrderPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文詳細取得
+        async function getOrderDetail(params) {
+            try {
+                const orderId = params.orderId;
+                
+                // 注文ページを取得
+                const orderPageDoc = await getDoc(doc(db, 'orderPages', orderId));
+                
+                if (!orderPageDoc.exists()) {
+                    return { success: false, message: 'Order page not found' };
+                }
+
+                const orderPageData = orderPageDoc.data();
+                const orderPage = {
+                    orderId: orderId,
+                    orderDate: orderPageData.orderDate,
+                    shopName: orderPageData.shopName || '',
+                    menus: orderPageData.menus || [],
+                    status: orderPageData.status,
+                    createdAt: orderPageData.createdAt
+                };
+
+                // この注文ページの注文データを取得
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId)
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+                const orders = [];
+
+                ordersSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    orders.push({
+                        id: doc.id,
+                        orderId: data.orderId,
+                        orderDate: data.orderDate,
+                        menuName: data.menuName,
+                        price: data.price,
+                        userName: data.userName,
+                        quantity: data.quantity,
+                        timestamp: data.timestamp
+                    });
+                });
+
+                return { 
+                    success: true, 
+                    message: 'Order detail retrieved',
+                    data: { orderPage, orders }
+                };
+            } catch (error) {
+                console.error('getOrderDetail error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文送信
+        async function submitOrderAPI(params) {
+            try {
+                const orderId = params.orderId;
+                const userName = params.userName;
+                const orderItems = params.orderItems;
+
+                // 注文ページの状態確認
+                const orderPageDoc = await getDoc(doc(db, 'orderPages', orderId));
+                
+                if (!orderPageDoc.exists()) {
+                    return { success: false, message: 'Order page not found' };
+                }
+
+                const orderPageData = orderPageDoc.data();
+                if (orderPageData.status === 'closed') {
+                    return { success: false, message: 'This order is closed and cannot be modified' };
+                }
+
+                // 既存の注文を削除
+                const existingOrdersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId),
+                    where('userName', '==', userName)
+                );
+                const existingOrdersSnapshot = await getDocs(existingOrdersQuery);
+                
+                const deletePromises = [];
+                existingOrdersSnapshot.forEach((docSnap) => {
+                    deletePromises.push(deleteDoc(doc(db, 'orders', docSnap.id)));
+                });
+                await Promise.all(deletePromises);
+
+                // 新しい注文を追加
+                const addPromises = [];
+                for (let item of orderItems) {
+                    if (item.quantity > 0) {
+                        addPromises.push(addDoc(collection(db, 'orders'), {
+                            orderId: orderId,
+                            orderDate: orderPageData.orderDate,
+                            menuName: item.menuName,
+                            price: item.price,
+                            userName: userName,
+                            quantity: item.quantity,
+                            timestamp: Timestamp.now()
+                        }));
+                    }
+                }
+                await Promise.all(addPromises);
+
+                return { success: true, message: 'Order submitted successfully' };
+            } catch (error) {
+                console.error('submitOrder error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文者一覧取得
+        async function getUserList(params) {
+            try {
+                const orderId = params.orderId;
+                
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId)
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+                
+                const userSet = new Set();
+                ordersSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    userSet.add(data.userName);
+                });
+
+                const users = Array.from(userSet).sort();
+                return { success: true, data: users };
+            } catch (error) {
+                console.error('getUserList error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文締切
+        async function closeOrderAPI(params) {
+            try {
+                const orderId = params.orderId;
+                await updateDoc(doc(db, 'orderPages', orderId), {
+                    status: 'closed'
+                });
+                return { success: true, message: 'Order closed successfully' };
+            } catch (error) {
+                console.error('closeOrder error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文再開
+        async function reopenOrderAPI(params) {
+            try {
+                const orderId = params.orderId;
+                await updateDoc(doc(db, 'orderPages', orderId), {
+                    status: 'open'
+                });
+                return { success: true, message: 'Order reopened successfully' };
+            } catch (error) {
+                console.error('reopenOrder error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文集計取得
+        async function getOrderSummary(params) {
+            try {
+                const orderId = params.orderId;
+
+                // 注文ページを取得
+                const orderPageDoc = await getDoc(doc(db, 'orderPages', orderId));
+                
+                if (!orderPageDoc.exists()) {
+                    return { success: false, message: 'Order page not found' };
+                }
+
+                const orderPageData = orderPageDoc.data();
+                const orderPage = {
+                    orderId: orderId,
+                    orderDate: orderPageData.orderDate,
+                    shopName: orderPageData.shopName || '',
+                    menus: orderPageData.menus || [],
+                    status: orderPageData.status
+                };
+
+                // 注文データを取得
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId)
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+
+                const menuSummary = {};
+                const userOrders = {};
+                let totalAmount = 0;
+
+                // メニューごとの集計初期化
+                for (let menu of orderPage.menus) {
+                    menuSummary[menu.name] = {
+                        menuName: menu.name,
+                        price: menu.price,
+                        totalQuantity: 0,
+                        totalAmount: 0
+                    };
+                }
+
+                // 注文データを集計
+                ordersSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const menuName = data.menuName;
+                    const price = data.price;
+                    const userName = data.userName;
+                    const quantity = data.quantity;
+
+                    // メニュー別集計
+                    if (menuSummary[menuName]) {
+                        menuSummary[menuName].totalQuantity += quantity;
+                        menuSummary[menuName].totalAmount += price * quantity;
+                    }
+
+                    // ユーザー別集計
+                    if (!userOrders[userName]) {
+                        userOrders[userName] = [];
+                    }
+                    userOrders[userName].push({
+                        menuName: menuName,
+                        price: price,
+                        quantity: quantity,
+                        amount: price * quantity
+                    });
+
+                    totalAmount += price * quantity;
+                });
+
+                return { 
+                    success: true, 
+                    message: 'Order summary retrieved',
+                    data: {
+                        orderPage: orderPage,
+                        menuSummary: Object.values(menuSummary),
+                        userOrders: userOrders,
+                        totalAmount: totalAmount
+                    }
+                };
+            } catch (error) {
+                console.error('getOrderSummary error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文ページ削除
+        async function deleteOrderPageAPI(params) {
+            try {
+                const orderId = params.orderId;
+
+                // 関連する注文データを削除
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId)
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+
+                const deletePromises = [];
+                ordersSnapshot.forEach((docSnap) => {
+                    deletePromises.push(deleteDoc(doc(db, 'orders', docSnap.id)));
+                });
+                await Promise.all(deletePromises);
+
+                // 注文ページを削除
+                await deleteDoc(doc(db, 'orderPages', orderId));
+
+                return { success: true, message: 'Order page and related orders deleted successfully' };
+            } catch (error) {
+                console.error('deleteOrderPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 注文ページ編集
+        async function editOrderPageAPI(params) {
+            try {
+                const orderId = params.orderId;
+                
+                await updateDoc(doc(db, 'orderPages', orderId), {
+                    orderDate: params.orderDate,
+                    shopName: params.shopName || '',
+                    menus: params.menus
+                });
+
+                return { success: true, message: 'Order page updated successfully' };
+            } catch (error) {
+                console.error('editOrderPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // ======================================
+        // UI 関数
+        // ======================================
+
+        // 注文リスト表示（利用者向け）
+        async function loadOrderList() {
+            const container = document.getElementById('orderList');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            const result = await getOrderPages();
+
+            if (result.success) {
+                // 日付の新しい順にソート
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+
+                if (sortedData.length === 0) {
+                    container.innerHTML = '<p>現在注文可能な日付はありません。</p>';
+                    return;
+                }
+
+                let html = '';
+                sortedData.forEach(order => {
+                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    
+                    html += `
+                        <div class="order-card" onclick="${order.status === 'open' ? `showOrderForm('${order.orderId}')` : ''}">
+                            <div class="order-card-header">
+                                <div class="order-date">${formattedDate}${shopInfo}</div>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="order-card-body">
+                                メニュー: ${order.menus.map(m => m.name).join(', ')}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        }
+
+        // 注文リストを表示
+        window.showOrderList = function() {
+            document.getElementById('orderListSection').classList.add('active');
+            document.getElementById('orderFormSection').classList.remove('active');
+            loadOrderList();
+        };
+
+        // 注文フォーム表示
+        window.showOrderForm = async function(orderId) {
+            currentOrderId = orderId;
+            
+            document.getElementById('orderListSection').classList.remove('active');
+            document.getElementById('orderFormSection').classList.add('active');
+
+            const container = document.getElementById('orderFormContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            const result = await getOrderDetail({ orderId: orderId });
+
+            if (result.success) {
+                const orderPage = result.data.orderPage;
+                const formattedDate = formatDate(orderPage.orderDate);
+                const shopInfo = orderPage.shopName ? ` - ${orderPage.shopName}` : '';
+                
+                // ユーザー一覧を取得
+                const userListResult = await getUserList({ orderId: orderId });
+                const existingUsers = userListResult.success ? userListResult.data : [];
+
+                let html = `
+                    <h2>${formattedDate}${shopInfo}の注文</h2>
+                    <div class="form-group">
+                        <label>名前</label>
+                        <select id="userNameSelect" onchange="handleUserSelection()">
+                            <option value="">-- 新規入力 --</option>
+                `;
+                
+                existingUsers.forEach(user => {
+                    html += `<option value="${user}">${user}</option>`;
+                });
+                
+                html += `
+                        </select>
+                    </div>
+                    <div class="form-group" id="userNameInputGroup">
+                        <label>名前を入力</label>
+                        <input type="text" id="userName" placeholder="山田太郎">
+                    </div>
+                    <div class="form-group">
+                        <label>注文内容</label>
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th>メニュー</th>
+                                    <th>価格</th>
+                                    <th>数量</th>
+                                    <th>小計</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderTableBody">
+                `;
+
+                orderPage.menus.forEach((menu, index) => {
+                    html += `
+                        <tr>
+                            <td>${menu.name}</td>
+                            <td>¥${menu.price.toLocaleString()}</td>
+                            <td>
+                                <input type="number" 
+                                    id="quantity_${index}" 
+                                    data-menu-name="${menu.name}"
+                                    data-price="${menu.price}"
+                                    min="0" 
+                                    value="0"
+                                    onchange="updateTotal()">
+                            </td>
+                            <td id="subtotal_${index}">¥0</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">合計</th>
+                                    <th id="orderTotal">¥0</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="submitOrder()">注文する</button>
+                    </div>
+                    <div id="orderMessage"></div>
+                `;
+
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        };
+
+        // ユーザー選択時の処理
+        window.handleUserSelection = async function() {
+            const select = document.getElementById('userNameSelect');
+            const selectedUser = select.value;
+            const userNameInput = document.getElementById('userName');
+            const userNameInputGroup = document.getElementById('userNameInputGroup');
+
+            if (selectedUser === '') {
+                userNameInputGroup.style.display = 'block';
+                userNameInput.value = '';
+                resetQuantities();
+            } else {
+                userNameInputGroup.style.display = 'none';
+                userNameInput.value = selectedUser;
+                await loadPreviousOrder(selectedUser);
+            }
+        };
+
+        // 前回の注文内容を読み込む
+        async function loadPreviousOrder(userName) {
+            const result = await getOrderDetail({ orderId: currentOrderId });
+            
+            if (result.success) {
+                const orders = result.data.orders;
+                
+                resetQuantities();
+                
+                orders.forEach(order => {
+                    if (order.userName === userName) {
+                        const inputs = document.querySelectorAll('[data-menu-name]');
+                        inputs.forEach(input => {
+                            if (input.dataset.menuName === order.menuName) {
+                                input.value = order.quantity;
+                            }
+                        });
+                    }
+                });
+                
+                updateTotal();
+            }
+        }
+
+        // 数量を0にリセット
+        function resetQuantities() {
+            const inputs = document.querySelectorAll('[data-menu-name]');
+            inputs.forEach(input => {
+                input.value = 0;
+            });
+            updateTotal();
+        }
+
+        // 合計計算
+        window.updateTotal = function() {
+            let total = 0;
+            const inputs = document.querySelectorAll('[data-menu-name]');
+            
+            inputs.forEach((input, index) => {
+                const quantity = parseInt(input.value) || 0;
+                const price = parseFloat(input.dataset.price);
+                const subtotal = quantity * price;
+                
+                document.getElementById(`subtotal_${index}`).textContent = `¥${subtotal.toLocaleString()}`;
+                total += subtotal;
+            });
+
+            document.getElementById('orderTotal').textContent = `¥${total.toLocaleString()}`;
+        };
+
+        // 注文送信
+        window.submitOrder = async function() {
+            const messageEl = document.getElementById('orderMessage');
+            const userNameInput = document.getElementById('userName');
+            const userName = userNameInput.value.trim();
+
+            if (!userName) {
+                messageEl.innerHTML = '<div class="error">名前を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const orderItems = [];
+            const inputs = document.querySelectorAll('[data-menu-name]');
+            
+            inputs.forEach(input => {
+                const quantity = parseInt(input.value) || 0;
+                if (quantity > 0) {
+                    orderItems.push({
+                        menuName: input.dataset.menuName,
+                        price: parseFloat(input.dataset.price),
+                        quantity: quantity
+                    });
+                }
+            });
+
+            if (orderItems.length === 0) {
+                messageEl.innerHTML = '<div class="error">数量を1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const result = await submitOrderAPI({
+                orderId: currentOrderId,
+                userName: userName,
+                orderItems: orderItems
+            });
+
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">注文を送信しました！</div>';
+                setTimeout(() => {
+                    showOrderList();
+                }, 1500);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+            }
+        };
+
+        // 管理者メニュー表示（注文管理を直接表示）
+        window.showAdminMenu = function() {
+            showOrderManagement();
+        };
+
+        // 新規注文ページ作成画面表示
+        window.showCreateOrderPage = async function() {
+            document.getElementById('orderManagementSection').classList.remove('active');
+            document.getElementById('createOrderSection').classList.add('active');
+            document.getElementById('orderDetailSection').classList.remove('active');
+            
+            await loadCopyOrderList();
+            
+            document.getElementById('newOrderDate').value = '';
+            document.getElementById('newShopName').value = '';
+            document.getElementById('menuItems').innerHTML = `
+                <div class="menu-item">
+                    <input type="text" placeholder="メニュー名" class="menu-name">
+                    <input type="number" placeholder="価格" class="menu-price" min="0">
+                </div>
+            `;
+            document.getElementById('createOrderMessage').innerHTML = '';
+        };
+
+        // メニュー項目追加
+        window.addMenuItem = function() {
+            const container = document.getElementById('menuItems');
+            const menuItem = document.createElement('div');
+            menuItem.className = 'menu-item';
+            menuItem.innerHTML = `
+                <input type="text" placeholder="メニュー名" class="menu-name">
+                <input type="number" placeholder="価格" class="menu-price" min="0">
+                <button onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(menuItem);
+        };
+
+        // 注文ページ作成
+        window.createOrderPage = async function() {
+            const messageEl = document.getElementById('createOrderMessage');
+            const orderDate = document.getElementById('newOrderDate').value;
+            const shopName = document.getElementById('newShopName').value.trim();
+
+            if (!orderDate) {
+                messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const menuItems = document.querySelectorAll('#menuItems .menu-item');
+            const menus = [];
+
+            menuItems.forEach(item => {
+                const name = item.querySelector('.menu-name').value.trim();
+                const price = parseFloat(item.querySelector('.menu-price').value);
+
+                if (name && price > 0) {
+                    menus.push({ name: name, price: price });
+                }
+            });
+
+            if (menus.length === 0) {
+                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const result = await createOrderPageAPI({
+                orderDate: orderDate,
+                shopName: shopName,
+                menus: menus
+            });
+
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">注文ページを作成しました！</div>';
+                setTimeout(() => {
+                    showAdminMenu();
+                }, 1500);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+            }
+        };
+
+        // 注文管理画面表示
+        window.showOrderManagement = async function() {
+            document.getElementById('orderManagementSection').classList.add('active');
+            document.getElementById('createOrderSection').classList.remove('active');
+            document.getElementById('orderDetailSection').classList.remove('active');
+            
+            await loadAdminOrderList();
+        };
+
+        // 管理者用注文リスト読み込み
+        async function loadAdminOrderList() {
+            const container = document.getElementById('adminOrderList');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            const result = await getOrderPages();
+
+            if (result.success) {
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+
+                if (sortedData.length === 0) {
+                    container.innerHTML = '<p>注文ページがありません。</p>';
+                    return;
+                }
+
+                let html = '';
+                sortedData.forEach(order => {
+                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    
+                    html += `
+                        <div class="order-card">
+                            <div class="order-card-header">
+                                <div class="order-date">${formattedDate}${shopInfo}</div>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="order-card-body">
+                                メニュー: ${order.menus.map(m => m.name).join(', ')}
+                            </div>
+                            <div class="admin-actions">
+                                <button class="btn" onclick="showOrderDetail('${order.orderId}')">詳細</button>
+                                <button class="btn" onclick="showEditOrderPage('${order.orderId}')">編集</button>
+                                <button class="btn btn-danger" onclick="deleteOrderPage('${order.orderId}')">削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        }
+
+        // 注文詳細表示
+        window.showOrderDetail = async function(orderId) {
+            currentOrderId = orderId;
+            
+            document.getElementById('orderManagementSection').classList.remove('active');
+            document.getElementById('orderDetailSection').classList.add('active');
+            
+            const container = document.getElementById('orderDetailContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+            
+            const result = await getOrderSummary({ orderId: orderId });
+            
+            if (result.success) {
+                const orderPage = result.data.orderPage;
+                const menuSummary = result.data.menuSummary;
+                const userOrders = result.data.userOrders;
+                const totalAmount = result.data.totalAmount;
+                const formattedDate = formatDate(orderPage.orderDate);
+                const shopInfo = orderPage.shopName ? ` - ${orderPage.shopName}` : '';
+                
+                let html = `
+                    <h2>${formattedDate}${shopInfo}の注文詳細</h2>
+                    <p>ステータス: <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}">${orderPage.status === 'open' ? '受付中' : '締切済'}</span></p>
+                `;
+                
+                if (orderPage.status === 'open') {
+                    html += '<button class="btn btn-danger" onclick="closeOrder()">この注文を締め切る</button>';
+                } else {
+                    html += '<button class="btn btn-success" onclick="reopenOrder()">締切を取り消す（受付中に戻す）</button>';
+                }
+                
+                // メニュー別集計
+                html += `
+                    <div class="summary-section">
+                        <h3>メニュー別集計</h3>
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th>メニュー</th>
+                                    <th>単価</th>
+                                    <th>数量</th>
+                                    <th>小計</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                menuSummary.forEach(menu => {
+                    html += `
+                        <tr>
+                            <td>${menu.menuName}</td>
+                            <td>¥${menu.price.toLocaleString()}</td>
+                            <td>${menu.totalQuantity}</td>
+                            <td>¥${menu.totalAmount.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">合計</th>
+                                    <th>¥${totalAmount.toLocaleString()}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                // ユーザー別注文
+                html += '<div class="user-order-section"><h3>ユーザー別注文</h3>';
+                
+                for (let userName in userOrders) {
+                    const orders = userOrders[userName];
+                    let userTotal = 0;
+                    
+                    html += `
+                        <div class="user-order">
+                            <h4>${userName}</h4>
+                            <ul>
+                    `;
+                    
+                    orders.forEach(order => {
+                        html += `<li>${order.menuName} × ${order.quantity} = ¥${order.amount.toLocaleString()}</li>`;
+                        userTotal += order.amount;
+                    });
+                    
+                    html += `
+                            </ul>
+                            <p><strong>小計: ¥${userTotal.toLocaleString()}</strong></p>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        };
+
+        // 注文締切
+        window.closeOrder = async function() {
+            if (!confirm('この注文を締め切りますか?締め切ると利用者は注文を変更できなくなります。')) {
+                return;
+            }
+            
+            const result = await closeOrderAPI({ orderId: currentOrderId });
+            
+            if (result.success) {
+                alert('注文を締め切りました');
+                showOrderDetail(currentOrderId);
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        };
+
+        // 締切を取り消す
+        window.reopenOrder = async function() {
+            if (!confirm('締切を取り消して受付中に戻しますか?')) {
+                return;
+            }
+            
+            const result = await reopenOrderAPI({ orderId: currentOrderId });
+            
+            if (result.success) {
+                alert('受付中に戻しました');
+                showOrderDetail(currentOrderId);
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        };
+
+        // コピー元候補リストを読み込む
+        async function loadCopyOrderList() {
+            const select = document.getElementById('copyFromOrder');
+            
+            const result = await getOrderPages();
+            
+            if (result.success && result.data.length > 0) {
+                select.innerHTML = '<option value="">-- 新規作成 --</option>';
+                
+                const sortedData = result.data.sort((a, b) => {
+                    return b.orderDate.localeCompare(a.orderDate);
+                });
+                
+                sortedData.forEach(order => {
+                    const option = document.createElement('option');
+                    option.value = order.orderId;
+                    const formattedDate = formatDate(order.orderDate);
+                    const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    option.textContent = `${formattedDate}${shopInfo} - ${order.menus.map(m => m.name).join(', ')}`;
+                    option.dataset.menus = JSON.stringify(order.menus);
+                    option.dataset.shopName = order.shopName || '';
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // 選択した注文ページからメニューを読み込む
+        window.loadMenusFromOrder = function() {
+            const select = document.getElementById('copyFromOrder');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (!selectedOption.value) {
+                document.getElementById('newShopName').value = '';
+                document.getElementById('menuItems').innerHTML = `
+                    <div class="menu-item">
+                        <input type="text" placeholder="メニュー名" class="menu-name">
+                        <input type="number" placeholder="価格" class="menu-price" min="0">
+                    </div>
+                `;
+                return;
+            }
+            
+            const menus = JSON.parse(selectedOption.dataset.menus);
+            const shopName = selectedOption.dataset.shopName || '';
+            
+            document.getElementById('newShopName').value = shopName;
+            
+            const container = document.getElementById('menuItems');
+            container.innerHTML = '';
+            
+            menus.forEach(menu => {
+                const menuItem = document.createElement('div');
+                menuItem.className = 'menu-item';
+                menuItem.innerHTML = `
+                    <input type="text" placeholder="メニュー名" class="menu-name" value="${menu.name}">
+                    <input type="number" placeholder="価格" class="menu-price" min="0" value="${menu.price}">
+                    <button onclick="this.parentElement.remove()">削除</button>
+                `;
+                container.appendChild(menuItem);
+            });
+        };
+
+        // 注文ページ削除
+        window.deleteOrderPage = async function(orderId) {
+            if (!confirm('この注文ページを削除しますか?\n関連する注文データもすべて削除されます。\nこの操作は取り消せません。')) {
+                return;
+            }
+            
+            const result = await deleteOrderPageAPI({ orderId: orderId });
+            
+            if (result.success) {
+                alert('注文ページを削除しました');
+                loadAdminOrderList();
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        };
+
+        // 注文ページ編集画面を表示
+        window.showEditOrderPage = async function(orderId) {
+            currentOrderId = orderId;
+            
+            document.getElementById('orderManagementSection').classList.remove('active');
+            document.getElementById('orderDetailSection').classList.add('active');
+            
+            const container = document.getElementById('orderDetailContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+            
+            const result = await getOrderDetail({ orderId: orderId });
+            
+            if (result.success) {
+                const orderPage = result.data.orderPage;
+                const formattedDate = formatDate(orderPage.orderDate);
+                
+                let html = `
+                    <h2>注文ページ編集</h2>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="editOrderDate" value="${formattedDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>お店の名前（オプション）</label>
+                        <input type="text" id="editShopName" value="${orderPage.shopName || ''}" placeholder="例: ほっともっと、ほっかほっか亭">
+                    </div>
+                    <div class="form-group">
+                        <label>メニュー</label>
+                        <div class="menu-items" id="editMenuItems">
+                `;
+                
+                orderPage.menus.forEach(menu => {
+                    html += `
+                        <div class="menu-item">
+                            <input type="text" placeholder="メニュー名" class="menu-name" value="${menu.name}">
+                            <input type="number" placeholder="価格" class="menu-price" min="0" value="${menu.price}">
+                            <button onclick="this.parentElement.remove()">削除</button>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                        <button class="btn btn-secondary" onclick="addEditMenuItem()">+ メニュー追加</button>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="saveEditOrderPage()">保存</button>
+                        <button class="btn btn-secondary" onclick="showOrderManagement()">キャンセル</button>
+                    </div>
+                    <div id="editOrderMessage"></div>
+                `;
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+            }
+        };
+
+        // 編集画面でメニュー項目を追加
+        window.addEditMenuItem = function() {
+            const container = document.getElementById('editMenuItems');
+            const menuItem = document.createElement('div');
+            menuItem.className = 'menu-item';
+            menuItem.innerHTML = `
+                <input type="text" placeholder="メニュー名" class="menu-name">
+                <input type="number" placeholder="価格" class="menu-price" min="0">
+                <button onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(menuItem);
+        };
+
+        // 注文ページの編集を保存
+        window.saveEditOrderPage = async function() {
+            const messageEl = document.getElementById('editOrderMessage');
+            const orderDate = document.getElementById('editOrderDate').value;
+            const shopName = document.getElementById('editShopName').value.trim();
+            
+            if (!orderDate) {
+                messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            
+            const menuItems = document.querySelectorAll('#editMenuItems .menu-item');
+            const menus = [];
+            
+            menuItems.forEach(item => {
+                const name = item.querySelector('.menu-name').value.trim();
+                const price = parseFloat(item.querySelector('.menu-price').value);
+                
+                if (name && price > 0) {
+                    menus.push({ name: name, price: price });
+                }
+            });
+            
+            if (menus.length === 0) {
+                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            
+            const result = await editOrderPageAPI({
+                orderId: currentOrderId,
+                orderDate: orderDate,
+                shopName: shopName,
+                menus: menus
+            });
+            
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">注文ページを更新しました</div>';
+                setTimeout(() => {
+                    showOrderManagement();
+                }, 1500);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+            }
+        };
+
+        // 初期化
+        window.onload = function() {
+            loadOrderList();
+        };
+    </script>
+</body>
+</html>
