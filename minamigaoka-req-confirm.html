@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>南ヶ丘MBC 入部申請管理</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    header {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    h1 {
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: #ff6b6b;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .loading {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .application-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+      transition: transform 0.2s;
+    }
+    
+    .application-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .app-date {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .app-number {
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .info-section {
+      margin-bottom: 12px;
+    }
+    
+    .info-row {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    
+    .info-icon {
+      font-size: 16px;
+      margin-right: 8px;
+      min-width: 24px;
+    }
+    
+    .info-label {
+      color: #666;
+      font-size: 12px;
+      min-width: 80px;
+    }
+    
+    .info-value {
+      color: #333;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    
+    .children-info, .parent-info {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .section-title {
+      color: #667eea;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background: #667eea;
+      margin-right: 8px;
+      border-radius: 2px;
+    }
+    
+    .approve-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+    }
+    
+    .approve-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+    }
+    
+    .approve-btn:active {
+      transform: translateY(0);
+    }
+    
+    .approve-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .empty-state {
+      background: white;
+      padding: 60px 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .empty-text {
+      color: #666;
+      font-size: 18px;
+    }
+    
+    .refresh-btn {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    
+    .refresh-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+    
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+      
+      h1 {
+        font-size: 20px;
+      }
+      
+      .application-card {
+        padding: 16px;
+      }
+      
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .info-label {
+        min-width: auto;
+        margin-bottom: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 南ヶ丘MBC 入部申請管理</h1>
+      <div id="badge-container"></div>
+      <button class="refresh-btn" onclick="loadApplications()">🔄 更新</button>
+    </header>
+    
+    <div id="content">
+      <div class="loading">
+        <p>読み込み中...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ★★★ ここにApps ScriptのWeb APIのURLを設定 ★★★
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxaAfzbmg-i7Q3_imt8B_ltLXbMj7oJiO9eCSb3x23eubTmQ1f2E8igmMo9WCpybR9ApA/exec';
+    
+    // ページ読み込み時に申請データを取得
+    window.onload = function() {
+      loadApplications();
+    };
+    
+    // 申請データを読み込む
+    function loadApplications() {
+      document.getElementById('content').innerHTML = '<div class="loading"><p>読み込み中...</p></div>';
+      
+      fetch(API_URL + '?action=getPendingApplications')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            displayApplications(data.applications);
+          } else {
+            showError(data.error || '申請データの取得に失敗しました');
+          }
+        })
+        .catch(error => {
+          showError('通信エラー: ' + error.message);
+        });
+    }
+    
+    // 申請データを表示
+    function displayApplications(applications) {
+      const content = document.getElementById('content');
+      const badgeContainer = document.getElementById('badge-container');
+      
+      if (applications.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <div class="empty-text">未処理の申請はありません</div>
+          </div>
+        `;
+        badgeContainer.innerHTML = '<span class="badge">未処理: 0件</span>';
+        return;
+      }
+      
+      badgeContainer.innerHTML = `<span class="badge">🔔 未処理: ${applications.length}件</span>`;
+      
+      let html = '';
+      applications.forEach((app, index) => {
+        html += createApplicationCard(app, index + 1);
+      });
+      
+      content.innerHTML = html;
+    }
+    
+    // 申請カードのHTMLを生成
+    function createApplicationCard(app, number) {
+      let childrenHtml = '';
+      
+      if (app.child1Name) {
+        childrenHtml += `
+          <div class="children-info">
+            <div class="section-title">👦 お子様1</div>
+            <div class="info-row">
+              <span class="info-label">氏名・学年</span>
+              <span class="info-value">${escapeHtml(app.child1Name)} （${escapeHtml(app.child1Grade)}）</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (app.child2Name) {
+        childrenHtml += `
+          <div class="children-info">
+            <div class="section-title">👦 お子様2</div>
+            <div class="info-row">
+              <span class="info-label">氏名・学年</span>
+              <span class="info-value">${escapeHtml(app.child2Name)} （${escapeHtml(app.child2Grade)}）</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      let parentHtml = `
+        <div class="parent-info">
+          <div class="section-title">👤 保護者1</div>
+          <div class="info-row">
+            <span class="info-label">氏名</span>
+            <span class="info-value">${escapeHtml(app.parent1Name)} （${escapeHtml(app.parent1Age)}歳）</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">スポーツ保険</span>
+            <span class="info-value">${escapeHtml(app.insurance1)}</span>
+          </div>
+        </div>
+      `;
+      
+      if (app.parent2Name) {
+        parentHtml += `
+          <div class="parent-info">
+            <div class="section-title">👤 保護者2</div>
+            <div class="info-row">
+              <span class="info-label">氏名</span>
+              <span class="info-value">${escapeHtml(app.parent2Name)} （${escapeHtml(app.parent2Age)}歳）</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">スポーツ保険</span>
+              <span class="info-value">${escapeHtml(app.insurance2)}</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="application-card">
+          <div class="card-header">
+            <span class="app-date">📅 ${escapeHtml(app.timestamp)}</span>
+            <span class="app-number">#${number}</span>
+          </div>
+          
+          ${childrenHtml}
+          ${parentHtml}
+          
+          <div class="info-section">
+            <div class="info-row">
+              <span class="info-icon">📧</span>
+              <span class="info-value">${escapeHtml(app.email)}</span>
+            </div>
+          </div>
+          
+          <button class="approve-btn" onclick="approveApplication(${app.row}, this)">
+            ✓ 受理する
+          </button>
+        </div>
+      `;
+    }
+    
+    // 受理処理
+    function approveApplication(row, button) {
+      if (!confirm('この申請を受理しますか？\n受理メールが自動送信されます。')) {
+        return;
+      }
+      
+      button.disabled = true;
+      button.textContent = '処理中...';
+      
+      fetch(API_URL + '?action=approveApplication&row=' + row, {
+        method: 'GET'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('✅ 受理しました！\n受理メールを送信しました。');
+            loadApplications();
+          } else {
+            alert('❌ エラーが発生しました: ' + (data.error || '不明なエラー'));
+            button.disabled = false;
+            button.textContent = '✓ 受理する';
+          }
+        })
+        .catch(error => {
+          alert('❌ 通信エラー: ' + error.message);
+          button.disabled = false;
+          button.textContent = '✓ 受理する';
+        });
+    }
+    
+    // エラー表示
+    function showError(error) {
+      document.getElementById('content').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-text">エラーが発生しました<br>${escapeHtml(error)}</div>
+        </div>
+      `;
+    }
+    
+    // HTMLエスケープ
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+  </script>
+</body>
+</html>
