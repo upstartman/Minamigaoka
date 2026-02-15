@@ -19,21 +19,9 @@
     }
     @media print {
       .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+      @page { size: A4 landscape; margin: 5mm; }
     }
-    .print-only { display: none; }
-    .scoresheet-table { border-collapse: collapse; font-size: 8px; }
-    .scoresheet-table th, .scoresheet-table td { border: 1px solid #333; padding: 2px 4px; }
-    .running-score-cell { width: 18px; height: 14px; text-align: center; font-size: 7px; position: relative; }
-    .running-score-cell.scored::after {
-      content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
-      border-bottom: 1px solid #000; transform: rotate(-45deg);
-    }
-    .q-circle { width: 12px; height: 12px; border: 1px solid #333; border-radius: 50%; 
-      display: inline-flex; align-items: center; justify-content: center; font-size: 7px; margin: 0 1px; }
-    .q-circle.starter { background: #22c55e; color: white; }
-    .q-circle.sub { background: #f97316; color: white; }
   </style>
 </head>
 <body>
@@ -483,7 +471,7 @@
       return (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" onClick={onCancel}><div className="bg-white rounded-xl p-4 mx-4 max-w-md w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">記録の追加</h3><div className="space-y-4"><div><label className="block text-sm font-medium mb-1">種類</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setFormData({ ...formData, type: 'score' })} className={`py-2 rounded text-sm ${formData.type === 'score' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>🏀 得点</button><button onClick={() => setFormData({ ...formData, type: 'foul' })} className={`py-2 rounded text-sm ${formData.type === 'foul' ? 'bg-yellow-500 text-white' : 'bg-gray-200'}`}>⚠️ ファウル</button><button onClick={() => setFormData({ ...formData, type: 'starter', playerIndexes: [] })} className={`py-2 rounded text-sm ${formData.type === 'starter' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>🏁 スタート</button><button onClick={() => setFormData({ ...formData, type: 'substitution' })} className={`py-2 rounded text-sm ${formData.type === 'substitution' ? 'bg-orange-500 text-white' : 'bg-gray-200'}`}>🔄 交代</button></div></div><div><label className="block text-sm font-medium mb-1">クォーター</label><select value={formData.quarter} onChange={e => setFormData({ ...formData, quarter: parseInt(e.target.value) })} className="w-full border rounded p-2">{[1, 2, 3, 4].map(q => (<option key={q} value={q}>Q{q}</option>))}</select></div><div><label className="block text-sm font-medium mb-1">チーム</label><select value={formData.scoringTeam} onChange={e => setFormData({ ...formData, scoringTeam: e.target.value })} className="w-full border rounded p-2"><option value="A">{game.teamA.name}</option><option value="B">{game.teamB.name}</option></select></div>{(formData.type === 'score' || formData.type === 'foul') && (<div><label className="block text-sm font-medium mb-1">選手</label><select value={formData.scoringPlayerIndex} onChange={e => setFormData({ ...formData, scoringPlayerIndex: parseInt(e.target.value) })} className="w-full border rounded p-2">{activePlayers.map(p => (<option key={p.originalIndex} value={p.originalIndex}>#{p.number} {p.name}</option>))}</select></div>)}{formData.type === 'score' && (<div><label className="block text-sm font-medium mb-1">得点</label><div className="flex gap-2"><button onClick={() => setFormData({ ...formData, points: 1 })} className={`flex-1 py-3 rounded font-bold ${formData.points === 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>+1</button><button onClick={() => setFormData({ ...formData, points: 2 })} className={`flex-1 py-3 rounded font-bold ${formData.points === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>+2</button></div></div>)}{formData.type === 'foul' && (<div><label className="block text-sm font-medium mb-1">ファウル種別</label><div className="flex gap-2">{['P', 'P1', 'P2'].map(ft => (<button key={ft} onClick={() => setFormData({ ...formData, foulType: ft })} className={`flex-1 py-3 rounded font-bold ${formData.foulType === ft ? 'bg-yellow-500 text-white' : 'bg-gray-200'}`}>{ft}</button>))}</div></div>)}{formData.type === 'starter' && (<div><label className="block text-sm font-medium mb-1">スタートメンバー ({(formData.playerIndexes || []).length}/5)</label><div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto border rounded p-2">{activePlayers.map(p => { const isSelected = (formData.playerIndexes || []).includes(p.originalIndex); return (<button key={p.originalIndex} onClick={() => toggleStarterPlayer(p.originalIndex)} className={`p-2 rounded text-xs text-left ${isSelected ? 'bg-green-500 text-white' : 'bg-gray-100'}`}>#{p.number} {p.name}</button>); })}</div></div>)}{formData.type === 'substitution' && (<><div><label className="block text-sm font-medium mb-1 text-red-600">❌ 抜ける選手</label><select value={formData.playerOut} onChange={e => setFormData({ ...formData, playerOut: parseInt(e.target.value) })} className="w-full border rounded p-2">{activePlayers.map(p => (<option key={p.originalIndex} value={p.originalIndex}>#{p.number} {p.name}</option>))}</select></div><div><label className="block text-sm font-medium mb-1 text-green-600">✅ 入る選手</label><select value={formData.playerIn} onChange={e => setFormData({ ...formData, playerIn: parseInt(e.target.value) })} className="w-full border rounded p-2">{activePlayers.map(p => (<option key={p.originalIndex} value={p.originalIndex}>#{p.number} {p.name}</option>))}</select></div>{formData.playerOut === formData.playerIn && (<p className="text-red-500 text-sm">※ 抜ける選手と入る選手は異なる必要があります</p>)}</>)}</div><div className="flex gap-3 mt-6"><button onClick={onCancel} className="flex-1 py-3 bg-gray-200 rounded-lg font-semibold">キャンセル</button><button onClick={() => onSave(formData)} disabled={!canSave()} className={`flex-1 py-3 rounded-lg font-semibold ${canSave() ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-500'}`}>追加</button></div></div></div>);
     }
 
-    // スコアシート印刷プレビュー画面（HTML版）
+    // スコアシート印刷プレビュー画面（公式フォーマット準拠HTML版）
     function PrintScoresheetView({ game, onBack }) {
       const teamAScore = game.teamA.players.reduce((s, p) => s + getPlayerTotalPoints(p), 0);
       const teamBScore = game.teamB.players.reduce((s, p) => s + getPlayerTotalPoints(p), 0);
@@ -512,64 +500,23 @@
       const { year, month, day } = formatDate(game.date);
       const [hour, minute] = (game.time || ':').split(':');
 
-      const renderTeamSection = (team, teamLabel, teamColor) => {
-        const activePlayers = team.players.filter(p => p.name);
-        return (
-          <div className="mb-4">
-            <div className="flex items-center gap-4 mb-1">
-              <span className="font-bold">チーム{teamLabel}:</span>
-              <span className="text-lg font-bold" style={{color: teamColor}}>{team.name}</span>
-              {teamLabel === 'A' && <span className="text-xs border px-1">（白）</span>}
-            </div>
-            <table className="scoresheet-table w-full">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="w-8">No.</th>
-                  <th className="w-12">ライセンス</th>
-                  <th className="w-24">選手氏名</th>
-                  <th className="w-20">出場時限</th>
-                  <th colSpan="5" className="w-24">ファウル</th>
-                  <th className="w-10">得点</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activePlayers.slice(0, 15).map((player, i) => {
-                  const quarters = player.quarters || [{},{},{},{}];
-                  const fouls = player.fouls || ['','','','',''];
-                  return (
-                    <tr key={i}>
-                      <td className="text-center font-bold">{player.number}</td>
-                      <td className="text-center">{player.licenseNo}</td>
-                      <td>{player.name}</td>
-                      <td className="text-center">
-                        {[0,1,2,3].map(q => {
-                          const qInfo = quarters[q] || {};
-                          return (
-                            <span key={q} className={`q-circle ${qInfo.played ? (qInfo.isStarter ? 'starter' : 'sub') : ''}`}>
-                              {q+1}
-                            </span>
-                          );
-                        })}
-                      </td>
-                      {fouls.map((f, fi) => (<td key={fi} className="text-center w-5">{f}</td>))}
-                      <td className="text-center font-bold">{getPlayerTotalPoints(player)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div className="flex gap-4 mt-1 text-xs">
-              <span>コーチ: {team.coach}</span>
-              <span>A.コーチ: {team.assistantCoach}</span>
-            </div>
-            <div className="flex gap-2 mt-1 text-xs">
-              <span>チームファウル:</span>
-              {[1,2,3,4].map(q => (
-                <span key={q} className="border px-1">Q{q}: {(team.teamFouls || [])[q-1] || 0}</span>
-              ))}
-            </div>
-          </div>
-        );
+      // 15行分の選手データを生成（空行含む）
+      const getPlayers15 = (team) => {
+        const result = [];
+        for (let i = 0; i < 15; i++) {
+          result.push(team.players[i] || createEmptyPlayer(i + 1));
+        }
+        return result;
+      };
+
+      // チームファウルの描画用配列生成
+      const renderTeamFoulBoxes = (team, q) => {
+        const count = (team.teamFouls || [])[q - 1] || 0;
+        return [1, 2, 3, 4].map(i => (
+          <td key={i} style={{width: '12px', height: '12px', border: '1px solid #333', textAlign: 'center', fontSize: '8px'}}>
+            {i <= count ? '×' : ''}
+          </td>
+        ));
       };
 
       return (
@@ -578,116 +525,352 @@
           <div className="no-print p-4 bg-gray-100 flex gap-4 items-center">
             <button onClick={onBack} className="text-blue-600">← 戻る</button>
             <button onClick={() => window.print()} className="bg-blue-600 text-white px-4 py-2 rounded">🖨️ 印刷 / PDF保存</button>
-            <span className="text-sm text-gray-500">※ブラウザの印刷機能でPDF保存可能</span>
+            <span className="text-sm text-gray-500">※ブラウザの印刷機能でPDF保存可能（A4横推奨）</span>
           </div>
 
-          {/* スコアシート本体 */}
-          <div className="p-4 max-w-4xl mx-auto bg-white" style={{fontSize: '10px'}}>
-            <div className="text-center mb-4">
-              <h1 className="text-lg font-bold">MINI-BASKETBALL OFFICIAL SCORESHEET</h1>
+          {/* スコアシート本体 - 公式フォーマット準拠 */}
+          <div style={{width: '297mm', minHeight: '210mm', padding: '5mm', margin: '0 auto', background: 'white', fontFamily: 'sans-serif', fontSize: '8px', boxSizing: 'border-box'}}>
+            
+            {/* ヘッダー */}
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '3mm', borderBottom: '1px solid #000', paddingBottom: '2mm'}}>
+              <div style={{width: '15mm', height: '15mm', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '10px', marginRight: '5mm'}}>JBA</div>
+              <div style={{flex: 1, textAlign: 'center'}}>
+                <div style={{fontSize: '14px', fontWeight: 'bold', letterSpacing: '2px'}}>MINI-BASKETBALL OFFICIAL SCORESHEET</div>
+              </div>
             </div>
 
-            {/* ヘッダー情報 */}
-            <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
-              <div>
-                <div className="flex gap-2 items-center">
-                  <span>大会名:</span>
-                  <span className="border-b flex-1 px-1">{game.tournamentName}</span>
+            {/* 上部情報エリア */}
+            <div style={{display: 'flex', gap: '3mm', marginBottom: '3mm'}}>
+              {/* 左側：大会名・スコア */}
+              <div style={{flex: '0 0 52%'}}>
+                {/* 大会名 */}
+                <div style={{display: 'flex', alignItems: 'center', marginBottom: '2mm'}}>
+                  <span style={{width: '12mm'}}>大会名</span>
+                  <div style={{flex: 1, borderBottom: '1px solid #000', minHeight: '5mm', paddingLeft: '2mm'}}>{game.tournamentName}</div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <span>日付:</span>
-                <span className="border-b w-12 text-center">{year}</span>年
-                <span className="border-b w-8 text-center">{month}</span>月
-                <span className="border-b w-8 text-center">{day}</span>日
-                <span className="ml-2">時間:</span>
-                <span className="border-b w-8 text-center">{hour}</span>:
-                <span className="border-b w-8 text-center">{minute}</span>
-              </div>
-              <div className="flex gap-2 items-center">
-                <span>会場:</span>
-                <span className="border-b flex-1 px-1">{game.venue}</span>
-              </div>
-              <div className="flex gap-2 items-center">
-                <span>Game No.:</span>
-                <span className="border-b w-16 text-center">{game.gameNo}</span>
-              </div>
-            </div>
-
-            {/* スコア */}
-            <div className="flex justify-center items-center gap-8 mb-4 py-2 bg-gray-100 rounded">
-              <div className="text-center">
-                <div className="text-xs">チームA</div>
-                <div className="text-2xl font-bold text-blue-600">{game.teamA.name}</div>
-              </div>
-              <div className="text-4xl font-bold">{teamAScore} - {teamBScore}</div>
-              <div className="text-center">
-                <div className="text-xs">チームB</div>
-                <div className="text-2xl font-bold text-red-600">{game.teamB.name}</div>
-              </div>
-            </div>
-
-            {/* クォーター別スコア */}
-            <div className="flex justify-center gap-4 mb-4 text-xs">
-              <table className="scoresheet-table">
-                <thead><tr><th></th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>合計</th></tr></thead>
-                <tbody>
-                  <tr><td className="font-bold text-blue-600">{game.teamA.name}</td><td>{getQuarterScore(game.teamA, 1)}</td><td>{getQuarterScore(game.teamA, 2)}</td><td>{getQuarterScore(game.teamA, 3)}</td><td>{getQuarterScore(game.teamA, 4)}</td><td className="font-bold">{teamAScore}</td></tr>
-                  <tr><td className="font-bold text-red-600">{game.teamB.name}</td><td>{getQuarterScore(game.teamB, 1)}</td><td>{getQuarterScore(game.teamB, 2)}</td><td>{getQuarterScore(game.teamB, 3)}</td><td>{getQuarterScore(game.teamB, 4)}</td><td className="font-bold">{teamBScore}</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* チームA */}
-            {renderTeamSection(game.teamA, 'A', '#2563eb')}
-
-            {/* チームB */}
-            {renderTeamSection(game.teamB, 'B', '#dc2626')}
-
-            {/* ランニングスコア */}
-            <div className="mt-4">
-              <h3 className="font-bold mb-2">ランニングスコア</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <table className="scoresheet-table w-full">
-                    <thead><tr><th colSpan="20" className="bg-blue-100">{game.teamA.name}</th></tr></thead>
+                
+                {/* スコアボックス */}
+                <div style={{display: 'flex', gap: '2mm', marginBottom: '2mm'}}>
+                  <div style={{width: '10mm', fontSize: '7px'}}>
+                    <div>スコア</div>
+                    <div>Score</div>
+                  </div>
+                  <table style={{borderCollapse: 'collapse', flex: 1}}>
                     <tbody>
-                      {[0, 20, 40, 60].map(start => (
-                        <tr key={start}>
-                          {Array.from({length: 20}, (_, i) => start + i + 1).map(n => (
-                            <td key={n} className={`running-score-cell ${scoresA.includes(n) ? 'scored' : ''}`}>{n}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div>
-                  <table className="scoresheet-table w-full">
-                    <thead><tr><th colSpan="20" className="bg-red-100">{game.teamB.name}</th></tr></thead>
-                    <tbody>
-                      {[0, 20, 40, 60].map(start => (
-                        <tr key={start}>
-                          {Array.from({length: 20}, (_, i) => start + i + 1).map(n => (
-                            <td key={n} className={`running-score-cell ${scoresB.includes(n) ? 'scored' : ''}`}>{n}</td>
-                          ))}
-                        </tr>
-                      ))}
+                      <tr>
+                        <td style={{border: '1px solid #000', width: '35mm', padding: '1mm', textAlign: 'center'}}>チームA</td>
+                        <td style={{border: '1px solid #000', width: '20mm', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '14px'}}>{teamAScore}</td>
+                        <td style={{border: '1px solid #000', width: '8mm', padding: '1mm', textAlign: 'center'}}>ー</td>
+                        <td style={{border: '1px solid #000', width: '20mm', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '14px'}}>{teamBScore}</td>
+                        <td style={{border: '1px solid #000', width: '35mm', padding: '1mm', textAlign: 'center'}}>チームB</td>
+                      </tr>
+                      <tr>
+                        <td style={{border: '1px solid #000', padding: '1mm', textAlign: 'center'}}>{game.teamA.name}</td>
+                        <td style={{border: '1px solid #000', padding: '1mm', textAlign: 'center'}}></td>
+                        <td style={{border: '1px solid #000', padding: '1mm', textAlign: 'center'}}>ー</td>
+                        <td style={{border: '1px solid #000', padding: '1mm', textAlign: 'center'}}></td>
+                        <td style={{border: '1px solid #000', padding: '1mm', textAlign: 'center'}}>{game.teamB.name}</td>
+                      </tr>
+                      <tr>
+                        <td style={{border: '1px solid #000', height: '4mm'}}></td>
+                        <td style={{border: '1px solid #000'}}></td>
+                        <td style={{border: '1px solid #000', textAlign: 'center'}}>ー</td>
+                        <td style={{border: '1px solid #000'}}></td>
+                        <td style={{border: '1px solid #000'}}></td>
+                      </tr>
+                      <tr>
+                        <td style={{border: '1px solid #000', height: '4mm', textAlign: 'center', fontSize: '6px'}}>（延長）</td>
+                        <td style={{border: '1px solid #000'}}></td>
+                        <td style={{border: '1px solid #000', textAlign: 'center'}}>ー</td>
+                        <td style={{border: '1px solid #000'}}></td>
+                        <td style={{border: '1px solid #000'}}></td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {/* 右側：日付・会場等 */}
+              <div style={{flex: '0 0 46%'}}>
+                <div style={{display: 'flex', gap: '3mm', marginBottom: '2mm'}}>
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+                    <span>日付</span>
+                    <span style={{borderBottom: '1px solid #000', width: '12mm', textAlign: 'center', marginLeft: '1mm'}}>{year}</span>
+                    <span>年</span>
+                    <span style={{borderBottom: '1px solid #000', width: '8mm', textAlign: 'center'}}>{month}</span>
+                    <span>月</span>
+                    <span style={{borderBottom: '1px solid #000', width: '8mm', textAlign: 'center'}}>{day}</span>
+                    <span>日</span>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', marginLeft: '5mm'}}>
+                    <span>時間</span>
+                    <span style={{borderBottom: '1px solid #000', width: '8mm', textAlign: 'center', marginLeft: '1mm'}}>{hour}</span>
+                    <span>：</span>
+                    <span style={{borderBottom: '1px solid #000', width: '8mm', textAlign: 'center'}}>{minute}</span>
+                  </div>
+                </div>
+                <div style={{display: 'flex', gap: '3mm', marginBottom: '2mm'}}>
+                  <div style={{display: 'flex', alignItems: 'center', flex: 1}}>
+                    <span>会場</span>
+                    <span style={{borderBottom: '1px solid #000', flex: 1, marginLeft: '1mm', minHeight: '4mm'}}>{game.venue}</span>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+                    <span style={{fontSize: '7px'}}>Game<br/>No.</span>
+                    <span style={{borderBottom: '1px solid #000', width: '15mm', textAlign: 'center', marginLeft: '1mm'}}>{game.gameNo}</span>
+                  </div>
+                </div>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1mm', fontSize: '6px'}}>
+                  <div>クルーチーフ</div><div>アンパイア</div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                  <div>スコアラー</div><div>タイマー</div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                  <div>A・スコアラー</div><div>ショットクロックオペレーター</div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                  <div style={{borderBottom: '1px solid #ccc', height: '4mm'}}></div>
+                </div>
+              </div>
             </div>
 
-            {/* フッター */}
-            <div className="mt-4 pt-2 border-t text-xs">
-              <div className="flex gap-8">
-                <span>勝利チーム: <span className="font-bold">{game.winner || (teamAScore > teamBScore ? game.teamA.name : teamBScore > teamAScore ? game.teamB.name : '引分')}</span></span>
-                <span>試合終了時間: {game.endTime}</span>
+            {/* メインコンテンツ：チームエリア + ランニングスコア */}
+            <div style={{display: 'flex', gap: '2mm'}}>
+              {/* 左側：チームA & チームB */}
+              <div style={{flex: '0 0 52%'}}>
+                {/* チームA */}
+                <div style={{border: '1px solid #000', marginBottom: '2mm'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1mm', borderBottom: '1px solid #000', background: '#f0f0f0'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '2mm'}}>
+                      <span style={{fontWeight: 'bold'}}>チームA：</span>
+                      <span style={{fontWeight: 'bold', fontSize: '10px'}}>{game.teamA.name}</span>
+                      <span style={{border: '1px solid #000', padding: '0 2mm', fontSize: '7px'}}>（白）</span>
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '1mm', fontSize: '7px'}}>
+                      <span>タイムアウト</span>
+                      {['①','②','③','④','OT'].map((t, i) => (
+                        <span key={i} style={{border: '1px solid #000', width: '10px', height: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px'}}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '7px'}}>
+                    <thead>
+                      <tr style={{background: '#f8f8f8'}}>
+                        <th style={{border: '1px solid #000', width: '8mm', padding: '1mm'}}>No.</th>
+                        <th style={{border: '1px solid #000', width: '12mm', padding: '1mm', fontSize: '6px'}}>ライセンス<br/>No.</th>
+                        <th style={{border: '1px solid #000', padding: '1mm', fontSize: '6px'}}>選手氏名<br/>Players</th>
+                        <th colSpan="4" style={{border: '1px solid #000', width: '20mm', padding: '1mm', fontSize: '6px'}}>出 場 時 限<br/>①②③④</th>
+                        <th colSpan="5" style={{border: '1px solid #000', width: '25mm', padding: '1mm'}}>ファウル<br/>1　2　3　4　5</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getPlayers15(game.teamA).map((player, i) => {
+                        const quarters = player.quarters || [{},{},{},{}];
+                        const fouls = player.fouls || ['','','','',''];
+                        return (
+                          <tr key={i}>
+                            <td style={{border: '1px solid #000', textAlign: 'center', height: '5mm', fontWeight: 'bold'}}>{player.number}</td>
+                            <td style={{border: '1px solid #000', textAlign: 'center', fontSize: '6px'}}>{player.licenseNo}</td>
+                            <td style={{border: '1px solid #000', paddingLeft: '1mm', fontSize: '7px'}}>{player.name}</td>
+                            {[0,1,2,3].map(q => {
+                              const qInfo = quarters[q] || {};
+                              const played = qInfo.played || qInfo === true;
+                              const isStarter = qInfo.isStarter;
+                              return (
+                                <td key={q} style={{border: '1px solid #000', width: '5mm', textAlign: 'center', padding: '0'}}>
+                                  {played && (
+                                    <span style={{
+                                      display: 'inline-block',
+                                      width: '10px',
+                                      height: '10px',
+                                      borderRadius: '50%',
+                                      border: isStarter ? '1.5px solid #000' : 'none',
+                                      background: isStarter ? 'transparent' : '#f97316',
+                                      lineHeight: '10px',
+                                      fontSize: '6px'
+                                    }}>
+                                      {isStarter ? '' : ''}
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            {fouls.map((f, fi) => (
+                              <td key={fi} style={{border: '1px solid #000', width: '5mm', textAlign: 'center', fontSize: '7px', fontWeight: f ? 'bold' : 'normal'}}>{f}</td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{display: 'flex', justifyContent: 'space-between', padding: '1mm', borderTop: '1px solid #000'}}>
+                    <div style={{fontSize: '7px'}}>
+                      <div>コーチ：<span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '30mm'}}>{game.teamA.coach}</span></div>
+                      <div>A.コーチ：<span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '28mm'}}>{game.teamA.assistantCoach}</span></div>
+                    </div>
+                    <div style={{fontSize: '6px'}}>
+                      <div style={{textAlign: 'center', marginBottom: '1mm'}}>チーム<br/>ファウル</div>
+                      <table style={{borderCollapse: 'collapse'}}>
+                        <tbody>
+                          <tr><td style={{fontSize: '5px', paddingRight: '1mm'}}>1Q</td>{renderTeamFoulBoxes(game.teamA, 1)}<td style={{fontSize: '5px', paddingLeft: '2mm', paddingRight: '1mm'}}>2Q</td>{renderTeamFoulBoxes(game.teamA, 2)}</tr>
+                          <tr><td style={{fontSize: '5px', paddingRight: '1mm'}}>3Q</td>{renderTeamFoulBoxes(game.teamA, 3)}<td style={{fontSize: '5px', paddingLeft: '2mm', paddingRight: '1mm'}}>4Q</td>{renderTeamFoulBoxes(game.teamA, 4)}</tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* チームB */}
+                <div style={{border: '1px solid #000'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1mm', borderBottom: '1px solid #000', background: '#f0f0f0'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '2mm'}}>
+                      <span style={{fontWeight: 'bold'}}>チームB：</span>
+                      <span style={{fontWeight: 'bold', fontSize: '10px'}}>{game.teamB.name}</span>
+                      <span style={{border: '1px solid #000', padding: '0 2mm', fontSize: '7px'}}>（　　）</span>
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '1mm', fontSize: '7px'}}>
+                      <span>タイムアウト</span>
+                      {['①','②','③','④','OT'].map((t, i) => (
+                        <span key={i} style={{border: '1px solid #000', width: '10px', height: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px'}}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '7px'}}>
+                    <thead>
+                      <tr style={{background: '#f8f8f8'}}>
+                        <th style={{border: '1px solid #000', width: '8mm', padding: '1mm'}}>No.</th>
+                        <th style={{border: '1px solid #000', width: '12mm', padding: '1mm', fontSize: '6px'}}>ライセンス<br/>No.</th>
+                        <th style={{border: '1px solid #000', padding: '1mm', fontSize: '6px'}}>選手氏名<br/>Players</th>
+                        <th colSpan="4" style={{border: '1px solid #000', width: '20mm', padding: '1mm', fontSize: '6px'}}>出 場 時 限<br/>①②③④</th>
+                        <th colSpan="5" style={{border: '1px solid #000', width: '25mm', padding: '1mm'}}>ファウル<br/>1　2　3　4　5</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getPlayers15(game.teamB).map((player, i) => {
+                        const quarters = player.quarters || [{},{},{},{}];
+                        const fouls = player.fouls || ['','','','',''];
+                        return (
+                          <tr key={i}>
+                            <td style={{border: '1px solid #000', textAlign: 'center', height: '5mm', fontWeight: 'bold'}}>{player.number}</td>
+                            <td style={{border: '1px solid #000', textAlign: 'center', fontSize: '6px'}}>{player.licenseNo}</td>
+                            <td style={{border: '1px solid #000', paddingLeft: '1mm', fontSize: '7px'}}>{player.name}</td>
+                            {[0,1,2,3].map(q => {
+                              const qInfo = quarters[q] || {};
+                              const played = qInfo.played || qInfo === true;
+                              const isStarter = qInfo.isStarter;
+                              return (
+                                <td key={q} style={{border: '1px solid #000', width: '5mm', textAlign: 'center', padding: '0'}}>
+                                  {played && (
+                                    <span style={{
+                                      display: 'inline-block',
+                                      width: '10px',
+                                      height: '10px',
+                                      borderRadius: '50%',
+                                      border: isStarter ? '1.5px solid #000' : 'none',
+                                      background: isStarter ? 'transparent' : '#f97316',
+                                      lineHeight: '10px',
+                                      fontSize: '6px'
+                                    }}>
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            {fouls.map((f, fi) => (
+                              <td key={fi} style={{border: '1px solid #000', width: '5mm', textAlign: 'center', fontSize: '7px', fontWeight: f ? 'bold' : 'normal'}}>{f}</td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{display: 'flex', justifyContent: 'space-between', padding: '1mm', borderTop: '1px solid #000'}}>
+                    <div style={{fontSize: '7px'}}>
+                      <div>コーチ：<span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '30mm'}}>{game.teamB.coach}</span></div>
+                      <div>A.コーチ：<span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '28mm'}}>{game.teamB.assistantCoach}</span></div>
+                    </div>
+                    <div style={{fontSize: '6px'}}>
+                      <div style={{textAlign: 'center', marginBottom: '1mm'}}>チーム<br/>ファウル</div>
+                      <table style={{borderCollapse: 'collapse'}}>
+                        <tbody>
+                          <tr><td style={{fontSize: '5px', paddingRight: '1mm'}}>1Q</td>{renderTeamFoulBoxes(game.teamB, 1)}<td style={{fontSize: '5px', paddingLeft: '2mm', paddingRight: '1mm'}}>2Q</td>{renderTeamFoulBoxes(game.teamB, 2)}</tr>
+                          <tr><td style={{fontSize: '5px', paddingRight: '1mm'}}>3Q</td>{renderTeamFoulBoxes(game.teamB, 3)}<td style={{fontSize: '5px', paddingLeft: '2mm', paddingRight: '1mm'}}>4Q</td>{renderTeamFoulBoxes(game.teamB, 4)}</tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* フッター */}
+                <div style={{marginTop: '2mm', fontSize: '6px', display: 'flex', justifyContent: 'space-between'}}>
+                  <div>
+                    <span>勝利チーム：</span>
+                    <span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '40mm', fontWeight: 'bold'}}>{game.winner || (teamAScore > teamBScore ? game.teamA.name : teamBScore > teamAScore ? game.teamB.name : '引分')}</span>
+                  </div>
+                  <div>
+                    <span>試合終了時間：</span>
+                    <span style={{borderBottom: '1px solid #000', display: 'inline-block', width: '20mm'}}>{game.endTime}</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-right text-gray-400 mt-2">
-                ※このスコアシートはアプリから出力されました
+
+              {/* 右側：ランニングスコア */}
+              <div style={{flex: '0 0 46%'}}>
+                <div style={{textAlign: 'center', fontWeight: 'bold', marginBottom: '1mm', fontSize: '8px'}}>
+                  ランニング スコア　RUNNING SCORE
+                </div>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '6px'}}>
+                  <thead>
+                    <tr>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>A</th>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>B</th>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>A</th>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>B</th>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>A</th>
+                      <th style={{border: '1px solid #000', padding: '1mm', width: '16.6%'}}>B</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({length: 40}, (_, row) => {
+                      const n1 = row + 1;
+                      const n2 = row + 41;
+                      const n3 = row + 81;
+                      return (
+                        <tr key={row}>
+                          <td style={{border: '1px solid #000', textAlign: 'center', height: '4mm', position: 'relative', background: scoresA.includes(n1) ? '#e0e0e0' : 'white'}}>
+                            {n1}
+                            {scoresA.includes(n1) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                          <td style={{border: '1px solid #000', textAlign: 'center', position: 'relative', background: scoresB.includes(n1) ? '#e0e0e0' : 'white'}}>
+                            {n1}
+                            {scoresB.includes(n1) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                          <td style={{border: '1px solid #000', textAlign: 'center', position: 'relative', background: scoresA.includes(n2) ? '#e0e0e0' : 'white'}}>
+                            {n2}
+                            {scoresA.includes(n2) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                          <td style={{border: '1px solid #000', textAlign: 'center', position: 'relative', background: scoresB.includes(n2) ? '#e0e0e0' : 'white'}}>
+                            {n2}
+                            {scoresB.includes(n2) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                          <td style={{border: '1px solid #000', textAlign: 'center', position: 'relative', background: scoresA.includes(n3) ? '#e0e0e0' : 'white'}}>
+                            {n3}
+                            {scoresA.includes(n3) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                          <td style={{border: '1px solid #000', textAlign: 'center', position: 'relative', background: scoresB.includes(n3) ? '#e0e0e0' : 'white'}}>
+                            {n3}
+                            {scoresB.includes(n3) && <span style={{position: 'absolute', left: '2px', right: '2px', top: '50%', height: '1px', background: '#000', transform: 'rotate(-45deg)'}}></span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
+            </div>
+
+            {/* 注釈 */}
+            <div style={{marginTop: '2mm', fontSize: '5px', color: '#666', textAlign: 'right'}}>
+              ※ライセンスNo.とは、JBA登録番号（メンバーID）の下3桁を記入してください。　　　　　　　　　　　　　公益財団法人 日本バスケットボール協会
             </div>
           </div>
         </div>
