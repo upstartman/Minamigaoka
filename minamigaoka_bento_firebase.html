@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>お弁当注文集計アプリ</title>
+    <title>南ヶ丘注文集計アプリ</title>
     <style>
         * {
             margin: 0;
@@ -613,7 +613,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🍱 お弁当注文集計アプリ</h1>
+            <h1>南ヶ丘注文集計アプリ</h1>
             <div class="mode-selector">
                 <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
                 <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
@@ -624,14 +624,14 @@
             <!-- 利用者モード -->
             <div id="userMode" class="section active">
                 <div id="orderListSection" class="section active">
-                    <h2>注文する日付を選択</h2>
+                    <h2>注文内容を選択</h2>
                     <div id="orderList" class="order-list">
                         <div class="loading">読み込み中...</div>
                     </div>
                 </div>
 
                 <div id="orderFormSection" class="section">
-                    <a href="#" class="back-link" onclick="showOrderList(); return false;">← 日付選択に戻る</a>
+                    <a href="#" class="back-link" onclick="showOrderList(); return false;">← 注文内容選択に戻る</a>
                     <div id="orderFormContent"></div>
                 </div>
             </div>
@@ -650,7 +650,7 @@
                     <a href="#" class="back-link" onclick="showOrderManagement(); return false;">← 注文管理に戻る</a>
                     <h2>新規注文ページ作成</h2>
                     <div class="form-group">
-                        <label>過去のページからコピー（オプション）</label>
+                        <label>過去の注文からコピーする場合は以下から選択</label>
                         <select id="copyFromOrder" onchange="loadMenusFromOrder()">
                             <option value="">-- 新規作成 --</option>
                         </select>
@@ -660,18 +660,22 @@
                         <input type="date" id="newOrderDate">
                     </div>
                     <div class="form-group">
-                        <label>お店の名前（オプション）</label>
-                        <input type="text" id="newShopName" placeholder="例: ほっともっと、ほっかほっか亭">
+                        <label>注文内容</label>
+                        <input type="text" id="newShopName" placeholder="例: お弁当（ほっともっと）">
                     </div>
                     <div class="form-group">
-                        <label>メニュー</label>
+                        <label>メモ（任意）</label>
+                        <textarea id="newMemo" placeholder="例: 締切は3/5(水)までです。" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>項目</label>
                         <div class="menu-items" id="menuItems">
                             <div class="menu-item">
-                                <input type="text" placeholder="メニュー名" class="menu-name">
+                                <input type="text" placeholder="項目名" class="menu-name">
                                 <input type="number" placeholder="価格" class="menu-price" min="0">
                             </div>
                         </div>
-                        <button class="btn btn-secondary" onclick="addMenuItem()">+ メニュー追加</button>
+                        <button class="btn btn-secondary" onclick="addMenuItem()">+ 項目追加</button>
                     </div>
                     <div class="buttons-container">
                         <button class="btn" onclick="createOrderPage()">作成</button>
@@ -777,6 +781,7 @@
                         orderId: doc.id,
                         orderDate: data.orderDate,
                         shopName: data.shopName || '',
+                        memo: data.memo || '',
                         menus: data.menus || [],
                         status: data.status,
                         createdAt: data.createdAt
@@ -803,6 +808,7 @@
                 const docRef = await addDoc(collection(db, 'orderPages'), {
                     orderDate: params.orderDate,
                     shopName: params.shopName || '',
+                    memo: params.memo || '',
                     menus: params.menus,
                     status: 'open',
                     createdAt: Timestamp.now()
@@ -836,6 +842,7 @@
                     orderId: orderId,
                     orderDate: orderPageData.orderDate,
                     shopName: orderPageData.shopName || '',
+                    memo: orderPageData.memo || '',
                     menus: orderPageData.menus || [],
                     status: orderPageData.status,
                     createdAt: orderPageData.createdAt
@@ -1039,6 +1046,7 @@
                     orderId: orderId,
                     orderDate: orderPageData.orderDate,
                     shopName: orderPageData.shopName || '',
+                    memo: orderPageData.memo || '',
                     menus: orderPageData.menus || [],
                     status: orderPageData.status,
                     paidUsers: orderPageData.paidUsers || []
@@ -1055,7 +1063,7 @@
                 const userOrders = {};
                 let totalAmount = 0;
 
-                // メニューごとの集計初期化
+                // 項目ごとの集計初期化
                 for (let menu of orderPage.menus) {
                     menuSummary[menu.name] = {
                         menuName: menu.name,
@@ -1073,7 +1081,7 @@
                     const userName = data.userName;
                     const quantity = data.quantity;
 
-                    // メニュー別集計
+                    // 項目別集計
                     if (menuSummary[menuName]) {
                         menuSummary[menuName].totalQuantity += quantity;
                         menuSummary[menuName].totalAmount += price * quantity;
@@ -1137,6 +1145,44 @@
             }
         }
 
+        // ユーザー注文削除
+        async function deleteUserOrderAPI(params) {
+            try {
+                const orderId = params.orderId;
+                const userName = params.userName;
+
+                // 該当ユーザーの注文データを削除
+                const ordersQuery = query(
+                    collection(db, 'orders'),
+                    where('orderId', '==', orderId),
+                    where('userName', '==', userName)
+                );
+                const ordersSnapshot = await getDocs(ordersQuery);
+
+                const deletePromises = [];
+                ordersSnapshot.forEach((docSnap) => {
+                    deletePromises.push(deleteDoc(doc(db, 'orders', docSnap.id)));
+                });
+                await Promise.all(deletePromises);
+
+                // paidUsersからも削除
+                const orderPageDoc = await getDoc(doc(db, 'orderPages', orderId));
+                if (orderPageDoc.exists()) {
+                    const orderPageData = orderPageDoc.data();
+                    let paidUsers = orderPageData.paidUsers || [];
+                    paidUsers = paidUsers.filter(u => u !== userName);
+                    await updateDoc(doc(db, 'orderPages', orderId), {
+                        paidUsers: paidUsers
+                    });
+                }
+
+                return { success: true, message: 'User order deleted successfully' };
+            } catch (error) {
+                console.error('deleteUserOrder error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
         // 注文ページ編集
         async function editOrderPageAPI(params) {
             try {
@@ -1145,6 +1191,7 @@
                 await updateDoc(doc(db, 'orderPages', orderId), {
                     orderDate: params.orderDate,
                     shopName: params.shopName || '',
+                    memo: params.memo || '',
                     menus: params.menus
                 });
 
@@ -1173,7 +1220,7 @@
                 });
 
                 if (sortedData.length === 0) {
-                    container.innerHTML = '<p>現在注文可能な日付はありません。</p>';
+                    container.innerHTML = '<p>現在注文可能な内容はありません。</p>';
                     return;
                 }
 
@@ -1191,7 +1238,7 @@
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
                             <div class="order-card-body">
-                                メニュー: ${order.menus.map(m => m.name).join(', ')}
+                                項目: ${order.menus.map(m => m.name).join(', ')}
                             </div>
                         </div>
                     `;
@@ -1232,6 +1279,19 @@
 
                 let html = `
                     <h2>${formattedDate}${shopInfo}の注文</h2>
+                `;
+                
+                // メモがあれば表示
+                if (orderPage.memo) {
+                    html += `
+                        <div class="memo-display" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                            <strong>📝 メモ:</strong>
+                            <p style="margin: 10px 0 0 0; white-space: pre-wrap;">${orderPage.memo}</p>
+                        </div>
+                    `;
+                }
+                
+                html += `
                     <div class="form-group">
                         <label>名前</label>
                         <select id="userNameSelect" onchange="handleUserSelection()">
@@ -1254,7 +1314,7 @@
                         <table class="order-table">
                             <thead>
                                 <tr>
-                                    <th>メニュー</th>
+                                    <th>項目</th>
                                     <th>価格</th>
                                     <th>数量</th>
                                     <th>小計</th>
@@ -1421,7 +1481,7 @@
             }
         };
 
-        // 管理者メニュー表示（注文管理を直接表示）
+        // 管理者項目表示（注文管理を直接表示）
         window.showAdminMenu = function() {
             showOrderManagement();
         };
@@ -1436,22 +1496,23 @@
             
             document.getElementById('newOrderDate').value = '';
             document.getElementById('newShopName').value = '';
+            document.getElementById('newMemo').value = '';
             document.getElementById('menuItems').innerHTML = `
                 <div class="menu-item">
-                    <input type="text" placeholder="メニュー名" class="menu-name">
+                    <input type="text" placeholder="項目名" class="menu-name">
                     <input type="number" placeholder="価格" class="menu-price" min="0">
                 </div>
             `;
             document.getElementById('createOrderMessage').innerHTML = '';
         };
 
-        // メニュー項目追加
+        // 項目追加
         window.addMenuItem = function() {
             const container = document.getElementById('menuItems');
             const menuItem = document.createElement('div');
             menuItem.className = 'menu-item';
             menuItem.innerHTML = `
-                <input type="text" placeholder="メニュー名" class="menu-name">
+                <input type="text" placeholder="項目名" class="menu-name">
                 <input type="number" placeholder="価格" class="menu-price" min="0">
                 <button onclick="this.parentElement.remove()">削除</button>
             `;
@@ -1463,6 +1524,7 @@
             const messageEl = document.getElementById('createOrderMessage');
             const orderDate = document.getElementById('newOrderDate').value;
             const shopName = document.getElementById('newShopName').value.trim();
+            const memo = document.getElementById('newMemo').value.trim();
 
             if (!orderDate) {
                 messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
@@ -1483,7 +1545,7 @@
             });
 
             if (menus.length === 0) {
-                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                messageEl.innerHTML = '<div class="error">項目を1つ以上入力してください</div>';
                 setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
@@ -1491,6 +1553,7 @@
             const result = await createOrderPageAPI({
                 orderDate: orderDate,
                 shopName: shopName,
+                memo: memo,
                 menus: menus
             });
 
@@ -1545,7 +1608,7 @@
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
                             <div class="order-card-body">
-                                メニュー: ${order.menus.map(m => m.name).join(', ')}
+                                項目: ${order.menus.map(m => m.name).join(', ')}
                             </div>
                             <div class="admin-actions">
                                 <button class="btn" onclick="showOrderDetail('${order.orderId}')">詳細</button>
@@ -1592,14 +1655,14 @@
                     html += '<button class="btn btn-success" onclick="reopenOrder()">締切を取り消す（受付中に戻す）</button>';
                 }
                 
-                // メニュー別集計
+                // 項目別集計
                 html += `
                     <div class="summary-section">
-                        <h3>メニュー別集計</h3>
+                        <h3>項目別集計</h3>
                         <table class="order-table">
                             <thead>
                                 <tr>
-                                    <th>メニュー</th>
+                                    <th>項目</th>
                                     <th>単価</th>
                                     <th>数量</th>
                                     <th>小計</th>
@@ -1665,10 +1728,13 @@
                         <div class="user-order ${isPaid ? 'paid' : ''}">
                             <div class="user-order-header">
                                 <h4>${userName}</h4>
-                                ${isPaid 
-                                    ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
-                                    : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
-                                }
+                                <div class="user-order-buttons" style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    ${isPaid 
+                                        ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
+                                        : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
+                                    }
+                                    <button class="btn btn-danger" style="font-size: 0.85em; padding: 6px 12px;" onclick="deleteUserOrder('${escapedUserName}')">削除</button>
+                                </div>
                             </div>
                             <ul>
                     `;
@@ -1727,6 +1793,14 @@
 
         // 集金状態を切り替え
         window.togglePaymentStatus = async function(userName, isPaid) {
+            // 確認ダイアログを表示
+            const actionText = isPaid ? '集金済み' : '未集金';
+            const confirmMessage = `${userName}さんを「${actionText}」に変更しますか？`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
             const result = await togglePaymentStatusAPI({
                 orderId: currentOrderId,
                 userName: userName,
@@ -1734,6 +1808,29 @@
             });
             
             if (result.success) {
+                // 画面を再読み込み
+                showOrderDetail(currentOrderId);
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        };
+
+        // ユーザー注文削除
+        window.deleteUserOrder = async function(userName) {
+            // 確認ダイアログを表示
+            const confirmMessage = `${userName}さんの注文を削除しますか？\nこの操作は取り消せません。`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const result = await deleteUserOrderAPI({
+                orderId: currentOrderId,
+                userName: userName
+            });
+            
+            if (result.success) {
+                alert(`${userName}さんの注文を削除しました`);
                 // 画面を再読み込み
                 showOrderDetail(currentOrderId);
             } else {
@@ -1767,7 +1864,7 @@
             }
         }
 
-        // 選択した注文ページからメニューを読み込む
+        // 選択した注文ページから項目を読み込む
         window.loadMenusFromOrder = function() {
             const select = document.getElementById('copyFromOrder');
             const selectedOption = select.options[select.selectedIndex];
@@ -1776,7 +1873,7 @@
                 document.getElementById('newShopName').value = '';
                 document.getElementById('menuItems').innerHTML = `
                     <div class="menu-item">
-                        <input type="text" placeholder="メニュー名" class="menu-name">
+                        <input type="text" placeholder="項目名" class="menu-name">
                         <input type="number" placeholder="価格" class="menu-price" min="0">
                     </div>
                 `;
@@ -1795,7 +1892,7 @@
                 const menuItem = document.createElement('div');
                 menuItem.className = 'menu-item';
                 menuItem.innerHTML = `
-                    <input type="text" placeholder="メニュー名" class="menu-name" value="${menu.name}">
+                    <input type="text" placeholder="項目名" class="menu-name" value="${menu.name}">
                     <input type="number" placeholder="価格" class="menu-price" min="0" value="${menu.price}">
                     <button onclick="this.parentElement.remove()">削除</button>
                 `;
@@ -1842,18 +1939,22 @@
                         <input type="date" id="editOrderDate" value="${formattedDate}">
                     </div>
                     <div class="form-group">
-                        <label>お店の名前（オプション）</label>
-                        <input type="text" id="editShopName" value="${orderPage.shopName || ''}" placeholder="例: ほっともっと、ほっかほっか亭">
+                        <label>注文内容</label>
+                        <input type="text" id="editShopName" value="${orderPage.shopName || ''}" placeholder="例: お弁当（ほっともっと）">
                     </div>
                     <div class="form-group">
-                        <label>メニュー</label>
+                        <label>メモ（任意）</label>
+                        <textarea id="editMemo" placeholder="例: 締切は3/5(水)までです。" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; resize: vertical;">${orderPage.memo || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>項目</label>
                         <div class="menu-items" id="editMenuItems">
                 `;
                 
                 orderPage.menus.forEach(menu => {
                     html += `
                         <div class="menu-item">
-                            <input type="text" placeholder="メニュー名" class="menu-name" value="${menu.name}">
+                            <input type="text" placeholder="項目名" class="menu-name" value="${menu.name}">
                             <input type="number" placeholder="価格" class="menu-price" min="0" value="${menu.price}">
                             <button onclick="this.parentElement.remove()">削除</button>
                         </div>
@@ -1862,7 +1963,7 @@
                 
                 html += `
                         </div>
-                        <button class="btn btn-secondary" onclick="addEditMenuItem()">+ メニュー追加</button>
+                        <button class="btn btn-secondary" onclick="addEditMenuItem()">+ 項目追加</button>
                     </div>
                     <div class="buttons-container">
                         <button class="btn" onclick="saveEditOrderPage()">保存</button>
@@ -1877,13 +1978,13 @@
             }
         };
 
-        // 編集画面でメニュー項目を追加
+        // 編集画面で項目を追加
         window.addEditMenuItem = function() {
             const container = document.getElementById('editMenuItems');
             const menuItem = document.createElement('div');
             menuItem.className = 'menu-item';
             menuItem.innerHTML = `
-                <input type="text" placeholder="メニュー名" class="menu-name">
+                <input type="text" placeholder="項目名" class="menu-name">
                 <input type="number" placeholder="価格" class="menu-price" min="0">
                 <button onclick="this.parentElement.remove()">削除</button>
             `;
@@ -1895,6 +1996,7 @@
             const messageEl = document.getElementById('editOrderMessage');
             const orderDate = document.getElementById('editOrderDate').value;
             const shopName = document.getElementById('editShopName').value.trim();
+            const memo = document.getElementById('editMemo').value.trim();
             
             if (!orderDate) {
                 messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
@@ -1915,7 +2017,7 @@
             });
             
             if (menus.length === 0) {
-                messageEl.innerHTML = '<div class="error">メニューを1つ以上入力してください</div>';
+                messageEl.innerHTML = '<div class="error">項目を1つ以上入力してください</div>';
                 setTimeout(() => messageEl.innerHTML = '', 3000);
                 return;
             }
@@ -1924,6 +2026,7 @@
                 orderId: currentOrderId,
                 orderDate: orderDate,
                 shopName: shopName,
+                memo: memo,
                 menus: menus
             });
             
