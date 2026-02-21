@@ -231,6 +231,54 @@
             color: #721c24;
         }
 
+        .user-order.paid {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .user-order.paid h4::after {
+            content: ' ✓ 集金済';
+            color: #28a745;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .btn-paid {
+            background: #28a745;
+            font-size: 0.85em;
+            padding: 6px 12px;
+            margin-left: 10px;
+        }
+
+        .btn-paid:hover {
+            background: #218838;
+        }
+
+        .btn-unpaid {
+            background: #ffc107;
+            color: #333;
+            font-size: 0.85em;
+            padding: 6px 12px;
+            margin-left: 10px;
+        }
+
+        .btn-unpaid:hover {
+            background: #e0a800;
+        }
+
+        .user-order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .user-order-header h4 {
+            margin: 0;
+        }
+
         .order-card-body {
             color: #666;
         }
@@ -936,6 +984,44 @@
             }
         }
 
+        // 集金状態を切り替え
+        async function togglePaymentStatusAPI(params) {
+            try {
+                const orderId = params.orderId;
+                const userName = params.userName;
+                const isPaid = params.isPaid;
+
+                // 現在の注文ページを取得
+                const orderPageDoc = await getDoc(doc(db, 'orderPages', orderId));
+                
+                if (!orderPageDoc.exists()) {
+                    return { success: false, message: 'Order page not found' };
+                }
+
+                const orderPageData = orderPageDoc.data();
+                let paidUsers = orderPageData.paidUsers || [];
+
+                if (isPaid) {
+                    // 集金済みにする
+                    if (!paidUsers.includes(userName)) {
+                        paidUsers.push(userName);
+                    }
+                } else {
+                    // 未集金に戻す
+                    paidUsers = paidUsers.filter(u => u !== userName);
+                }
+
+                await updateDoc(doc(db, 'orderPages', orderId), {
+                    paidUsers: paidUsers
+                });
+
+                return { success: true, message: isPaid ? 'Payment recorded' : 'Payment cancelled' };
+            } catch (error) {
+                console.error('togglePaymentStatus error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
         // 注文集計取得
         async function getOrderSummary(params) {
             try {
@@ -954,7 +1040,8 @@
                     orderDate: orderPageData.orderDate,
                     shopName: orderPageData.shopName || '',
                     menus: orderPageData.menus || [],
-                    status: orderPageData.status
+                    status: orderPageData.status,
+                    paidUsers: orderPageData.paidUsers || []
                 };
 
                 // 注文データを取得
@@ -1545,15 +1632,44 @@
                 `;
                 
                 // ユーザー別注文
-                html += '<div class="user-order-section"><h3>ユーザー別注文</h3>';
+                const paidUsers = orderPage.paidUsers || [];
+                const totalUsers = Object.keys(userOrders).length;
+                const paidCount = Object.keys(userOrders).filter(u => paidUsers.includes(u)).length;
+                
+                // 未集金の合計金額を計算
+                let unpaidAmount = 0;
+                for (let userName in userOrders) {
+                    if (!paidUsers.includes(userName)) {
+                        userOrders[userName].forEach(order => {
+                            unpaidAmount += order.amount;
+                        });
+                    }
+                }
+                
+                html += `
+                    <div class="user-order-section">
+                        <h3>ユーザー別注文</h3>
+                        <div class="payment-summary" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <p><strong>集金状況:</strong> ${paidCount} / ${totalUsers} 人完了</p>
+                            <p><strong>未集金額:</strong> ¥${unpaidAmount.toLocaleString()}</p>
+                        </div>
+                `;
                 
                 for (let userName in userOrders) {
                     const orders = userOrders[userName];
                     let userTotal = 0;
+                    const isPaid = paidUsers.includes(userName);
+                    const escapedUserName = userName.replace(/'/g, "\\'");
                     
                     html += `
-                        <div class="user-order">
-                            <h4>${userName}</h4>
+                        <div class="user-order ${isPaid ? 'paid' : ''}">
+                            <div class="user-order-header">
+                                <h4>${userName}</h4>
+                                ${isPaid 
+                                    ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
+                                    : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
+                                }
+                            </div>
                             <ul>
                     `;
                     
@@ -1603,6 +1719,22 @@
             
             if (result.success) {
                 alert('受付中に戻しました');
+                showOrderDetail(currentOrderId);
+            } else {
+                alert(`エラー: ${result.message}`);
+            }
+        };
+
+        // 集金状態を切り替え
+        window.togglePaymentStatus = async function(userName, isPaid) {
+            const result = await togglePaymentStatusAPI({
+                orderId: currentOrderId,
+                userName: userName,
+                isPaid: isPaid
+            });
+            
+            if (result.success) {
+                // 画面を再読み込み
                 showOrderDetail(currentOrderId);
             } else {
                 alert(`エラー: ${result.message}`);
