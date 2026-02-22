@@ -664,7 +664,7 @@
               </div>
             </div>
             <h4 className="font-medium mb-2 text-sm">選手</h4>
-            <div className="overflow-x-auto max-h-48 overflow-y-auto border rounded">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded">
               <table className="w-full text-sm"><thead className="sticky top-0 bg-gray-100"><tr><th className="p-2 w-16">背番号</th><th className="p-2 w-20">ライセンス</th><th className="p-2">氏名</th></tr></thead>
                 <tbody>{game.teamB.players.slice(0, 15).map((player, i) => (<tr key={i} className="border-b"><td className="p-1"><input type="text" value={player.number} onChange={(e) => updateOpponentPlayer(i, 'number', e.target.value)} className="w-full border rounded p-1 text-center" /></td><td className="p-1"><input type="text" value={player.licenseNo} onChange={(e) => updateOpponentPlayer(i, 'licenseNo', e.target.value)} className="w-full border rounded p-1 text-center" maxLength="3" /></td><td className="p-1"><input type="text" value={player.name} onChange={(e) => updateOpponentPlayer(i, 'name', e.target.value)} className="w-full border rounded p-1" /></td></tr>))}</tbody>
               </table>
