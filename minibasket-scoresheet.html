@@ -349,7 +349,19 @@
       const saveGame = (game) => { setCurrentGame(game); localStorage.setItem(STORAGE_KEYS.CURRENT_GAME, JSON.stringify(game)); };
       
       const finishGame = async (game) => {
-        const updatedGames = [...games, game];
+        // 既存の試合か新規かを判定（同じIDがあれば更新、なければ追加）
+        const existingIndex = games.findIndex(g => g.id === game.id);
+        let updatedGames;
+        
+        if (existingIndex >= 0) {
+          // 既存の試合を更新
+          updatedGames = [...games];
+          updatedGames[existingIndex] = game;
+        } else {
+          // 新規試合を追加
+          updatedGames = [...games, game];
+        }
+        
         setGames(updatedGames);
         localStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify(updatedGames));
         localStorage.removeItem(STORAGE_KEYS.CURRENT_GAME);
@@ -426,15 +438,69 @@
         setTimeout(() => setSyncStatus(''), 2000);
       };
 
+      // 試合履歴画面を開く（Firebaseから最新データを読み込み）
+      const openGamesList = async () => {
+        if (firebaseConnected) {
+          setSyncStatus('同期中...');
+          try {
+            const firestoreGames = await loadGamesFromFirestore();
+            if (firestoreGames) {
+              setGames(firestoreGames);
+              localStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify(firestoreGames));
+            }
+            setSyncStatus('同期完了');
+          } catch (e) {
+            console.error('Sync games error:', e);
+            setSyncStatus('同期失敗');
+          }
+          setTimeout(() => setSyncStatus(''), 2000);
+        }
+        setView('games-list');
+      };
+
+      // 試合履歴から試合を開く（Firebaseから最新データを読み込み）
+      const openGameFromHistory = async (game) => {
+        if (firebaseConnected) {
+          setSyncStatus('読み込み中...');
+          try {
+            // Firebaseから最新の試合データを取得
+            const doc = await db.collection('games').doc(String(game.id)).get();
+            if (doc.exists) {
+              const latestGame = doc.data();
+              setCurrentGame(latestGame);
+              localStorage.setItem(STORAGE_KEYS.CURRENT_GAME, JSON.stringify(latestGame));
+              setSyncStatus('読み込み完了');
+            } else {
+              // Firebaseにない場合はローカルデータを使用
+              setCurrentGame(game);
+              localStorage.setItem(STORAGE_KEYS.CURRENT_GAME, JSON.stringify(game));
+              setSyncStatus('ローカルデータを使用');
+            }
+          } catch (e) {
+            console.error('Load game error:', e);
+            // エラー時はローカルデータを使用
+            setCurrentGame(game);
+            localStorage.setItem(STORAGE_KEYS.CURRENT_GAME, JSON.stringify(game));
+            setSyncStatus('読み込み失敗（ローカル使用）');
+          }
+          setTimeout(() => setSyncStatus(''), 2000);
+        } else {
+          // オフライン時はローカルデータを使用
+          setCurrentGame(game);
+          localStorage.setItem(STORAGE_KEYS.CURRENT_GAME, JSON.stringify(game));
+        }
+        setView('scoring');
+      };
+
       return (
         <div className="min-h-screen bg-gray-100">
-          {view === 'home' && <HomeView myTeam={myTeam} currentGame={currentGame} firebaseConnected={firebaseConnected} syncStatus={syncStatus} connectionError={connectionError} onTeamSetup={() => setView('team-setup')} onNewGame={() => setView('game-setup')} onContinueGame={() => setView('scoring')} onGamesList={() => setView('games-list')} onSync={syncFromFirebase} />}
+          {view === 'home' && <HomeView myTeam={myTeam} currentGame={currentGame} firebaseConnected={firebaseConnected} syncStatus={syncStatus} connectionError={connectionError} onTeamSetup={() => setView('team-setup')} onNewGame={() => setView('game-setup')} onContinueGame={() => setView('scoring')} onGamesList={openGamesList} onSync={syncFromFirebase} />}
           {view === 'team-setup' && <TeamSetupView team={myTeam} onSave={(team) => { saveMyTeam(team); setView('home'); }} onBack={() => setView('home')} />}
           {view === 'game-setup' && <GameSetupView myTeam={myTeam} onStart={(game) => { saveGame(game); setView('scoring'); }} onBack={() => setView('home')} />}
           {view === 'scoring' && currentGame && <ScoringView game={currentGame} onUpdate={saveGame} onFinish={(game) => { finishGame(game); setView('home'); }} onBack={() => setView('home')} onEditHistory={() => setView('history')} onPrintScoresheet={() => setView('print')} />}
           {view === 'history' && currentGame && <HistoryEditView game={currentGame} onUpdate={saveGame} onBack={() => setView('scoring')} />}
           {view === 'print' && currentGame && <PrintScoresheetView game={currentGame} onBack={() => setView('scoring')} />}
-          {view === 'games-list' && <GamesListView games={games} onBack={() => setView('home')} onSelectGame={(game) => { setCurrentGame(game); setView('scoring'); }} onDeleteGame={deleteGame} />}
+          {view === 'games-list' && <GamesListView games={games} onBack={() => setView('home')} onSelectGame={openGameFromHistory} onDeleteGame={deleteGame} />}
         </div>
       );
     }
