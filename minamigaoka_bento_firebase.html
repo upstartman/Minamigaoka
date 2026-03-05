@@ -613,7 +613,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏀 南ヶ丘注文集計アプリ</h1>
+            <h1>南ヶ丘注文集計アプリ</h1>
             <div class="mode-selector">
                 <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
                 <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
@@ -1309,6 +1309,9 @@
                         <label>名前を入力</label>
                         <input type="text" id="userName" placeholder="山田太郎">
                     </div>
+                    <div id="deleteOrderButtonContainer" style="display: none; margin-bottom: 20px;">
+                        <button class="btn btn-danger" onclick="deleteMyOrder()">この注文を削除する</button>
+                    </div>
                     <div class="form-group">
                         <label>注文内容</label>
                         <table class="order-table">
@@ -1369,15 +1372,15 @@
             const select = document.getElementById('userNameSelect');
             const selectedUser = select.value;
             const userNameInput = document.getElementById('userName');
-            const userNameInputGroup = document.getElementById('userNameInputGroup');
+            const deleteButtonContainer = document.getElementById('deleteOrderButtonContainer');
 
             if (selectedUser === '') {
-                userNameInputGroup.style.display = 'block';
                 userNameInput.value = '';
+                deleteButtonContainer.style.display = 'none';
                 resetQuantities();
             } else {
-                userNameInputGroup.style.display = 'none';
                 userNameInput.value = selectedUser;
+                deleteButtonContainer.style.display = 'block';
                 await loadPreviousOrder(selectedUser);
             }
         };
@@ -1474,6 +1477,41 @@
                 messageEl.innerHTML = '<div class="success">注文を送信しました！</div>';
                 setTimeout(() => {
                     showOrderList();
+                }, 1500);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+            }
+        };
+
+        // 自分の注文を削除
+        window.deleteMyOrder = async function() {
+            const select = document.getElementById('userNameSelect');
+            const selectedUser = select.value;
+            const messageEl = document.getElementById('orderMessage');
+            
+            if (!selectedUser) {
+                messageEl.innerHTML = '<div class="error">削除する注文を選択してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            
+            // 確認ダイアログを表示
+            const confirmMessage = `${selectedUser}さんの注文を削除しますか？\nこの操作は取り消せません。`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const result = await deleteUserOrderAPI({
+                orderId: currentOrderId,
+                userName: selectedUser
+            });
+            
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">注文を削除しました</div>';
+                setTimeout(() => {
+                    showOrderForm(currentOrderId);
                 }, 1500);
             } else {
                 messageEl.innerHTML = `<div class="error">${result.message}</div>`;
@@ -1728,13 +1766,10 @@
                         <div class="user-order ${isPaid ? 'paid' : ''}">
                             <div class="user-order-header">
                                 <h4>${userName}</h4>
-                                <div class="user-order-buttons" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    ${isPaid 
-                                        ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
-                                        : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
-                                    }
-                                    <button class="btn btn-danger" style="font-size: 0.85em; padding: 6px 12px;" onclick="deleteUserOrder('${escapedUserName}')">削除</button>
-                                </div>
+                                ${isPaid 
+                                    ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
+                                    : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
+                                }
                             </div>
                             <ul>
                     `;
@@ -1808,29 +1843,6 @@
             });
             
             if (result.success) {
-                // 画面を再読み込み
-                showOrderDetail(currentOrderId);
-            } else {
-                alert(`エラー: ${result.message}`);
-            }
-        };
-
-        // ユーザー注文削除
-        window.deleteUserOrder = async function(userName) {
-            // 確認ダイアログを表示
-            const confirmMessage = `${userName}さんの注文を削除しますか？\nこの操作は取り消せません。`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
-            const result = await deleteUserOrderAPI({
-                orderId: currentOrderId,
-                userName: userName
-            });
-            
-            if (result.success) {
-                alert(`${userName}さんの注文を削除しました`);
                 // 画面を再読み込み
                 showOrderDetail(currentOrderId);
             } else {
