@@ -240,6 +240,23 @@
             width: 100%;
         }
 
+        .order-buttons {
+            display: inline-flex;
+            gap: 0.2rem;
+            margin-right: 0.5rem;
+        }
+
+        .order-buttons .btn {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
+            min-width: 24px;
+        }
+
+        .order-buttons .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
         /* Cards */
         .card {
             background: white;
@@ -926,8 +943,15 @@
         async function loadAllData() {
             if (!db) return;
             try {
-                const membersSnapshot = await db.collection('members').orderBy('name').get();
+                const membersSnapshot = await db.collection('members').get();
                 members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // sortOrderでソート（未設定の場合は名前順）
+                members.sort((a, b) => {
+                    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+                        return a.sortOrder - b.sortOrder;
+                    }
+                    return (a.name || '').localeCompare(b.name || '', 'ja');
+                });
                 renderMembers();
 
                 const vehiclesSnapshot = await db.collection('vehicles').orderBy('owner').get();
@@ -959,9 +983,15 @@
             }
 
             emptyState.style.display = 'none';
-            tbody.innerHTML = members.map(member => `
+            tbody.innerHTML = members.map((member, index) => `
                 <tr>
-                    <td>${member.name}</td>
+                    <td>
+                        <span class="order-buttons">
+                            <button class="btn btn-sm btn-outline" onclick="moveMember('${member.id}', -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                            <button class="btn btn-sm btn-outline" onclick="moveMember('${member.id}', 1)" ${index === members.length - 1 ? 'disabled' : ''}>↓</button>
+                        </span>
+                        ${member.name}
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-outline" onclick="editMember('${member.id}')">編集</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">削除</button>
@@ -1003,7 +1033,9 @@
                 if (editId) {
                     await db.collection('members').doc(editId).update({ name });
                 } else {
-                    await db.collection('members').add({ name });
+                    // 新規追加時は最後のsortOrderを取得して+1
+                    const maxSortOrder = members.length > 0 ? Math.max(...members.map(m => m.sortOrder || 0)) : -1;
+                    await db.collection('members').add({ name, sortOrder: maxSortOrder + 1 });
                 }
                 closeMemberModal();
                 loadAllData();
@@ -1022,6 +1054,30 @@
                 loadAllData();
             } catch (error) {
                 alert('削除に失敗しました: ' + error.message);
+            }
+        }
+
+        async function moveMember(id, direction) {
+            if (!db) return;
+            
+            const currentIndex = members.findIndex(m => m.id === id);
+            const newIndex = currentIndex + direction;
+            
+            if (newIndex < 0 || newIndex >= members.length) return;
+            
+            // 入れ替える2つの部員
+            const member1 = members[currentIndex];
+            const member2 = members[newIndex];
+            
+            try {
+                // sortOrderを入れ替え
+                const batch = db.batch();
+                batch.update(db.collection('members').doc(member1.id), { sortOrder: newIndex });
+                batch.update(db.collection('members').doc(member2.id), { sortOrder: currentIndex });
+                await batch.commit();
+                loadAllData();
+            } catch (error) {
+                alert('並び替えに失敗しました: ' + error.message);
             }
         }
 
@@ -1493,7 +1549,13 @@
                 container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">遠征データがありません</p>';
                 return;
             }
-            container.innerHTML = expeditions.map(exp => `
+            // 清算済みでない遠征のみ表示
+            const unsettledExpeditions = expeditions.filter(exp => !exp.settled);
+            if (unsettledExpeditions.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">未清算の遠征がありません</p>';
+                return;
+            }
+            container.innerHTML = unsettledExpeditions.map(exp => `
                 <label class="checkbox-item">
                     <input type="checkbox" value="${exp.id}">
                     ${exp.date.slice(5)} ${exp.destination.slice(0, 8)}
@@ -1556,7 +1618,7 @@
                 const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
                 headerHtml += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
-            headerHtml += '<th>計</th>';
+            headerHtml += '<th>遠征費計</th>';
             selectedExpeditions.forEach(exp => {
                 const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
                 headerHtml += `<th>交通費<br>${exp.date.slice(5)}<br>${shortDest}</th>`;
@@ -1630,8 +1692,8 @@
                     <h3>有料道路料金</h3>
                     <table>
                         <tr><th>区間</th><th>方向</th><th>料金</th></tr>
-                        ${exp.tollItems.map(t => `<tr><td>${t.from}→${t.to}</td><td>${t.direction === 'outbound' ? '往路' : '復路'}</td><td>¥${t.price}</td></tr>`).join('')}
-                        <tr><th colspan="2">計</th><td>¥${exp.totalToll}</td></tr>
+                        ${exp.tollItems.map(t => `<tr><td>${t.from}→${t.to}</td><td>${t.direction === 'outbound' ? '往路' : '復路'}</td><td>¥${t.price.toLocaleString()}</td></tr>`).join('')}
+                        <tr><th colspan="2">計</th><td>¥${exp.totalToll.toLocaleString()}</td></tr>
                     </table>
                 `;
             }
@@ -1650,43 +1712,56 @@
                     <title>交通費計算書 - ${exp.date}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
                     <style>
-                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 12px; }
-                        h1 { text-align: center; font-size: 18px; margin-bottom: 5px; }
-                        .date { text-align: right; margin-bottom: 15px; }
-                        .info { margin-bottom: 10px; }
-                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                        th, td { border: 1px solid #333; padding: 5px; text-align: left; }
+                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 14px; }
+                        h1 { text-align: center; font-size: 22px; margin-bottom: 15px; }
+                        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+                        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
                         th { background: #f0f0f0; }
-                        .summary { background: #e8f5e9; padding: 10px; margin: 15px 0; border-radius: 5px; }
-                        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
-                        .summary-item { font-weight: bold; }
-                        h3 { font-size: 13px; margin: 15px 0 5px; }
-                        .member-box { background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin: 10px 0; }
-                        .member-box h4 { margin: 0 0 8px; font-size: 12px; color: #333; }
-                        .member-list { line-height: 1.8; }
-                        .absent { color: #888; }
+                        .info-table th { width: 25%; text-align: center; }
+                        .info-table td { width: 25%; }
+                        .summary { background: #e8f5e9; padding: 12px; margin: 15px 0; border-radius: 5px; }
+                        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; }
+                        .summary-item { font-weight: bold; font-size: 18px; }
+                        .summary-label { font-size: 13px; margin-bottom: 4px; }
+                        h3 { font-size: 15px; margin: 18px 0 8px; }
+                        .member-box { background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; padding: 12px; margin: 12px 0; }
+                        .member-box h4 { margin: 0 0 10px; font-size: 14px; color: #333; }
+                        .member-list { line-height: 2; font-size: 14px; }
+                        .absent { color: #888; margin-top: 10px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
                 <body>
                     <h1>交通費計算書</h1>
-                    <div class="date">日付: ${exp.date}</div>
                     
-                    <div class="info">
-                        <strong>行き先:</strong> ${exp.destination}
-                    </div>
-                    
-                    <table>
-                        <tr><th>往復距離</th><td>${exp.distanceTotal} km</td><th>レギュラー</th><td>¥${exp.gasPriceRegular}/L</td><th>軽油</th><td>¥${exp.gasPriceDiesel}/L</td></tr>
+                    <table class="info-table">
+                        <tr>
+                            <th>日付</th>
+                            <td>${exp.date}</td>
+                            <th>行き先</th>
+                            <td>${exp.destination}</td>
+                        </tr>
+                        <tr>
+                            <th>往復距離</th>
+                            <td>${exp.distanceTotal} km</td>
+                            <th>レギュラー</th>
+                            <td>¥${exp.gasPriceRegular}/L</td>
+                        </tr>
+                        <tr>
+                            <th>参加人数</th>
+                            <td>${exp.participantCount}人</td>
+                            <th>軽油</th>
+                            <td>¥${exp.gasPriceDiesel}/L</td>
+                        </tr>
                     </table>
                     
                     ${tollHtml}
                     
                     <div class="summary">
                         <div class="summary-grid">
-                            <div><div>交通費合計</div><div class="summary-item">¥${exp.totalExpense?.toLocaleString()}</div></div>
-                            <div><div>参加人数</div><div class="summary-item">${exp.participantCount}人</div></div>
-                            <div><div>1人あたり</div><div class="summary-item">¥${exp.perPerson?.toLocaleString()}</div></div>
+                            <div><div class="summary-label">交通費合計</div><div class="summary-item">¥${exp.totalExpense?.toLocaleString()}</div></div>
+                            <div><div class="summary-label">1人あたり</div><div class="summary-item">¥${exp.perPerson?.toLocaleString()}</div></div>
+                            <div><div class="summary-label">残金（部費へ）</div><div class="summary-item">¥${exp.remainder?.toLocaleString()}</div></div>
                         </div>
                     </div>
                     
@@ -1713,14 +1788,8 @@
                         <div class="member-list">
                             ${participantRows.map(row => `<div>${row}</div>`).join('')}
                         </div>
-                        ${absentNames.length > 0 ? `<div class="absent" style="margin-top: 8px;"><strong>休み:</strong> ${absentNames.join('、')}</div>` : ''}
+                        ${absentNames.length > 0 ? `<div class="absent"><strong>休み:</strong> ${absentNames.join('、')}</div>` : ''}
                     </div>
-                    
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        };
-                    <\/script>
                 </body>
                 </html>
             `;
@@ -1771,18 +1840,19 @@
                 data.balance = data.totalIncome - data.totalCost;
             });
 
-            // Build table HTML
-            let headerHtml = '<th>部員</th>';
+            // Build table HTML - 2行ヘッダー
+            const expCount = selectedExpeditions.length;
+            let headerRow1 = `<th rowspan="2">部員</th><th colspan="${expCount}">遠征費</th><th rowspan="2">遠征費計</th><th colspan="${expCount}">交通費</th><th rowspan="2">集金金額</th>`;
+            
+            let headerRow2 = '';
             selectedExpeditions.forEach(exp => {
                 const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
-                headerHtml += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
+                headerRow2 += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
-            headerHtml += '<th>計</th>';
             selectedExpeditions.forEach(exp => {
                 const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
-                headerHtml += `<th>交通費<br>${exp.date.slice(5)}<br>${shortDest}</th>`;
+                headerRow2 += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
-            headerHtml += '<th>集金金額</th>';
 
             let bodyHtml = '';
             let roundingRemainder = 0; // 丸めによる残金
@@ -1843,12 +1913,12 @@
                     <title>清算表</title>
                     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
                     <style>
-                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 11px; }
-                        h1 { text-align: center; font-size: 16px; margin-bottom: 5px; }
-                        .date-range { text-align: center; margin-bottom: 15px; font-size: 12px; }
+                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 13px; }
+                        h1 { text-align: center; font-size: 20px; margin-bottom: 8px; }
+                        .date-range { text-align: center; margin-bottom: 15px; font-size: 14px; }
                         table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #333; padding: 4px; text-align: center; }
-                        th { background: #f0f0f0; font-size: 9px; }
+                        th, td { border: 1px solid #333; padding: 6px; text-align: center; }
+                        th { background: #f0f0f0; font-size: 11px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
@@ -1856,14 +1926,12 @@
                     <h1>遠征費用清算表</h1>
                     <div class="date-range">${dateRange}</div>
                     <table>
-                        <thead><tr>${headerHtml}</tr></thead>
+                        <thead>
+                            <tr>${headerRow1}</tr>
+                            <tr>${headerRow2}</tr>
+                        </thead>
                         <tbody>${bodyHtml}</tbody>
                     </table>
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        };
-                    <\/script>
                 </body>
                 </html>
             `;
