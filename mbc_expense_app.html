@@ -442,6 +442,22 @@
             margin-bottom: 0.5rem;
         }
 
+        .history-item.settled {
+            background: #f5f5f5;
+            opacity: 0.8;
+        }
+
+        .settled-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            margin-left: 0.3rem;
+            vertical-align: middle;
+        }
+
         .history-item-header {
             display: flex;
             justify-content: space-between;
@@ -467,6 +483,7 @@
             display: flex;
             gap: 0.3rem;
             margin-top: 0.5rem;
+            flex-wrap: wrap;
         }
 
         /* Empty State */
@@ -726,7 +743,7 @@
                 <!-- Calculation Results -->
                 <div id="calculationResults" style="display: none;">
                     <div class="calc-result">
-                        <div class="calc-result-grid">
+                        <div class="calc-result-grid" style="grid-template-columns: repeat(3, 1fr);">
                             <div class="calc-item">
                                 <div class="calc-item-label">交通費合計</div>
                                 <div class="calc-item-value" id="resultTotal">¥0</div>
@@ -738,10 +755,6 @@
                             <div class="calc-item">
                                 <div class="calc-item-label">1人あたり</div>
                                 <div class="calc-item-value" id="resultPerPerson">¥0</div>
-                            </div>
-                            <div class="calc-item">
-                                <div class="calc-item-label">残金(部費へ)</div>
-                                <div class="calc-item-value" id="resultRemainder">¥0</div>
                             </div>
                         </div>
                     </div>
@@ -1029,7 +1042,7 @@
                 return `
                     <tr>
                         <td>${vehicle.owner}</td>
-                        <td>${vehicle.fuelEfficiency}</td>
+                        <td>${vehicle.fuelEfficiency}km/L</td>
                         <td>${vehicle.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
                         <td>${linkedMember ? linkedMember.name : '-'}</td>
                         <td>
@@ -1259,13 +1272,12 @@
             document.getElementById('resultTotal').textContent = `¥${totalExpense.toLocaleString()}`;
             document.getElementById('resultCount').textContent = `${participantCount}人`;
             document.getElementById('resultPerPerson').textContent = `¥${perPerson.toLocaleString()}`;
-            document.getElementById('resultRemainder').textContent = `¥${remainder.toLocaleString()}`;
 
             const tbody = document.getElementById('vehicleDetailsBody');
             tbody.innerHTML = vehicleDetails.map(v => `
                 <tr>
                     <td>${v.owner}</td>
-                    <td>${v.fuelEfficiency}</td>
+                    <td>${v.fuelEfficiency}km/L</td>
                     <td>${v.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
                     <td>¥${v.gasCost.toLocaleString()}</td>
                     <td>¥${v.tollCost.toLocaleString()}</td>
@@ -1344,9 +1356,9 @@
 
             emptyState.style.display = 'none';
             container.innerHTML = expeditions.map(exp => `
-                <div class="history-item">
+                <div class="history-item ${exp.settled ? 'settled' : ''}">
                     <div class="history-item-header">
-                        <span class="history-date">${exp.date}</span>
+                        <span class="history-date">${exp.date} ${exp.settled ? '<span class="settled-badge">精算済</span>' : ''}</span>
                         <span class="history-total">¥${exp.totalExpense?.toLocaleString() || 0}</span>
                     </div>
                     <div class="history-destination">📍 ${exp.destination}</div>
@@ -1354,12 +1366,54 @@
                         ${exp.participantCount || 0}人 / 1人 ¥${exp.perPerson?.toLocaleString() || 0}
                     </div>
                     <div class="history-actions">
-                        <button class="btn btn-sm btn-outline" onclick="editExpedition('${exp.id}')">編集</button>
+                        ${exp.settled 
+                            ? `<button class="btn btn-sm btn-outline" onclick="unsettle('${exp.id}')">精算取消</button>`
+                            : `<button class="btn btn-sm btn-primary" onclick="confirmSettle('${exp.id}')">精算済に</button>
+                               <button class="btn btn-sm btn-outline" onclick="editExpedition('${exp.id}')">編集</button>`
+                        }
                         <button class="btn btn-sm btn-secondary" onclick="loadExpeditionToPrint('${exp.id}')">印刷</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteExpedition('${exp.id}')">削除</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function confirmSettle(id) {
+            const exp = expeditions.find(e => e.id === id);
+            if (!exp) return;
+            
+            if (confirm(`「${exp.date} ${exp.destination}」を精算済みにしますか？\n\n精算済みにすると編集ができなくなります。`)) {
+                settleExpedition(id);
+            }
+        }
+
+        async function settleExpedition(id) {
+            if (!db) { alert('Firebaseに接続してください'); return; }
+            
+            try {
+                await db.collection('expeditions').doc(id).update({
+                    settled: true,
+                    settledAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                loadAllData();
+            } catch (error) {
+                alert('更新に失敗しました: ' + error.message);
+            }
+        }
+
+        async function unsettle(id) {
+            if (!confirm('精算済みを取り消しますか？')) return;
+            if (!db) { alert('Firebaseに接続してください'); return; }
+            
+            try {
+                await db.collection('expeditions').doc(id).update({
+                    settled: false,
+                    settledAt: null
+                });
+                loadAllData();
+            } catch (error) {
+                alert('更新に失敗しました: ' + error.message);
+            }
         }
 
         function editExpedition(id) {
@@ -1493,18 +1547,25 @@
             const headerRow = document.getElementById('settlementHeader');
             const tbody = document.getElementById('settlementBody');
 
+            // 元の残金の合計
+            const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
+
             let headerHtml = '<th>部員</th>';
             selectedExpeditions.forEach(exp => {
-                headerHtml += `<th>${exp.date.slice(5)}</th>`;
+                const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
+                headerHtml += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
             headerHtml += '<th>計</th>';
             selectedExpeditions.forEach(exp => {
-                headerHtml += `<th>配車</th>`;
+                const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
+                headerHtml += `<th>交通費<br>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
-            headerHtml += '<th>差引</th>';
+            headerHtml += '<th>集金金額</th>';
             headerRow.innerHTML = headerHtml;
 
             let bodyHtml = '';
+            let roundingRemainder = 0; // 丸めによる残金
+
             Object.entries(settlementData).forEach(([memberId, data]) => {
                 if (data.totalCost === 0 && data.totalIncome === 0) return;
 
@@ -1523,11 +1584,33 @@
                     bodyHtml += `<td>${income > 0 ? income : ''}</td>`;
                 });
                 
-                const balanceClass = data.balance > 0 ? 'settlement-positive' : (data.balance < 0 ? 'settlement-negative' : '');
-                const balancePrefix = data.balance > 0 ? '+' : '';
-                bodyHtml += `<td class="${balanceClass}"><strong>${balancePrefix}${data.balance}</strong></td>`;
+                // 集金金額 = 負担額 - 交通費収入
+                const rawCollectAmount = data.totalCost - data.totalIncome;
+                let roundedCollectAmount;
+                
+                if (rawCollectAmount > 0) {
+                    // 支払う側：100円単位で切り上げ
+                    roundedCollectAmount = Math.ceil(rawCollectAmount / 100) * 100;
+                } else if (rawCollectAmount < 0) {
+                    // もらう側：100円単位で切り捨て（絶対値で切り捨て、符号を戻す）
+                    roundedCollectAmount = -Math.floor(Math.abs(rawCollectAmount) / 100) * 100;
+                } else {
+                    roundedCollectAmount = 0;
+                }
+                // 丸めによる差額を残金に加算（支払う側も、もらう側も同じ式でOK）
+                roundingRemainder += roundedCollectAmount - rawCollectAmount;
+                
+                const collectClass = roundedCollectAmount < 0 ? 'settlement-positive' : (roundedCollectAmount > 0 ? 'settlement-negative' : '');
+                bodyHtml += `<td class="${collectClass}"><strong>${roundedCollectAmount}</strong></td>`;
                 bodyHtml += '</tr>';
             });
+
+            // 残金の行を追加（元の残金 + 丸めによる残金）
+            const totalRemainder = baseRemainder + roundingRemainder;
+            bodyHtml += `<tr style="background: #fff9e6;">
+                <td colspan="${selectedExpeditions.length + 1}"><strong>残金（部費へ繰入れ）</strong></td>
+                <td colspan="${selectedExpeditions.length + 1}" style="text-align: right;"><strong>¥${totalRemainder}</strong></td>
+            </tr>`;
 
             tbody.innerHTML = bodyHtml;
         }
@@ -1537,8 +1620,8 @@
             if (!currentExpedition) { alert('データがありません'); return; }
             const exp = currentExpedition;
 
-            const participants = exp.selectedMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean).join('、') || '';
-            const absent = exp.absentMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean).join('、') || '';
+            const participantNames = exp.selectedMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean) || [];
+            const absentNames = exp.absentMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean) || [];
 
             let tollHtml = '';
             if (exp.tollItems && exp.tollItems.length > 0) {
@@ -1550,6 +1633,12 @@
                         <tr><th colspan="2">計</th><td>¥${exp.totalToll}</td></tr>
                     </table>
                 `;
+            }
+
+            // 参加者を5人ずつの行に分ける
+            const participantRows = [];
+            for (let i = 0; i < participantNames.length; i += 5) {
+                participantRows.push(participantNames.slice(i, i + 5).join('、'));
             }
 
             const html = `
@@ -1568,10 +1657,13 @@
                         th, td { border: 1px solid #333; padding: 5px; text-align: left; }
                         th { background: #f0f0f0; }
                         .summary { background: #e8f5e9; padding: 10px; margin: 15px 0; border-radius: 5px; }
-                        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+                        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
                         .summary-item { font-weight: bold; }
-                        .participants { margin-top: 15px; font-size: 11px; }
                         h3 { font-size: 13px; margin: 15px 0 5px; }
+                        .member-box { background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin: 10px 0; }
+                        .member-box h4 { margin: 0 0 8px; font-size: 12px; color: #333; }
+                        .member-list { line-height: 1.8; }
+                        .absent { color: #888; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
@@ -1583,16 +1675,8 @@
                         <strong>行き先:</strong> ${exp.destination}
                     </div>
                     
-                    <h3>距離</h3>
                     <table>
-                        <tr><th>片道</th><td>${exp.distanceOneWay} km</td></tr>
-                        <tr><th>往復</th><td>${exp.distanceTotal} km</td></tr>
-                    </table>
-                    
-                    <h3>ガソリン単価</h3>
-                    <table>
-                        <tr><th>レギュラー</th><td>¥${exp.gasPriceRegular}</td></tr>
-                        <tr><th>軽油</th><td>¥${exp.gasPriceDiesel}</td></tr>
+                        <tr><th>往復距離</th><td>${exp.distanceTotal} km</td><th>レギュラー</th><td>¥${exp.gasPriceRegular}/L</td><th>軽油</th><td>¥${exp.gasPriceDiesel}/L</td></tr>
                     </table>
                     
                     ${tollHtml}
@@ -1602,7 +1686,6 @@
                             <div><div>交通費合計</div><div class="summary-item">¥${exp.totalExpense?.toLocaleString()}</div></div>
                             <div><div>参加人数</div><div class="summary-item">${exp.participantCount}人</div></div>
                             <div><div>1人あたり</div><div class="summary-item">¥${exp.perPerson?.toLocaleString()}</div></div>
-                            <div><div>残金</div><div class="summary-item">¥${exp.remainder}</div></div>
                         </div>
                     </div>
                     
@@ -1612,7 +1695,7 @@
                         ${exp.vehicleDetails?.map(v => `
                             <tr>
                                 <td>${v.owner}</td>
-                                <td>${v.fuelEfficiency}</td>
+                                <td>${v.fuelEfficiency}km/L</td>
                                 <td>${v.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
                                 <td>¥${v.gasPrice}</td>
                                 <td>${v.distance}km</td>
@@ -1624,10 +1707,12 @@
                         <tr style="font-weight: bold;"><td colspan="7">合計</td><td>¥${exp.totalExpense?.toLocaleString()}</td></tr>
                     </table>
                     
-                    <div class="participants">
-                        <div><strong>参加:</strong> ${participants}</div>
-                        ${absent ? `<div><strong>休み:</strong> ${absent}</div>` : ''}
-                        <div style="margin-top: 5px;">残金 ${exp.remainder}円 → 部費へ繰入れ</div>
+                    <div class="member-box">
+                        <h4>👥 参加者 (${participantNames.length}人)</h4>
+                        <div class="member-list">
+                            ${participantRows.map(row => `<div>${row}</div>`).join('')}
+                        </div>
+                        ${absentNames.length > 0 ? `<div class="absent" style="margin-top: 8px;"><strong>休み:</strong> ${absentNames.join('、')}</div>` : ''}
                     </div>
                     
                     <script>
@@ -1650,6 +1735,9 @@
 
             const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
             const settlementData = {};
+
+            // 元の残金の合計
+            const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
 
             members.forEach(member => {
                 settlementData[member.id] = {
@@ -1685,15 +1773,19 @@
             // Build table HTML
             let headerHtml = '<th>部員</th>';
             selectedExpeditions.forEach(exp => {
-                headerHtml += `<th>${exp.date.slice(5)}</th>`;
+                const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
+                headerHtml += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
             headerHtml += '<th>計</th>';
             selectedExpeditions.forEach(exp => {
-                headerHtml += `<th>配車</th>`;
+                const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
+                headerHtml += `<th>交通費<br>${exp.date.slice(5)}<br>${shortDest}</th>`;
             });
-            headerHtml += '<th>差引</th>';
+            headerHtml += '<th>集金金額</th>';
 
             let bodyHtml = '';
+            let roundingRemainder = 0; // 丸めによる残金
+
             Object.entries(settlementData).forEach(([memberId, data]) => {
                 if (data.totalCost === 0 && data.totalIncome === 0) return;
 
@@ -1708,11 +1800,35 @@
                     const income = data.vehicleIncome[exp.id] || 0;
                     bodyHtml += `<td>${income > 0 ? '¥' + income : ''}</td>`;
                 });
-                const prefix = data.balance > 0 ? '+' : '';
-                const color = data.balance > 0 ? 'green' : (data.balance < 0 ? 'red' : 'black');
-                bodyHtml += `<td style="color: ${color};"><strong>${prefix}¥${data.balance}</strong></td>`;
+                
+                // 集金金額 = 負担額 - 交通費収入（100円単位で丸め）
+                const rawCollectAmount = data.totalCost - data.totalIncome;
+                let roundedCollectAmount;
+                
+                if (rawCollectAmount > 0) {
+                    // 支払う側：100円単位で切り上げ
+                    roundedCollectAmount = Math.ceil(rawCollectAmount / 100) * 100;
+                } else if (rawCollectAmount < 0) {
+                    // もらう側：100円単位で切り捨て
+                    roundedCollectAmount = -Math.floor(Math.abs(rawCollectAmount) / 100) * 100;
+                } else {
+                    roundedCollectAmount = 0;
+                }
+                // 丸めによる差額を残金に加算
+                roundingRemainder += roundedCollectAmount - rawCollectAmount;
+                
+                const color = roundedCollectAmount < 0 ? 'green' : (roundedCollectAmount > 0 ? 'red' : 'black');
+                bodyHtml += `<td style="color: ${color};"><strong>¥${roundedCollectAmount}</strong></td>`;
                 bodyHtml += '</tr>';
             });
+
+            // 残金の行を追加（元の残金 + 丸めによる残金）
+            const totalRemainder = baseRemainder + roundingRemainder;
+            const colCount = selectedExpeditions.length * 2 + 3;
+            bodyHtml += `<tr style="background: #fff9e6;">
+                <td colspan="${Math.ceil(colCount / 2)}"><strong>残金（部費へ繰入れ）</strong></td>
+                <td colspan="${Math.floor(colCount / 2)}" style="text-align: right;"><strong>¥${totalRemainder}</strong></td>
+            </tr>`;
 
             const dateRange = selectedExpeditions.length > 0 
                 ? `${selectedExpeditions[selectedExpeditions.length - 1].date} ～ ${selectedExpeditions[0].date}`
@@ -1731,7 +1847,7 @@
                         .date-range { text-align: center; margin-bottom: 15px; font-size: 12px; }
                         table { width: 100%; border-collapse: collapse; }
                         th, td { border: 1px solid #333; padding: 4px; text-align: center; }
-                        th { background: #f0f0f0; font-size: 10px; }
+                        th { background: #f0f0f0; font-size: 9px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
