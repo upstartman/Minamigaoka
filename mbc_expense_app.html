@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>南ヶ丘MBC 遠征費用清算</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #1a5f4a;
+            --primary-light: #2d8a6e;
+            --primary-dark: #0d3d2f;
+            --secondary: #e8a838;
+            --bg-cream: #faf8f5;
+            --bg-card: #ffffff;
+            --text-dark: #2c3e50;
+            --text-light: #6c7a89;
+            --border: #e0dcd5;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 13px;
+            background: var(--bg-cream);
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 0.8rem 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            font-size: 1.3rem;
+        }
+
+        .logo h1 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .firebase-status {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.9;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 60px;
+            padding: 0.6rem 0.3rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .nav-tab-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 0.8rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 0.8rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 0.85rem;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--text-dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dark);
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Checkbox Grid */
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.4rem;
+            background: #f5f5f5;
+            border-radius: 0.3rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .checkbox-item.selected {
+            background: rgba(26,95,74,0.15);
+        }
+
+        .checkbox-item input {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--primary);
+        }
+
+        /* Toll Section */
+        .toll-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 70px 70px 30px;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+
+        .toll-item input,
+        .toll-item select {
+            padding: 0.4rem;
+            border: 1px solid var(--border);
+            border-radius: 0.3rem;
+            font-size: 0.75rem;
+        }
+
+        /* Calculation Results */
+        .calc-result {
+            background: var(--primary);
+            color: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .calc-result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+        }
+
+        .calc-item {
+            text-align: center;
+        }
+
+        .calc-item-label {
+            font-size: 0.7rem;
+            opacity: 0.9;
+        }
+
+        .calc-item-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* History List */
+        .history-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.3rem;
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .history-total {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .history-destination {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Settlement */
+        .settlement-positive {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .settlement-negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* Print Window Styles */
+        .print-content {
+            font-family: 'Noto Sans JP', sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .print-content h1 {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .print-content .print-date {
+            text-align: right;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .print-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin: 10px 0;
+        }
+
+        .print-content th,
+        .print-content td {
+            border: 1px solid #333;
+            padding: 5px;
+        }
+
+        .print-content th {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-content, .print-content * {
+                visibility: visible;
+            }
+            .print-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🏀</span>
+                <h1>南ヶ丘MBC 遠征費用清算</h1>
+            </div>
+            <div class="firebase-status">
+                <div class="status-dot" id="firebaseStatus"></div>
+                <span id="firebaseStatusText">未接続</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="members">
+            <span class="nav-tab-icon">👥</span>
+            部員
+        </button>
+        <button class="nav-tab" data-tab="vehicles">
+            <span class="nav-tab-icon">🚗</span>
+            車両
+        </button>
+        <button class="nav-tab" data-tab="expedition">
+            <span class="nav-tab-icon">📝</span>
+            遠征入力
+        </button>
+        <button class="nav-tab" data-tab="history">
+            <span class="nav-tab-icon">📋</span>
+            履歴
+        </button>
+        <button class="nav-tab" data-tab="settlement">
+            <span class="nav-tab-icon">💰</span>
+            清算
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Members Tab -->
+        <div class="tab-content active" id="tab-members">
+            <div class="section-header">
+                <h2 class="section-title">👥 部員管理</h2>
+                <button class="btn btn-primary btn-sm" onclick="showMemberModal()">➕ 追加</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="membersEmptyState">
+                <div class="empty-state-icon">👥</div>
+                <p>部員が登録されていません</p>
+            </div>
+        </div>
+
+        <!-- Vehicles Tab -->
+        <div class="tab-content" id="tab-vehicles">
+            <div class="section-header">
+                <h2 class="section-title">🚗 車両管理</h2>
+                <button class="btn btn-primary btn-sm" onclick="showVehicleModal()">➕ 追加</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>車両提供者</th>
+                            <th>燃費</th>
+                            <th>燃料</th>
+                            <th>紐付け部員</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehiclesTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="vehiclesEmptyState">
+                <div class="empty-state-icon">🚗</div>
+                <p>車両が登録されていません</p>
+            </div>
+        </div>
+
+        <!-- Expedition Input Tab -->
+        <div class="tab-content" id="tab-expedition">
+            <div class="section-header">
+                <h2 class="section-title">📝 遠征入力</h2>
+            </div>
+
+            <form id="expeditionForm">
+                <div class="card">
+                    <div class="card-title">基本情報</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>日付 *</label>
+                            <input type="date" id="expDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>行き先 *</label>
+                            <input type="text" id="expDestination" placeholder="例：FUKAI SQUARE GARDEN足利" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📏 距離・ガソリン単価</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>片道距離 (km) *</label>
+                            <input type="number" id="expDistanceOneWay" placeholder="65" required min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>往復距離 (km)</label>
+                            <input type="number" id="expDistanceTotal" readonly style="background: #f0f0f0;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>レギュラー (円/L) *</label>
+                            <input type="number" id="expGasPriceRegular" placeholder="149.5" required min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>軽油 (円/L) *</label>
+                            <input type="number" id="expGasPriceDiesel" placeholder="138" required min="0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🛣️ 高速道路料金</div>
+                    <div id="tollItemsContainer">
+                        <div class="toll-item" data-toll-index="0">
+                            <input type="text" placeholder="から" class="toll-from">
+                            <input type="text" placeholder="まで" class="toll-to">
+                            <select class="toll-direction">
+                                <option value="outbound">往路</option>
+                                <option value="return">復路</option>
+                            </select>
+                            <input type="number" placeholder="料金" class="toll-price" min="0">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeTollItem(this)">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="addTollItem()">
+                        ➕ 区間追加
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">👥 参加部員</div>
+                    <div class="checkbox-grid" id="memberCheckboxes">
+                        <p style="color: var(--text-light); font-size: 0.75rem;">部員を先に登録してください</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🚗 使用車両</div>
+                    <div class="checkbox-grid" id="vehicleCheckboxes">
+                        <p style="color: var(--text-light); font-size: 0.75rem;">車両を先に登録してください</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-primary" onclick="calculateExpedition()">🧮 計算</button>
+                    <button type="button" class="btn btn-secondary" onclick="saveExpedition()">💾 保存</button>
+                    <button type="button" class="btn btn-outline" onclick="resetExpeditionForm()">🔄 リセット</button>
+                </div>
+
+                <!-- Calculation Results -->
+                <div id="calculationResults" style="display: none;">
+                    <div class="calc-result">
+                        <div class="calc-result-grid">
+                            <div class="calc-item">
+                                <div class="calc-item-label">交通費合計</div>
+                                <div class="calc-item-value" id="resultTotal">¥0</div>
+                            </div>
+                            <div class="calc-item">
+                                <div class="calc-item-label">参加人数</div>
+                                <div class="calc-item-value" id="resultCount">0人</div>
+                            </div>
+                            <div class="calc-item">
+                                <div class="calc-item-label">1人あたり</div>
+                                <div class="calc-item-value" id="resultPerPerson">¥0</div>
+                            </div>
+                            <div class="calc-item">
+                                <div class="calc-item-label">残金(部費へ)</div>
+                                <div class="calc-item-value" id="resultRemainder">¥0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">🚗 車両別明細</div>
+                        <div class="table-container">
+                            <table id="vehicleDetailsTable">
+                                <thead>
+                                    <tr>
+                                        <th>車両</th>
+                                        <th>燃費</th>
+                                        <th>燃料</th>
+                                        <th>ガソリン代</th>
+                                        <th>高速代</th>
+                                        <th>計</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehicleDetailsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary btn-block" onclick="openPrintView()">
+                        🖨️ 印刷用表示
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="tab-history">
+            <div class="section-header">
+                <h2 class="section-title">📋 遠征履歴</h2>
+            </div>
+
+            <div id="historyList"></div>
+
+            <div class="empty-state" id="historyEmptyState">
+                <div class="empty-state-icon">📋</div>
+                <p>遠征履歴がありません</p>
+            </div>
+        </div>
+
+        <!-- Settlement Tab -->
+        <div class="tab-content" id="tab-settlement">
+            <div class="section-header">
+                <h2 class="section-title">💰 清算</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-title">清算する遠征を選択</div>
+                <div class="checkbox-grid" id="settlementExpeditions"></div>
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="calculateSettlement()">🧮 清算計算</button>
+
+            <div id="settlementResults" style="display: none;">
+                <div class="card" style="margin-top: 1rem;">
+                    <div class="card-title">📊 清算結果</div>
+                    <div class="table-container">
+                        <table id="settlementTable">
+                            <thead>
+                                <tr id="settlementHeader"></tr>
+                            </thead>
+                            <tbody id="settlementBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-block" onclick="openSettlementPrintView()">
+                    🖨️ 清算表を印刷用表示
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Member Modal -->
+    <div class="modal-overlay" id="memberModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="memberModalTitle">部員を追加</h3>
+                <button type="button" class="modal-close" onclick="closeMemberModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>名前 *</label>
+                <input type="text" id="memberNameInput" placeholder="例：ゆりあ">
+            </div>
+            <input type="hidden" id="editMemberId">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeMemberModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveMember()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div class="modal-overlay" id="vehicleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="vehicleModalTitle">車両を追加</h3>
+                <button type="button" class="modal-close" onclick="closeVehicleModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>車両提供者名 *</label>
+                <input type="text" id="vehicleOwnerInput" placeholder="例：佐藤あ車">
+            </div>
+            <div class="form-group">
+                <label>燃費 (km/L) *</label>
+                <input type="number" id="vehicleFuelEfficiencyInput" placeholder="例：9" min="1" max="30" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>燃料タイプ *</label>
+                <select id="vehicleFuelTypeInput">
+                    <option value="regular">レギュラー</option>
+                    <option value="diesel">軽油</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>紐付け部員（この車両提供者の子）</label>
+                <select id="vehicleMemberInput">
+                    <option value="">-- 選択してください --</option>
+                </select>
+            </div>
+            <input type="hidden" id="editVehicleId">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeVehicleModal()">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveVehicle()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== App State ====================
+        let db = null;
+        let members = [];
+        let vehicles = [];
+        let expeditions = [];
+        let currentExpedition = null;
+        let editingExpeditionId = null;
+
+        // ==================== Firebase Config ====================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDyE2wpQsTFq0skOE2hU0fqi4gNoNHNwu4",
+            authDomain: "minamigaoka-expense.firebaseapp.com",
+            projectId: "minamigaoka-expense",
+            storageBucket: "minamigaoka-expense.firebasestorage.app",
+            messagingSenderId: "232670962803",
+            appId: "1:232670962803:web:8ea72a9350c90eaf093606"
+        };
+
+        // ==================== Firebase Connection ====================
+        function autoConnect() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                }
+                db = firebase.firestore();
+                document.getElementById('firebaseStatus').classList.add('connected');
+                document.getElementById('firebaseStatusText').textContent = '接続済み';
+                loadAllData();
+            } catch (error) {
+                console.error('Firebase error:', error);
+                document.getElementById('firebaseStatusText').textContent = '接続エラー';
+            }
+        }
+
+        // ==================== Data Loading ====================
+        async function loadAllData() {
+            if (!db) return;
+            try {
+                const membersSnapshot = await db.collection('members').orderBy('name').get();
+                members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderMembers();
+
+                const vehiclesSnapshot = await db.collection('vehicles').orderBy('owner').get();
+                vehicles = vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderVehicles();
+
+                const expeditionsSnapshot = await db.collection('expeditions').orderBy('date', 'desc').get();
+                expeditions = expeditionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderHistory();
+                renderSettlementExpeditions();
+
+                renderMemberCheckboxes();
+                renderVehicleCheckboxes();
+                updateVehicleMemberSelect();
+            } catch (error) {
+                console.error('Data loading error:', error);
+            }
+        }
+
+        // ==================== Members ====================
+        function renderMembers() {
+            const tbody = document.getElementById('membersTableBody');
+            const emptyState = document.getElementById('membersEmptyState');
+            
+            if (members.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tbody.innerHTML = members.map(member => `
+                <tr>
+                    <td>${member.name}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="editMember('${member.id}')">編集</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">削除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showMemberModal(memberId = null) {
+            document.getElementById('memberModal').classList.add('active');
+            document.getElementById('memberNameInput').value = '';
+            document.getElementById('editMemberId').value = '';
+            
+            if (memberId) {
+                const member = members.find(m => m.id === memberId);
+                if (member) {
+                    document.getElementById('memberModalTitle').textContent = '部員を編集';
+                    document.getElementById('memberNameInput').value = member.name;
+                    document.getElementById('editMemberId').value = memberId;
+                }
+            } else {
+                document.getElementById('memberModalTitle').textContent = '部員を追加';
+            }
+        }
+
+        function closeMemberModal() {
+            document.getElementById('memberModal').classList.remove('active');
+        }
+
+        async function saveMember() {
+            if (!db) { alert('Firebaseに接続してください'); return; }
+
+            const name = document.getElementById('memberNameInput').value.trim();
+            const editId = document.getElementById('editMemberId').value;
+
+            if (!name) { alert('名前を入力してください'); return; }
+
+            try {
+                if (editId) {
+                    await db.collection('members').doc(editId).update({ name });
+                } else {
+                    await db.collection('members').add({ name });
+                }
+                closeMemberModal();
+                loadAllData();
+            } catch (error) {
+                console.error('Save member error:', error);
+                alert('保存に失敗しました: ' + error.message);
+            }
+        }
+
+        function editMember(id) { showMemberModal(id); }
+
+        async function deleteMember(id) {
+            if (!confirm('この部員を削除しますか？')) return;
+            try {
+                await db.collection('members').doc(id).delete();
+                loadAllData();
+            } catch (error) {
+                alert('削除に失敗しました: ' + error.message);
+            }
+        }
+
+        // ==================== Vehicles ====================
+        function renderVehicles() {
+            const tbody = document.getElementById('vehiclesTableBody');
+            const emptyState = document.getElementById('vehiclesEmptyState');
+            
+            if (vehicles.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tbody.innerHTML = vehicles.map(vehicle => {
+                const linkedMember = members.find(m => m.id === vehicle.linkedMemberId);
+                return `
+                    <tr>
+                        <td>${vehicle.owner}</td>
+                        <td>${vehicle.fuelEfficiency}</td>
+                        <td>${vehicle.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
+                        <td>${linkedMember ? linkedMember.name : '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline" onclick="editVehicle('${vehicle.id}')">編集</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${vehicle.id}')">削除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateVehicleMemberSelect() {
+            const select = document.getElementById('vehicleMemberInput');
+            select.innerHTML = '<option value="">-- 選択してください --</option>' +
+                members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        }
+
+        function showVehicleModal(vehicleId = null) {
+            document.getElementById('vehicleModal').classList.add('active');
+            document.getElementById('vehicleOwnerInput').value = '';
+            document.getElementById('vehicleFuelEfficiencyInput').value = '';
+            document.getElementById('vehicleFuelTypeInput').value = 'regular';
+            document.getElementById('vehicleMemberInput').value = '';
+            document.getElementById('editVehicleId').value = '';
+            
+            updateVehicleMemberSelect();
+            
+            if (vehicleId) {
+                const vehicle = vehicles.find(v => v.id === vehicleId);
+                if (vehicle) {
+                    document.getElementById('vehicleModalTitle').textContent = '車両を編集';
+                    document.getElementById('vehicleOwnerInput').value = vehicle.owner;
+                    document.getElementById('vehicleFuelEfficiencyInput').value = vehicle.fuelEfficiency;
+                    document.getElementById('vehicleFuelTypeInput').value = vehicle.fuelType;
+                    document.getElementById('vehicleMemberInput').value = vehicle.linkedMemberId || '';
+                    document.getElementById('editVehicleId').value = vehicleId;
+                }
+            } else {
+                document.getElementById('vehicleModalTitle').textContent = '車両を追加';
+            }
+        }
+
+        function closeVehicleModal() {
+            document.getElementById('vehicleModal').classList.remove('active');
+        }
+
+        async function saveVehicle() {
+            if (!db) { alert('Firebaseに接続してください'); return; }
+
+            const owner = document.getElementById('vehicleOwnerInput').value.trim();
+            const fuelEfficiency = parseFloat(document.getElementById('vehicleFuelEfficiencyInput').value);
+            const fuelType = document.getElementById('vehicleFuelTypeInput').value;
+            const linkedMemberId = document.getElementById('vehicleMemberInput').value || null;
+            const editId = document.getElementById('editVehicleId').value;
+
+            if (!owner || !fuelEfficiency) { alert('必須項目を入力してください'); return; }
+
+            try {
+                const data = { owner, fuelEfficiency, fuelType, linkedMemberId };
+                if (editId) {
+                    await db.collection('vehicles').doc(editId).update(data);
+                } else {
+                    await db.collection('vehicles').add(data);
+                }
+                closeVehicleModal();
+                loadAllData();
+            } catch (error) {
+                alert('保存に失敗しました: ' + error.message);
+            }
+        }
+
+        function editVehicle(id) { showVehicleModal(id); }
+
+        async function deleteVehicle(id) {
+            if (!confirm('この車両を削除しますか？')) return;
+            try {
+                await db.collection('vehicles').doc(id).delete();
+                loadAllData();
+            } catch (error) {
+                alert('削除に失敗しました: ' + error.message);
+            }
+        }
+
+        // ==================== Expedition Input ====================
+        function renderMemberCheckboxes() {
+            const container = document.getElementById('memberCheckboxes');
+            if (members.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">部員を先に登録してください</p>';
+                return;
+            }
+            container.innerHTML = members.map(member => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${member.id}">
+                    ${member.name}
+                </label>
+            `).join('');
+        }
+
+        function renderVehicleCheckboxes() {
+            const container = document.getElementById('vehicleCheckboxes');
+            if (vehicles.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">車両を先に登録してください</p>';
+                return;
+            }
+            container.innerHTML = vehicles.map(vehicle => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${vehicle.id}">
+                    ${vehicle.owner}
+                </label>
+            `).join('');
+        }
+
+        // Distance calculation
+        document.addEventListener('DOMContentLoaded', function() {
+            const distOneWay = document.getElementById('expDistanceOneWay');
+            const distTotal = document.getElementById('expDistanceTotal');
+
+            distOneWay.addEventListener('input', function() {
+                const oneWay = parseFloat(this.value) || 0;
+                distTotal.value = oneWay * 2;
+            });
+
+            autoConnect();
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+        });
+
+        // Toll functions
+        function addTollItem() {
+            const container = document.getElementById('tollItemsContainer');
+            const div = document.createElement('div');
+            div.className = 'toll-item';
+            div.innerHTML = `
+                <input type="text" placeholder="から" class="toll-from">
+                <input type="text" placeholder="まで" class="toll-to">
+                <select class="toll-direction">
+                    <option value="outbound">往路</option>
+                    <option value="return">復路</option>
+                </select>
+                <input type="number" placeholder="料金" class="toll-price" min="0">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTollItem(this)">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeTollItem(button) {
+            const container = document.getElementById('tollItemsContainer');
+            if (container.children.length > 1) {
+                button.closest('.toll-item').remove();
+            }
+        }
+
+        // ==================== Calculation ====================
+        function calculateExpedition() {
+            const date = document.getElementById('expDate').value;
+            const destination = document.getElementById('expDestination').value;
+            const distanceOneWay = parseFloat(document.getElementById('expDistanceOneWay').value) || 0;
+            const distanceTotal = distanceOneWay * 2;
+            const gasPriceRegular = parseFloat(document.getElementById('expGasPriceRegular').value) || 0;
+            const gasPriceDiesel = parseFloat(document.getElementById('expGasPriceDiesel').value) || 0;
+
+            const tollItems = Array.from(document.querySelectorAll('.toll-item')).map(item => ({
+                from: item.querySelector('.toll-from').value,
+                to: item.querySelector('.toll-to').value,
+                direction: item.querySelector('.toll-direction').value,
+                price: parseFloat(item.querySelector('.toll-price').value) || 0
+            })).filter(item => item.price > 0);
+
+            const totalToll = tollItems.reduce((sum, item) => sum + item.price, 0);
+
+            const selectedMemberIds = Array.from(document.querySelectorAll('#memberCheckboxes input:checked')).map(cb => cb.value);
+            const selectedVehicleIds = Array.from(document.querySelectorAll('#vehicleCheckboxes input:checked')).map(cb => cb.value);
+
+            if (!date || !destination || distanceOneWay === 0 || selectedMemberIds.length === 0 || selectedVehicleIds.length === 0) {
+                alert('必須項目を入力してください');
+                return;
+            }
+
+            const tollPerVehicle = selectedVehicleIds.length > 0 ? Math.round(totalToll / selectedVehicleIds.length) : 0;
+
+            const vehicleDetails = selectedVehicleIds.map(vid => {
+                const vehicle = vehicles.find(v => v.id === vid);
+                if (!vehicle) return null;
+
+                const gasPrice = vehicle.fuelType === 'diesel' ? gasPriceDiesel : gasPriceRegular;
+                const gasCost = Math.round(gasPrice * distanceTotal / vehicle.fuelEfficiency);
+                const total = gasCost + tollPerVehicle;
+
+                return {
+                    vehicleId: vid,
+                    owner: vehicle.owner,
+                    fuelEfficiency: vehicle.fuelEfficiency,
+                    fuelType: vehicle.fuelType,
+                    linkedMemberId: vehicle.linkedMemberId,
+                    gasPrice,
+                    distance: distanceTotal,
+                    gasCost,
+                    tollCost: tollPerVehicle,
+                    total
+                };
+            }).filter(Boolean);
+
+            const totalExpense = vehicleDetails.reduce((sum, v) => sum + v.total, 0);
+            const participantCount = selectedMemberIds.length;
+            const perPerson = Math.ceil(totalExpense / participantCount);
+            const collected = perPerson * participantCount;
+            const remainder = collected - totalExpense;
+
+            currentExpedition = {
+                date,
+                destination,
+                distanceOneWay,
+                distanceTotal,
+                gasPriceRegular,
+                gasPriceDiesel,
+                tollItems,
+                totalToll,
+                selectedMemberIds,
+                selectedVehicleIds,
+                vehicleDetails,
+                totalExpense,
+                participantCount,
+                perPerson,
+                remainder,
+                absentMemberIds: members.filter(m => !selectedMemberIds.includes(m.id)).map(m => m.id)
+            };
+
+            document.getElementById('resultTotal').textContent = `¥${totalExpense.toLocaleString()}`;
+            document.getElementById('resultCount').textContent = `${participantCount}人`;
+            document.getElementById('resultPerPerson').textContent = `¥${perPerson.toLocaleString()}`;
+            document.getElementById('resultRemainder').textContent = `¥${remainder.toLocaleString()}`;
+
+            const tbody = document.getElementById('vehicleDetailsBody');
+            tbody.innerHTML = vehicleDetails.map(v => `
+                <tr>
+                    <td>${v.owner}</td>
+                    <td>${v.fuelEfficiency}</td>
+                    <td>${v.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
+                    <td>¥${v.gasCost.toLocaleString()}</td>
+                    <td>¥${v.tollCost.toLocaleString()}</td>
+                    <td><strong>¥${v.total.toLocaleString()}</strong></td>
+                </tr>
+            `).join('') + `
+                <tr style="background: #f8f9fa; font-weight: 600;">
+                    <td colspan="5">合計</td>
+                    <td>¥${totalExpense.toLocaleString()}</td>
+                </tr>
+            `;
+
+            document.getElementById('calculationResults').style.display = 'block';
+        }
+
+        async function saveExpedition() {
+            if (!db) { alert('Firebaseに接続してください'); return; }
+            if (!currentExpedition) { alert('先に計算を実行してください'); return; }
+
+            try {
+                if (editingExpeditionId) {
+                    await db.collection('expeditions').doc(editingExpeditionId).update({
+                        ...currentExpedition,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    editingExpeditionId = null;
+                } else {
+                    await db.collection('expeditions').add({
+                        ...currentExpedition,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                alert('保存しました');
+                resetExpeditionForm();
+                loadAllData();
+            } catch (error) {
+                alert('保存に失敗しました: ' + error.message);
+            }
+        }
+
+        function resetExpeditionForm() {
+            document.getElementById('expeditionForm').reset();
+            document.getElementById('expDistanceTotal').value = '';
+            document.getElementById('calculationResults').style.display = 'none';
+            document.querySelectorAll('#memberCheckboxes input, #vehicleCheckboxes input').forEach(cb => cb.checked = false);
+            
+            const tollContainer = document.getElementById('tollItemsContainer');
+            tollContainer.innerHTML = `
+                <div class="toll-item" data-toll-index="0">
+                    <input type="text" placeholder="から" class="toll-from">
+                    <input type="text" placeholder="まで" class="toll-to">
+                    <select class="toll-direction">
+                        <option value="outbound">往路</option>
+                        <option value="return">復路</option>
+                    </select>
+                    <input type="number" placeholder="料金" class="toll-price" min="0">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeTollItem(this)">✕</button>
+                </div>
+            `;
+            
+            currentExpedition = null;
+            editingExpeditionId = null;
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        // ==================== History ====================
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            const emptyState = document.getElementById('historyEmptyState');
+            
+            if (expeditions.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = expeditions.map(exp => `
+                <div class="history-item">
+                    <div class="history-item-header">
+                        <span class="history-date">${exp.date}</span>
+                        <span class="history-total">¥${exp.totalExpense?.toLocaleString() || 0}</span>
+                    </div>
+                    <div class="history-destination">📍 ${exp.destination}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.3rem;">
+                        ${exp.participantCount || 0}人 / 1人 ¥${exp.perPerson?.toLocaleString() || 0}
+                    </div>
+                    <div class="history-actions">
+                        <button class="btn btn-sm btn-outline" onclick="editExpedition('${exp.id}')">編集</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadExpeditionToPrint('${exp.id}')">印刷</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteExpedition('${exp.id}')">削除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editExpedition(id) {
+            const exp = expeditions.find(e => e.id === id);
+            if (!exp) return;
+
+            // Switch to expedition tab
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="expedition"]').classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-expedition').classList.add('active');
+
+            // Fill form with expedition data
+            document.getElementById('expDate').value = exp.date;
+            document.getElementById('expDestination').value = exp.destination;
+            document.getElementById('expDistanceOneWay').value = exp.distanceOneWay;
+            document.getElementById('expDistanceTotal').value = exp.distanceTotal;
+            document.getElementById('expGasPriceRegular').value = exp.gasPriceRegular;
+            document.getElementById('expGasPriceDiesel').value = exp.gasPriceDiesel;
+
+            // Set toll items
+            const tollContainer = document.getElementById('tollItemsContainer');
+            if (exp.tollItems && exp.tollItems.length > 0) {
+                tollContainer.innerHTML = exp.tollItems.map((item, i) => `
+                    <div class="toll-item" data-toll-index="${i}">
+                        <input type="text" placeholder="から" class="toll-from" value="${item.from || ''}">
+                        <input type="text" placeholder="まで" class="toll-to" value="${item.to || ''}">
+                        <select class="toll-direction">
+                            <option value="outbound" ${item.direction === 'outbound' ? 'selected' : ''}>往路</option>
+                            <option value="return" ${item.direction === 'return' ? 'selected' : ''}>復路</option>
+                        </select>
+                        <input type="number" placeholder="料金" class="toll-price" min="0" value="${item.price || ''}">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeTollItem(this)">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            // Set member checkboxes
+            document.querySelectorAll('#memberCheckboxes input').forEach(cb => {
+                cb.checked = exp.selectedMemberIds?.includes(cb.value) || false;
+            });
+
+            // Set vehicle checkboxes
+            document.querySelectorAll('#vehicleCheckboxes input').forEach(cb => {
+                cb.checked = exp.selectedVehicleIds?.includes(cb.value) || false;
+            });
+
+            editingExpeditionId = id;
+            currentExpedition = exp;
+
+            // Recalculate
+            calculateExpedition();
+        }
+
+        function loadExpeditionToPrint(id) {
+            const exp = expeditions.find(e => e.id === id);
+            if (!exp) return;
+            currentExpedition = exp;
+            openPrintView();
+        }
+
+        async function deleteExpedition(id) {
+            if (!confirm('この遠征データを削除しますか？')) return;
+            try {
+                await db.collection('expeditions').doc(id).delete();
+                loadAllData();
+            } catch (error) {
+                alert('削除に失敗しました: ' + error.message);
+            }
+        }
+
+        // ==================== Settlement ====================
+        function renderSettlementExpeditions() {
+            const container = document.getElementById('settlementExpeditions');
+            if (expeditions.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">遠征データがありません</p>';
+                return;
+            }
+            container.innerHTML = expeditions.map(exp => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${exp.id}">
+                    ${exp.date.slice(5)} ${exp.destination.slice(0, 8)}
+                </label>
+            `).join('');
+        }
+
+        function calculateSettlement() {
+            const selectedIds = Array.from(document.querySelectorAll('#settlementExpeditions input:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) { alert('遠征を選択してください'); return; }
+
+            const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
+            const settlementData = {};
+
+            members.forEach(member => {
+                settlementData[member.id] = {
+                    name: member.name,
+                    costs: {},
+                    vehicleIncome: {},
+                    totalCost: 0,
+                    totalIncome: 0,
+                    balance: 0
+                };
+            });
+
+            selectedExpeditions.forEach(exp => {
+                exp.selectedMemberIds?.forEach(memberId => {
+                    if (settlementData[memberId]) {
+                        settlementData[memberId].costs[exp.id] = exp.perPerson;
+                        settlementData[memberId].totalCost += exp.perPerson;
+                    }
+                });
+
+                exp.vehicleDetails?.forEach(vehicle => {
+                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
+                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] = 
+                            (settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] || 0) + vehicle.total;
+                        settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
+                    }
+                });
+            });
+
+            Object.values(settlementData).forEach(data => {
+                data.balance = data.totalIncome - data.totalCost;
+            });
+
+            renderSettlementTable(selectedExpeditions, settlementData);
+            document.getElementById('settlementResults').style.display = 'block';
+        }
+
+        function renderSettlementTable(selectedExpeditions, settlementData) {
+            const headerRow = document.getElementById('settlementHeader');
+            const tbody = document.getElementById('settlementBody');
+
+            let headerHtml = '<th>部員</th>';
+            selectedExpeditions.forEach(exp => {
+                headerHtml += `<th>${exp.date.slice(5)}</th>`;
+            });
+            headerHtml += '<th>計</th>';
+            selectedExpeditions.forEach(exp => {
+                headerHtml += `<th>配車</th>`;
+            });
+            headerHtml += '<th>差引</th>';
+            headerRow.innerHTML = headerHtml;
+
+            let bodyHtml = '';
+            Object.entries(settlementData).forEach(([memberId, data]) => {
+                if (data.totalCost === 0 && data.totalIncome === 0) return;
+
+                bodyHtml += '<tr>';
+                bodyHtml += `<td>${data.name}</td>`;
+                
+                selectedExpeditions.forEach(exp => {
+                    const cost = data.costs[exp.id] || 0;
+                    bodyHtml += `<td>${cost > 0 ? cost : '-'}</td>`;
+                });
+                
+                bodyHtml += `<td><strong>${data.totalCost}</strong></td>`;
+                
+                selectedExpeditions.forEach(exp => {
+                    const income = data.vehicleIncome[exp.id] || 0;
+                    bodyHtml += `<td>${income > 0 ? income : ''}</td>`;
+                });
+                
+                const balanceClass = data.balance > 0 ? 'settlement-positive' : (data.balance < 0 ? 'settlement-negative' : '');
+                const balancePrefix = data.balance > 0 ? '+' : '';
+                bodyHtml += `<td class="${balanceClass}"><strong>${balancePrefix}${data.balance}</strong></td>`;
+                bodyHtml += '</tr>';
+            });
+
+            tbody.innerHTML = bodyHtml;
+        }
+
+        // ==================== Print Views ====================
+        function openPrintView() {
+            if (!currentExpedition) { alert('データがありません'); return; }
+            const exp = currentExpedition;
+
+            const participants = exp.selectedMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean).join('、') || '';
+            const absent = exp.absentMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean).join('、') || '';
+
+            let tollHtml = '';
+            if (exp.tollItems && exp.tollItems.length > 0) {
+                tollHtml = `
+                    <h3>有料道路料金</h3>
+                    <table>
+                        <tr><th>区間</th><th>方向</th><th>料金</th></tr>
+                        ${exp.tollItems.map(t => `<tr><td>${t.from}→${t.to}</td><td>${t.direction === 'outbound' ? '往路' : '復路'}</td><td>¥${t.price}</td></tr>`).join('')}
+                        <tr><th colspan="2">計</th><td>¥${exp.totalToll}</td></tr>
+                    </table>
+                `;
+            }
+
+            const html = `
+                <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>交通費計算書 - ${exp.date}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 12px; }
+                        h1 { text-align: center; font-size: 18px; margin-bottom: 5px; }
+                        .date { text-align: right; margin-bottom: 15px; }
+                        .info { margin-bottom: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th, td { border: 1px solid #333; padding: 5px; text-align: left; }
+                        th { background: #f0f0f0; }
+                        .summary { background: #e8f5e9; padding: 10px; margin: 15px 0; border-radius: 5px; }
+                        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+                        .summary-item { font-weight: bold; }
+                        .participants { margin-top: 15px; font-size: 11px; }
+                        h3 { font-size: 13px; margin: 15px 0 5px; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <h1>交通費計算書</h1>
+                    <div class="date">日付: ${exp.date}</div>
+                    
+                    <div class="info">
+                        <strong>行き先:</strong> ${exp.destination}
+                    </div>
+                    
+                    <h3>距離</h3>
+                    <table>
+                        <tr><th>片道</th><td>${exp.distanceOneWay} km</td></tr>
+                        <tr><th>往復</th><td>${exp.distanceTotal} km</td></tr>
+                    </table>
+                    
+                    <h3>ガソリン単価</h3>
+                    <table>
+                        <tr><th>レギュラー</th><td>¥${exp.gasPriceRegular}</td></tr>
+                        <tr><th>軽油</th><td>¥${exp.gasPriceDiesel}</td></tr>
+                    </table>
+                    
+                    ${tollHtml}
+                    
+                    <div class="summary">
+                        <div class="summary-grid">
+                            <div><div>交通費合計</div><div class="summary-item">¥${exp.totalExpense?.toLocaleString()}</div></div>
+                            <div><div>参加人数</div><div class="summary-item">${exp.participantCount}人</div></div>
+                            <div><div>1人あたり</div><div class="summary-item">¥${exp.perPerson?.toLocaleString()}</div></div>
+                            <div><div>残金</div><div class="summary-item">¥${exp.remainder}</div></div>
+                        </div>
+                    </div>
+                    
+                    <h3>車両別明細</h3>
+                    <table>
+                        <tr><th>車両提供者</th><th>燃費</th><th>燃料</th><th>単価</th><th>距離</th><th>ガソリン代</th><th>高速代</th><th>計</th></tr>
+                        ${exp.vehicleDetails?.map(v => `
+                            <tr>
+                                <td>${v.owner}</td>
+                                <td>${v.fuelEfficiency}</td>
+                                <td>${v.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
+                                <td>¥${v.gasPrice}</td>
+                                <td>${v.distance}km</td>
+                                <td>¥${v.gasCost?.toLocaleString()}</td>
+                                <td>¥${v.tollCost?.toLocaleString()}</td>
+                                <td>¥${v.total?.toLocaleString()}</td>
+                            </tr>
+                        `).join('') || ''}
+                        <tr style="font-weight: bold;"><td colspan="7">合計</td><td>¥${exp.totalExpense?.toLocaleString()}</td></tr>
+                    </table>
+                    
+                    <div class="participants">
+                        <div><strong>参加:</strong> ${participants}</div>
+                        ${absent ? `<div><strong>休み:</strong> ${absent}</div>` : ''}
+                        <div style="margin-top: 5px;">残金 ${exp.remainder}円 → 部費へ繰入れ</div>
+                    </div>
+                    
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+        }
+
+        function openSettlementPrintView() {
+            const selectedIds = Array.from(document.querySelectorAll('#settlementExpeditions input:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) { alert('遠征を選択してください'); return; }
+
+            const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
+            const settlementData = {};
+
+            members.forEach(member => {
+                settlementData[member.id] = {
+                    name: member.name,
+                    costs: {},
+                    vehicleIncome: {},
+                    totalCost: 0,
+                    totalIncome: 0,
+                    balance: 0
+                };
+            });
+
+            selectedExpeditions.forEach(exp => {
+                exp.selectedMemberIds?.forEach(memberId => {
+                    if (settlementData[memberId]) {
+                        settlementData[memberId].costs[exp.id] = exp.perPerson;
+                        settlementData[memberId].totalCost += exp.perPerson;
+                    }
+                });
+                exp.vehicleDetails?.forEach(vehicle => {
+                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
+                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] = 
+                            (settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] || 0) + vehicle.total;
+                        settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
+                    }
+                });
+            });
+
+            Object.values(settlementData).forEach(data => {
+                data.balance = data.totalIncome - data.totalCost;
+            });
+
+            // Build table HTML
+            let headerHtml = '<th>部員</th>';
+            selectedExpeditions.forEach(exp => {
+                headerHtml += `<th>${exp.date.slice(5)}</th>`;
+            });
+            headerHtml += '<th>計</th>';
+            selectedExpeditions.forEach(exp => {
+                headerHtml += `<th>配車</th>`;
+            });
+            headerHtml += '<th>差引</th>';
+
+            let bodyHtml = '';
+            Object.entries(settlementData).forEach(([memberId, data]) => {
+                if (data.totalCost === 0 && data.totalIncome === 0) return;
+
+                bodyHtml += '<tr>';
+                bodyHtml += `<td>${data.name}</td>`;
+                selectedExpeditions.forEach(exp => {
+                    const cost = data.costs[exp.id] || 0;
+                    bodyHtml += `<td>${cost > 0 ? '¥' + cost : '-'}</td>`;
+                });
+                bodyHtml += `<td><strong>¥${data.totalCost}</strong></td>`;
+                selectedExpeditions.forEach(exp => {
+                    const income = data.vehicleIncome[exp.id] || 0;
+                    bodyHtml += `<td>${income > 0 ? '¥' + income : ''}</td>`;
+                });
+                const prefix = data.balance > 0 ? '+' : '';
+                const color = data.balance > 0 ? 'green' : (data.balance < 0 ? 'red' : 'black');
+                bodyHtml += `<td style="color: ${color};"><strong>${prefix}¥${data.balance}</strong></td>`;
+                bodyHtml += '</tr>';
+            });
+
+            const dateRange = selectedExpeditions.length > 0 
+                ? `${selectedExpeditions[selectedExpeditions.length - 1].date} ～ ${selectedExpeditions[0].date}`
+                : '';
+
+            const html = `
+                <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>清算表</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 11px; }
+                        h1 { text-align: center; font-size: 16px; margin-bottom: 5px; }
+                        .date-range { text-align: center; margin-bottom: 15px; font-size: 12px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #333; padding: 4px; text-align: center; }
+                        th { background: #f0f0f0; font-size: 10px; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <h1>遠征費用清算表</h1>
+                    <div class="date-range">${dateRange}</div>
+                    <table>
+                        <thead><tr>${headerHtml}</tr></thead>
+                        <tbody>${bodyHtml}</tbody>
+                    </table>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+        }
+
+        // ==================== Tab Navigation ====================
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const tabId = this.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
