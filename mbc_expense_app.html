@@ -1220,7 +1220,8 @@
                 return;
             }
 
-            const tollPerVehicle = selectedVehicleIds.length > 0 ? Math.round(totalToll / selectedVehicleIds.length) : 0;
+            // 高速代は各車両に同じ金額を適用
+            const tollPerVehicle = totalToll;
 
             const vehicleDetails = selectedVehicleIds.map(vid => {
                 const vehicle = vehicles.find(v => v.id === vid);
