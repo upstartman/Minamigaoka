@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南ヶ丘MBC - ミニバスケットボールクラブ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange-bright: #FF6B35;
+            --orange-dark: #E55A2B;
+            --navy: #1A2744;
+            --cream: #FFF8F0;
+            --gold: #FFB347;
+            --court-wood: #DEB887;
+            --line-white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Basketball Court Background */
+        .court-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, #DEB887 0%, #D2A679 50%, #C4956A 100%);
+            z-index: -2;
+        }
+
+        .court-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 8px solid var(--line-white);
+            border-radius: 50%;
+        }
+
+        .half-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 8px;
+            height: 100%;
+            background: var(--line-white);
+            transform: translateX(-50%);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .logo-container {
+            display: inline-block;
+            position: relative;
+            animation: bounceIn 0.8s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .club-logo {
+            max-width: 320px;
+            width: 90%;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.15));
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem 3rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '🏀';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        .section-title::before {
+            left: calc(50% - 140px);
+        }
+
+        .section-title::after {
+            right: calc(50% - 140px);
+        }
+
+        /* App Cards */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            text-decoration: none;
+            color: var(--navy);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 10px 40px rgba(0,0,0,0.1),
+                0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid transparent;
+        }
+
+        .app-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--orange-bright);
+            box-shadow: 
+                0 20px 60px rgba(255, 107, 53, 0.25),
+                0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--orange-bright), var(--gold));
+        }
+
+        .app-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+        }
+
+        .app-card:nth-child(1) .app-icon {
+            background: linear-gradient(135deg, #4ECDC4, #6EE7DE);
+            box-shadow: 0 8px 20px rgba(78, 205, 196, 0.3);
+        }
+
+        .app-card:nth-child(2) .app-icon {
+            background: linear-gradient(135deg, #FFB347, #FFD280);
+            box-shadow: 0 8px 20px rgba(255, 179, 71, 0.3);
+        }
+
+        .app-card:nth-child(3) .app-icon {
+            background: linear-gradient(135deg, #A78BFA, #C4B5FD);
+            box-shadow: 0 8px 20px rgba(167, 139, 250, 0.3);
+        }
+
+        .app-card:nth-child(4) .app-icon {
+            background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .app-name {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: var(--navy);
+        }
+
+        .app-arrow {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: var(--cream);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .app-card:hover .app-arrow {
+            background: var(--orange-bright);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--navy);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Floating Basketballs Animation */
+        .floating-ball {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(145deg, var(--orange-bright), var(--orange-dark));
+            border-radius: 50%;
+            opacity: 0.15;
+            z-index: -1;
+            animation: float 20s infinite;
+        }
+
+        .floating-ball:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-ball:nth-child(2) {
+            top: 60%;
+            right: 15%;
+            width: 20px;
+            height: 20px;
+            animation-delay: -5s;
+        }
+
+        .floating-ball:nth-child(3) {
+            bottom: 30%;
+            left: 20%;
+            width: 25px;
+            height: 25px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-30px) rotate(90deg); }
+            50% { transform: translateY(0) rotate(180deg); }
+            75% { transform: translateY(30px) rotate(270deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header {
+                padding: 1.5rem 1rem;
+            }
+
+            .club-logo {
+                max-width: 260px;
+            }
+
+            .section-title::before,
+            .section-title::after {
+                display: none;
+            }
+
+            .app-card {
+                padding: 1.5rem;
+            }
+
+            .app-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="court-bg"></div>
+    <div class="court-lines">
+        <div class="center-circle"></div>
+        <div class="half-line"></div>
+    </div>
+    
+    <div class="floating-ball"></div>
+    <div class="floating-ball"></div>
+    <div class="floating-ball"></div>
+
+    <header class="header">
+        <div class="logo-container">
+            <img src="logo.png" alt="南ヶ丘MBC" class="club-logo">
+        </div>
+    </header>
+
+    <main class="main-content">
+        <h2 class="section-title">クラブアプリ</h2>
+        
+        <div class="app-grid">
+            <a href="https://upstartman.github.io/minamigaoka/minamigaoka_score_2026.html" class="app-card">
+                <div class="app-icon">📊</div>
+                <h3 class="app-name">試合結果記録 2026</h3>
+                <div class="app-arrow">→</div>
+            </a>
+
+            <a href="https://upstartman.github.io/minamigaoka/minamigaoka_bento_firebase.html" class="app-card">
+                <div class="app-icon">🍱</div>
+                <h3 class="app-name">注文集計</h3>
+                <div class="app-arrow">→</div>
+            </a>
+
+            <a href="https://upstartman.github.io/minamigaoka/mbc_expense_app.html" class="app-card">
+                <div class="app-icon">💰</div>
+                <h3 class="app-name">遠征費用清算</h3>
+                <div class="app-arrow">→</div>
+            </a>
+
+            <a href="https://upstartman.github.io/minamigaoka/minibasket-scoresheet.html" class="app-card">
+                <div class="app-icon">📋</div>
+                <h3 class="app-name">スコアシート</h3>
+                <div class="app-arrow">→</div>
+            </a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 南ヶ丘MBC</p>
+    </footer>
+</body>
+</html>
