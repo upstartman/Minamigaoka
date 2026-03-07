@@ -1625,7 +1625,7 @@
             selectedExpeditions.forEach((exp, i) => {
                 headerHtml += `<th>${circleNumbers[i]}</th>`;
             });
-            headerHtml += '<th>集金金額</th>';
+            headerHtml += '<th>差引額</th><th>集金額</th>';
             headerRow.innerHTML = headerHtml;
 
             // 凡例を更新
@@ -1633,7 +1633,7 @@
             const legendHtml = selectedExpeditions.map((exp, i) => 
                 `${circleNumbers[i]} ${exp.date} ${exp.destination}`
             ).join('<br>');
-            legendDiv.innerHTML = legendHtml;
+            legendDiv.innerHTML = '遠征費 / 交通費負担額<br>' + legendHtml;
 
             let bodyHtml = '';
             let roundingRemainder = 0; // 丸めによる残金
@@ -1656,7 +1656,7 @@
                     bodyHtml += `<td>${income > 0 ? income : ''}</td>`;
                 });
                 
-                // 集金金額 = 負担額 - 交通費収入
+                // 差引額 = 負担額 - 交通費収入（丸め前）
                 const rawCollectAmount = data.totalCost - data.totalIncome;
                 let roundedCollectAmount;
                 
@@ -1672,6 +1672,9 @@
                 // 丸めによる差額を残金に加算（支払う側も、もらう側も同じ式でOK）
                 roundingRemainder += roundedCollectAmount - rawCollectAmount;
                 
+                // 差引額
+                bodyHtml += `<td>${rawCollectAmount}</td>`;
+                // 集金額
                 const collectClass = roundedCollectAmount < 0 ? 'settlement-positive' : (roundedCollectAmount > 0 ? 'settlement-negative' : '');
                 bodyHtml += `<td class="${collectClass}"><strong>${roundedCollectAmount}</strong></td>`;
                 bodyHtml += '</tr>';
@@ -1681,7 +1684,7 @@
             const totalRemainder = baseRemainder + roundingRemainder;
             bodyHtml += `<tr style="background: #fff9e6;">
                 <td colspan="${selectedExpeditions.length + 1}"><strong>残金（部費へ繰入れ）</strong></td>
-                <td colspan="${selectedExpeditions.length + 1}" style="text-align: right;"><strong>¥${totalRemainder}</strong></td>
+                <td colspan="${selectedExpeditions.length + 2}" style="text-align: right;"><strong>¥${totalRemainder}</strong></td>
             </tr>`;
 
             tbody.innerHTML = bodyHtml;
@@ -1705,12 +1708,6 @@
                         <tr><th colspan="2">計</th><td>¥${exp.totalToll.toLocaleString()}</td></tr>
                     </table>
                 `;
-            }
-
-            // 参加者を5人ずつの行に分ける
-            const participantRows = [];
-            for (let i = 0; i < participantNames.length; i += 5) {
-                participantRows.push(participantNames.slice(i, i + 5).join('、'));
             }
 
             const html = `
@@ -1793,9 +1790,7 @@
                     
                     <div class="member-box">
                         <h4>👥 参加者 (${participantNames.length}人)</h4>
-                        <div class="member-list">
-                            ${participantRows.map(row => `<div>${row}</div>`).join('')}
-                        </div>
+                        <div class="member-list">${participantNames.join('、')}</div>
                         ${absentNames.length > 0 ? `<div class="absent"><strong>休み:</strong> ${absentNames.join('、')}</div>` : ''}
                     </div>
                 </body>
@@ -1855,11 +1850,11 @@
             const circleNumbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
             
             // 凡例を作成
-            const legendHtml = selectedExpeditions.map((exp, i) => 
+            const legendHtml = '遠征費 / 交通費負担額<br>' + selectedExpeditions.map((exp, i) => 
                 `${circleNumbers[i]} ${exp.date} ${exp.destination}`
             ).join('<br>');
             
-            let headerRow1 = `<th rowspan="2">部員</th><th colspan="${expCount}">遠征費</th><th rowspan="2">遠征費計</th><th colspan="${expCount}">交通費</th><th rowspan="2">集金金額</th>`;
+            let headerRow1 = `<th rowspan="2">部員</th><th colspan="${expCount}">遠征費</th><th rowspan="2">遠征費計</th><th colspan="${expCount}">交通費負担額</th><th rowspan="2">差引額</th><th rowspan="2">集金額</th>`;
             
             let headerRow2 = '';
             selectedExpeditions.forEach((exp, i) => {
@@ -1887,7 +1882,7 @@
                     bodyHtml += `<td>${income > 0 ? '¥' + income : ''}</td>`;
                 });
                 
-                // 集金金額 = 負担額 - 交通費収入（100円単位で丸め）
+                // 差引額 = 負担額 - 交通費収入（丸め前）
                 const rawCollectAmount = data.totalCost - data.totalIncome;
                 let roundedCollectAmount;
                 
@@ -1903,6 +1898,9 @@
                 // 丸めによる差額を残金に加算
                 roundingRemainder += roundedCollectAmount - rawCollectAmount;
                 
+                // 差引額
+                bodyHtml += `<td>¥${rawCollectAmount}</td>`;
+                // 集金額
                 const color = roundedCollectAmount < 0 ? 'green' : (roundedCollectAmount > 0 ? 'red' : 'black');
                 bodyHtml += `<td style="color: ${color};"><strong>¥${roundedCollectAmount}</strong></td>`;
                 bodyHtml += '</tr>';
@@ -1910,7 +1908,7 @@
 
             // 残金の行を追加（元の残金 + 丸めによる残金）
             const totalRemainder = baseRemainder + roundingRemainder;
-            const colCount = selectedExpeditions.length * 2 + 3;
+            const colCount = selectedExpeditions.length * 2 + 4;
             bodyHtml += `<tr style="background: #fff9e6;">
                 <td colspan="${Math.ceil(colCount / 2)}"><strong>残金（部費へ繰入れ）</strong></td>
                 <td colspan="${Math.floor(colCount / 2)}" style="text-align: right;"><strong>¥${totalRemainder}</strong></td>
