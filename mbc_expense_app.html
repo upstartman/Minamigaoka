@@ -832,6 +832,7 @@
             <div id="settlementResults" style="display: none;">
                 <div class="card" style="margin-top: 1rem;">
                     <div class="card-title">📊 清算結果</div>
+                    <div id="settlementLegend" style="background: #f9f9f9; border: 1px solid #ddd; padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.3rem; font-size: 0.75rem; line-height: 1.6;"></div>
                     <div class="table-container">
                         <table id="settlementTable">
                             <thead>
@@ -1613,18 +1614,26 @@
             // 元の残金の合計
             const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
 
+            // 番号記号の配列
+            const circleNumbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+
             let headerHtml = '<th>部員</th>';
-            selectedExpeditions.forEach(exp => {
-                const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
-                headerHtml += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
+            selectedExpeditions.forEach((exp, i) => {
+                headerHtml += `<th>${circleNumbers[i]}</th>`;
             });
             headerHtml += '<th>遠征費計</th>';
-            selectedExpeditions.forEach(exp => {
-                const shortDest = exp.destination.length > 6 ? exp.destination.slice(0, 6) + '…' : exp.destination;
-                headerHtml += `<th>交通費<br>${exp.date.slice(5)}<br>${shortDest}</th>`;
+            selectedExpeditions.forEach((exp, i) => {
+                headerHtml += `<th>${circleNumbers[i]}</th>`;
             });
             headerHtml += '<th>集金金額</th>';
             headerRow.innerHTML = headerHtml;
+
+            // 凡例を更新
+            const legendDiv = document.getElementById('settlementLegend');
+            const legendHtml = selectedExpeditions.map((exp, i) => 
+                `${circleNumbers[i]} ${exp.date} ${exp.destination}`
+            ).join('<br>');
+            legendDiv.innerHTML = legendHtml;
 
             let bodyHtml = '';
             let roundingRemainder = 0; // 丸めによる残金
@@ -1758,10 +1767,9 @@
                     ${tollHtml}
                     
                     <div class="summary">
-                        <div class="summary-grid">
+                        <div class="summary-grid" style="grid-template-columns: repeat(2, 1fr);">
                             <div><div class="summary-label">交通費合計</div><div class="summary-item">¥${exp.totalExpense?.toLocaleString()}</div></div>
                             <div><div class="summary-label">1人あたり</div><div class="summary-item">¥${exp.perPerson?.toLocaleString()}</div></div>
-                            <div><div class="summary-label">残金（部費へ）</div><div class="summary-item">¥${exp.remainder?.toLocaleString()}</div></div>
                         </div>
                     </div>
                     
@@ -1842,16 +1850,23 @@
 
             // Build table HTML - 2行ヘッダー
             const expCount = selectedExpeditions.length;
+            
+            // 番号記号の配列
+            const circleNumbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+            
+            // 凡例を作成
+            const legendHtml = selectedExpeditions.map((exp, i) => 
+                `${circleNumbers[i]} ${exp.date} ${exp.destination}`
+            ).join('<br>');
+            
             let headerRow1 = `<th rowspan="2">部員</th><th colspan="${expCount}">遠征費</th><th rowspan="2">遠征費計</th><th colspan="${expCount}">交通費</th><th rowspan="2">集金金額</th>`;
             
             let headerRow2 = '';
-            selectedExpeditions.forEach(exp => {
-                const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
-                headerRow2 += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
+            selectedExpeditions.forEach((exp, i) => {
+                headerRow2 += `<th>${circleNumbers[i]}</th>`;
             });
-            selectedExpeditions.forEach(exp => {
-                const shortDest = exp.destination.length > 5 ? exp.destination.slice(0, 5) + '…' : exp.destination;
-                headerRow2 += `<th>${exp.date.slice(5)}<br>${shortDest}</th>`;
+            selectedExpeditions.forEach((exp, i) => {
+                headerRow2 += `<th>${circleNumbers[i]}</th>`;
             });
 
             let bodyHtml = '';
@@ -1915,16 +1930,18 @@
                     <style>
                         body { font-family: 'Noto Sans JP', sans-serif; padding: 20px; font-size: 13px; }
                         h1 { text-align: center; font-size: 20px; margin-bottom: 8px; }
-                        .date-range { text-align: center; margin-bottom: 15px; font-size: 14px; }
+                        .date-range { text-align: center; margin-bottom: 10px; font-size: 14px; }
+                        .legend { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; border-radius: 5px; font-size: 12px; line-height: 1.8; }
                         table { width: 100%; border-collapse: collapse; }
                         th, td { border: 1px solid #333; padding: 6px; text-align: center; }
-                        th { background: #f0f0f0; font-size: 11px; }
+                        th { background: #f0f0f0; font-size: 13px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
                 <body>
                     <h1>遠征費用清算表</h1>
                     <div class="date-range">${dateRange}</div>
+                    <div class="legend">${legendHtml}</div>
                     <table>
                         <thead>
                             <tr>${headerRow1}</tr>
