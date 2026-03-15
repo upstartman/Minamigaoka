@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>遠征しおり作成アプリ - 南ヶ丘MBC</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 10px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    header p {
+      opacity: 0.9;
+      margin-top: 6px;
+      font-size: 0.85rem;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 15px;
+    }
+    .tab-btn {
+      padding: 10px 8px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .tab-btn.active {
+      background: white;
+      color: #667eea;
+      font-weight: bold;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .card h2 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      font-size: 1.1rem;
+    }
+    .card h3 {
+      color: #555;
+      margin: 16px 0 10px;
+      font-size: 1rem;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      color: #555;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px; /* iOS zoom防止 */
+      transition: border-color 0.3s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 500px) {
+      .form-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    /* 行程アイテム - スマホ対応 */
+    .schedule-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .schedule-item-row1 {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .schedule-item select {
+      width: 90px;
+      padding: 8px 4px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .time-selects {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .time-selects .hour-select,
+    .time-selects .minute-select {
+      width: 55px;
+      padding: 8px 4px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .time-selects .time-colon {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .undefined-check {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+      color: #666;
+      margin-left: 6px;
+      cursor: pointer;
+    }
+    .undefined-check input {
+      width: 16px;
+      height: 16px;
+    }
+    .schedule-item input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      min-width: 0;
+    }
+    .schedule-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .schedule-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .schedule-btn.insert {
+      background: #d4edda;
+      color: #155724;
+    }
+    .schedule-btn.up {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .schedule-btn.down {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .schedule-btn.delete {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .member-section {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    /* 車割り - スマホ対応 */
+    .car-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .car-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .car-item-header span {
+      font-weight: bold;
+      color: #856404;
+      min-width: 25px;
+    }
+    .car-item-header input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .car-item input.members-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .car-item-buttons {
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    .member-item {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .member-item input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .history-list {
+      margin-top: 12px;
+    }
+    .history-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    @media (min-width: 400px) {
+      .history-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .history-item-info {
+      flex: 1;
+    }
+    .history-item-name {
+      font-weight: bold;
+      color: #333;
+    }
+    .history-item-date {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .history-item-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* 持ち物アイテム - スマホ対応 */
+    .item-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .item-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .item-row-main {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .item-row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .item-row input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      min-width: 0;
+    }
+    .item-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .item-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .item-btn.insert {
+      background: #d4edda;
+      color: #155724;
+    }
+    .item-btn.up {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .item-btn.down {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .item-btn.delete {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .car-assignment {
+      background: #fff3cd;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .car-assignment h4 {
+      color: #856404;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .room-assignment {
+      background: #d4edda;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .room-assignment h4 {
+      color: #155724;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      background: #e9ecef;
+      border: 2px dashed #adb5bd;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #495057;
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+    .remove-btn {
+      background: #ffc9c9;
+      color: #c92a2a;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    
+    /* 画像プレビュー */
+    .image-preview {
+      margin-top: 10px;
+      max-width: 200px;
+    }
+    .image-preview img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .loading-content {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* PDF出力用スタイル（横向きA4: 1123px x 794px at 96dpi） */
+    .pdf-page {
+      position: absolute;
+      left: -9999px;
+      width: 1123px;
+      height: 794px;
+      background: white;
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
+      display: flex;
+    }
+    .pdf-half {
+      width: 50%;
+      padding: 40px 55px;
+      border-right: 1px dashed #999;
+      overflow: hidden;
+    }
+    .pdf-half:last-child {
+      border-right: none;
+    }
+    .pdf-title {
+      font-size: 48px;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .pdf-subtitle {
+      font-size: 28px;
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .pdf-cover-image {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .pdf-cover-image img {
+      max-width: 220px;
+      max-height: 180px;
+      border-radius: 8px;
+    }
+    .pdf-section-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 8px;
+      margin: 20px 0 14px;
+    }
+    .pdf-text {
+      font-size: 22px;
+      line-height: 1.9;
+      color: #333;
+    }
+    .pdf-schedule-item {
+      display: flex;
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+    .pdf-schedule-time {
+      width: 85px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .pdf-item-list {
+      font-size: 20px;
+    }
+    .pdf-item-row {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 9px;
+    }
+    .pdf-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #333;
+      margin-right: 12px;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .pdf-member-section {
+      margin-bottom: 10px;
+    }
+    .pdf-member-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .pdf-member-list {
+      font-size: 20px;
+      padding-left: 18px;
+      line-height: 1.5;
+    }
+    .pdf-note {
+      font-size: 18px;
+      color: #555;
+      margin-top: 14px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+    }
+    .pdf-input-line {
+      border-bottom: 2px solid #333;
+      display: inline-block;
+      min-width: 140px;
+    }
+    
+    /* タブレット以上 */
+    @media (min-width: 768px) {
+      body {
+        padding: 20px;
+      }
+      header h1 {
+        font-size: 2rem;
+      }
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .tab-btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+      }
+      .card {
+        padding: 24px;
+      }
+      .schedule-item {
+        flex-direction: row;
+        align-items: center;
+      }
+      .schedule-item-row1 {
+        flex: 1;
+      }
+      .schedule-buttons {
+        justify-content: flex-start;
+      }
+      .item-row {
+        flex-direction: row;
+        align-items: center;
+      }
+      .item-row-main {
+        flex: 1;
+      }
+      .item-buttons {
+        justify-content: flex-start;
+      }
+      .car-item {
+        flex-direction: row;
+        align-items: center;
+      }
+      .car-item-header {
+        flex: 1;
+      }
+      .car-item input.members-input {
+        flex: 2;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏀 遠征しおり作成アプリ</h1>
+      <p>ミニバスケットボールの遠征・合宿のしおりを簡単に作成</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="basic">基本情報</button>
+      <button class="tab-btn" data-tab="schedule">行程</button>
+      <button class="tab-btn" data-tab="items">持ち物</button>
+      <button class="tab-btn" data-tab="assignment">車割り・部屋割り</button>
+      <button class="tab-btn" data-tab="members">メンバー</button>
+      <button class="tab-btn" data-tab="history">履歴</button>
+      <button class="tab-btn" data-tab="output">出力</button>
+    </div>
+
+    <!-- 基本情報 -->
+    <div id="basic" class="tab-content active">
+      <div class="card">
+        <h2>📋 基本情報</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>大会名</label>
+            <input type="text" id="eventName" placeholder="例: 千葉ジェッツ船橋カップ">
+          </div>
+          <div class="form-group">
+            <label>チーム名</label>
+            <input type="text" id="teamName" placeholder="例: 南ヶ丘MBC">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>開催日（1日目）</label>
+            <input type="date" id="date1">
+          </div>
+          <div class="form-group">
+            <label>開催日（2日目）</label>
+            <input type="date" id="date2">
+          </div>
+        </div>
+        
+        <h3>🖼️ 表紙画像</h3>
+        <div class="form-group">
+          <label>画像を選択（表紙の日程の下に表示されます）</label>
+          <input type="file" id="coverImage" accept="image/*" onchange="handleImageUpload(event)">
+          <div id="imagePreview" class="image-preview"></div>
+          <button type="button" class="btn btn-secondary btn-small" onclick="clearImage()" style="margin-top: 8px; display: none;" id="clearImageBtn">画像を削除</button>
+        </div>
+        
+        <h3>📍 会場情報</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>1日目会場</label>
+            <input type="text" id="venue1" placeholder="例: 習志野台第二小学校">
+          </div>
+          <div class="form-group">
+            <label>2日目会場</label>
+            <input type="text" id="venue2" placeholder="例: 未定">
+          </div>
+        </div>
+
+        <h3>🏨 宿泊先</h3>
+        <div class="form-group">
+          <label>宿泊先名称</label>
+          <input type="text" id="hotelName" placeholder="例: 東横INN千葉新鎌ヶ谷駅前">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>郵便番号</label>
+            <input type="text" id="hotelZip" placeholder="例: 〒273-0107">
+          </div>
+          <div class="form-group">
+            <label>電話番号</label>
+            <input type="text" id="hotelTel" placeholder="例: 047-774-1045">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>住所</label>
+          <input type="text" id="hotelAddress" placeholder="例: 千葉県鎌ケ谷市新鎌ヶ谷2-8-18">
+        </div>
+
+        <h3>🍽️ 食事</h3>
+        <div class="form-group">
+          <label>夕食場所</label>
+          <input type="text" id="dinner" placeholder="例: 日高屋（予定）">
+        </div>
+      </div>
+    </div>
+
+    <!-- 行程 -->
+    <div id="schedule" class="tab-content">
+      <div class="card">
+        <h2>📅 行程表</h2>
+        <p style="color: #666; margin-bottom: 12px; font-size: 0.85rem;">
+          ⊕上に挿入 / ↑↓順序変更 / ✕削除
+        </p>
+        
+        <h3>1日目</h3>
+        <div id="schedule1Container"></div>
+        <button class="add-btn" onclick="addScheduleItem(1)">+ 末尾に追加</button>
+
+        <h3>2日目</h3>
+        <div id="schedule2Container"></div>
+        <button class="add-btn" onclick="addScheduleItem(2)">+ 末尾に追加</button>
+      </div>
+    </div>
+
+    <!-- 持ち物 -->
+    <div id="items" class="tab-content">
+      <div class="card">
+        <h2>🎒 持ち物リスト</h2>
+        <p style="color: #666; margin-bottom: 12px; font-size: 0.85rem;">
+          ⊕上に挿入 / ↑↓順序変更 / ✕削除
+        </p>
+        
+        <h3>① バスケ試合用リュック</h3>
+        <div id="items1Container" class="item-list-container"></div>
+        <button class="add-btn" onclick="addItem(1)">+ アイテム追加</button>
+
+        <h3>② 車内に持ち込む物</h3>
+        <div id="items2Container" class="item-list-container"></div>
+        <button class="add-btn" onclick="addItem(2)">+ アイテム追加</button>
+
+        <h3>③ 2日目試合用</h3>
+        <div id="items3Container" class="item-list-container"></div>
+        <button class="add-btn" onclick="addItem(3)">+ アイテム追加</button>
+
+        <h3>④ 宿泊用セット</h3>
+        <div id="items4Container" class="item-list-container"></div>
+        <button class="add-btn" onclick="addItem(4)">+ アイテム追加</button>
+
+        <h3>注意事項</h3>
+        <div class="form-group">
+          <textarea id="itemsNote" rows="3" placeholder="例: 持ち物全てに必ず名前を書いてください！&#10;お小遣いは、夕飯・道の駅で買うものなどで使うので、多めに持たせてください"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 車割り・部屋割り -->
+    <div id="assignment" class="tab-content">
+      <div class="card">
+        <h2>🚗 車割り・部屋割り</h2>
+        
+        <div class="car-assignment">
+          <h4>🚙 車割り</h4>
+          <div id="carContainer"></div>
+          <button class="add-btn" onclick="addCar()">+ 車追加</button>
+          <div class="form-group" style="margin-top: 16px;">
+            <label>車割り注意事項</label>
+            <textarea id="carNote" rows="2" placeholder="例: 給油,ETCカードか支払う手段を忘れずに★&#10;駐車場では他の車に気を付けて！"></textarea>
+          </div>
+        </div>
+
+        <div class="room-assignment">
+          <h4>🛏️ 部屋割り</h4>
+          <div id="roomContainer"></div>
+          <button class="add-btn" onclick="addRoom()">+ 部屋追加</button>
+          <div class="form-group" style="margin-top: 16px;">
+            <label>部屋割り注意事項</label>
+            <textarea id="roomNote" rows="2" placeholder="例: 部屋番号は当日わかります"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- メンバー -->
+    <div id="members" class="tab-content">
+      <div class="card">
+        <h2>👥 メンバー</h2>
+        
+        <div class="member-section">
+          <h3>コーチ</h3>
+          <div id="coachContainer"></div>
+          <button class="add-btn" onclick="addMember('coach')">+ コーチ追加</button>
+        </div>
+
+        <div class="member-section">
+          <h3>保護者</h3>
+          <div id="parentContainer"></div>
+          <button class="add-btn" onclick="addMember('parent')">+ 保護者追加</button>
+        </div>
+
+        <div class="member-section">
+          <h3>6年生</h3>
+          <div id="grade6Container"></div>
+          <button class="add-btn" onclick="addMember('grade6')">+ 6年生追加</button>
+        </div>
+
+        <div class="member-section">
+          <h3>5年生</h3>
+          <div id="grade5Container"></div>
+          <button class="add-btn" onclick="addMember('grade5')">+ 5年生追加</button>
+        </div>
+
+        <div class="member-section">
+          <h3>4年生</h3>
+          <div id="grade4Container"></div>
+          <button class="add-btn" onclick="addMember('grade4')">+ 4年生追加</button>
+        </div>
+
+        <div class="member-section">
+          <h3>その他（兄弟児など）</h3>
+          <div id="otherContainer"></div>
+          <button class="add-btn" onclick="addMember('other')">+ その他追加</button>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label>合計人数メモ</label>
+          <input type="text" id="totalMembers" placeholder="例: 子ども16名 大人11名 合計27名">
+        </div>
+      </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div id="history" class="tab-content">
+      <div class="card">
+        <h2>📚 保存履歴</h2>
+        <div class="action-buttons">
+          <button class="btn btn-success" onclick="saveToHistory()">💾 現在のデータを保存</button>
+          <button class="btn btn-danger" onclick="clearAllHistory()">🗑️ 全履歴削除</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+
+    <!-- 出力 -->
+    <div id="output" class="tab-content">
+      <div class="card">
+        <h2>📄 PDF出力</h2>
+        <p style="margin-bottom: 16px; color: #666; font-size: 0.9rem;">
+          A4横向きを縦に2分割したしおり形式でPDFを生成します。<br>
+          印刷後、中央で折るとしおりとして使用できます。<br>
+          全5ページ（10面）構成です。
+        </p>
+        <div class="action-buttons">
+          <button class="btn btn-primary" onclick="generatePDF()">📄 PDFを別タブで開く</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ローディング -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <div>PDF生成中...</div>
+    </div>
+  </div>
+
+  <!-- PDF生成用の非表示エリア -->
+  <div id="pdfContainer"></div>
+
+  <script>
+    // デフォルトデータ
+    const defaultSchedule1 = [
+      { time: '6:00', content: '南小集合・出発' },
+      { time: '', content: '上三川IC→★PA（10分休憩）→花輪IC' },
+      { time: '8:30', content: '会場到着' },
+      { time: '未定', content: '昼食（弁当）' },
+      { time: '12:10', content: '試合開始 Tip Off！' },
+      { time: '16:00', content: '会場出発' },
+      { time: '', content: '宿：東横INN 着・チェックIN・着替え' },
+      { time: '17:00', content: '徒歩で日高屋へ（各自夕食注文）' },
+      { time: '19:00', content: 'お風呂、就寝準備、自由時間' },
+      { time: '21:00', content: '就寝' }
+    ];
+
+    const defaultSchedule2 = [
+      { time: '6:00', content: '起床' },
+      { time: '6:30', content: '荷物の整理/部屋の片づけ・朝食' },
+      { time: '7:00', content: 'チェックOUT・東横INN出発' },
+      { time: '未定', content: '会場到着' },
+      { time: '未定', content: '開場・指導者ミーティング' },
+      { time: '', content: '試合開始 Tip Off！' },
+      { time: '未定', content: '昼食（弁当）' },
+      { time: '17:00', content: '出発' },
+      { time: '', content: '花輪IC→★PA(10分休憩)→上三川IC' },
+      { time: '未定', content: '南小到着 ※出発時に連絡します' }
+    ];
+
+    const defaultItems = {
+      items1: ['公式ユニフォーム＆靴下', 'バッシュ', '水筒（中身を入れてくる）', '帽子', 'タオル', '予備の飲み物（2L）', 'ウィダインゼリー ※1個目', '酔う子は酔い止め'],
+      items2: ['飲み物', '朝ごはん（おにぎり,パンなど）', 'お小遣い（夕飯・その他）', '酔う子は酔い止め'],
+      items3: ['タオル', 'ウィダインゼリー ※2個目', '靴下'],
+      items4: ['着替え（バスケ練習着3セット）※寝間着にも使用', '洗濯ネット（必ず名前を書く）', 'ハンガー4本', '汚れものを入れるビニール袋', '必要な子は常備薬', 'その他、各自必要なもの']
+    };
+
+    // 画像データ保持用
+    let coverImageData = null;
+
+    // 画像アップロード処理
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // ファイルサイズチェック（2MB以下）
+      if (file.size > 2 * 1024 * 1024) {
+        alert('画像サイズは2MB以下にしてください');
+        event.target.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        coverImageData = e.target.result;
+        displayImagePreview(coverImageData);
+        saveToLocalStorage();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 画像プレビュー表示
+    function displayImagePreview(imageData) {
+      const preview = document.getElementById('imagePreview');
+      const clearBtn = document.getElementById('clearImageBtn');
+      if (imageData) {
+        preview.innerHTML = `<img src="${imageData}" alt="表紙画像">`;
+        clearBtn.style.display = 'inline-block';
+      } else {
+        preview.innerHTML = '';
+        clearBtn.style.display = 'none';
+      }
+    }
+
+    // 画像削除
+    function clearImage() {
+      coverImageData = null;
+      document.getElementById('coverImage').value = '';
+      displayImagePreview(null);
+      saveToLocalStorage();
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTabs();
+      loadFromLocalStorage();
+      renderHistoryList();
+    });
+
+    // タブ切り替え
+    function initTabs() {
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const tabId = this.dataset.tab;
+          tabBtns.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+    }
+
+    // 時刻オプション生成（時間）
+    function generateHourOptions(selectedValue = '') {
+      const options = ['<option value="">--</option>'];
+      for (let h = 5; h <= 23; h++) {
+        const selected = String(h) === selectedValue ? ' selected' : '';
+        options.push(`<option value="${h}"${selected}>${h}</option>`);
+      }
+      return options.join('');
+    }
+
+    // 時刻オプション生成（分 - 5分単位）
+    function generateMinuteOptions(selectedValue = '') {
+      const options = ['<option value="">--</option>'];
+      for (let m = 0; m < 60; m += 5) {
+        const minStr = m.toString().padStart(2, '0');
+        const selected = minStr === selectedValue ? ' selected' : '';
+        options.push(`<option value="${minStr}"${selected}>${minStr}</option>`);
+      }
+      return options.join('');
+    }
+
+    // スケジュールアイテム追加
+    function addScheduleItem(day, time = '', content = '', insertBefore = null) {
+      const container = document.getElementById(`schedule${day}Container`);
+      const div = document.createElement('div');
+      div.className = 'schedule-item';
+      div.dataset.day = day;
+      
+      // 時刻をパース（例: "6:30" → hour="6", minute="30"）
+      let hour = '';
+      let minute = '';
+      if (time && time !== '未定' && time.includes(':')) {
+        const parts = time.split(':');
+        hour = parts[0];
+        minute = parts[1];
+      }
+      const isUndefined = time === '未定';
+      
+      div.innerHTML = `
+        <div class="schedule-item-row1">
+          <div class="time-selects">
+            <select class="hour-select" onchange="saveToLocalStorage()">
+              ${generateHourOptions(hour)}
+            </select>
+            <span class="time-colon">:</span>
+            <select class="minute-select" onchange="saveToLocalStorage()">
+              ${generateMinuteOptions(minute)}
+            </select>
+            <label class="undefined-check">
+              <input type="checkbox" ${isUndefined ? 'checked' : ''} onchange="toggleUndefined(this)">
+              <span>未定</span>
+            </label>
+          </div>
+          <input type="text" placeholder="内容" value="${content}">
+        </div>
+        <div class="schedule-buttons">
+          <button class="schedule-btn insert" onclick="insertScheduleAbove(this)" title="上に挿入">⊕</button>
+          <button class="schedule-btn up" onclick="moveScheduleUp(this)" title="上へ移動">↑</button>
+          <button class="schedule-btn down" onclick="moveScheduleDown(this)" title="下へ移動">↓</button>
+          <button class="schedule-btn delete" onclick="deleteScheduleItem(this)" title="削除">✕</button>
+        </div>
+      `;
+      
+      if (insertBefore) {
+        container.insertBefore(div, insertBefore);
+      } else {
+        container.appendChild(div);
+      }
+      
+      // 未定チェック時はセレクトを無効化
+      if (isUndefined) {
+        div.querySelector('.hour-select').disabled = true;
+        div.querySelector('.minute-select').disabled = true;
+      }
+    }
+    
+    // 未定チェックボックス切り替え
+    function toggleUndefined(checkbox) {
+      const item = checkbox.closest('.schedule-item');
+      const hourSelect = item.querySelector('.hour-select');
+      const minuteSelect = item.querySelector('.minute-select');
+      
+      if (checkbox.checked) {
+        hourSelect.disabled = true;
+        minuteSelect.disabled = true;
+        hourSelect.value = '';
+        minuteSelect.value = '';
+      } else {
+        hourSelect.disabled = false;
+        minuteSelect.disabled = false;
+      }
+      saveToLocalStorage();
+    }
+
+    // 上に挿入
+    function insertScheduleAbove(btn) {
+      const item = btn.closest('.schedule-item');
+      const day = item.dataset.day;
+      addScheduleItem(day, '', '', item);
+      saveToLocalStorage();
+    }
+
+    // 上へ移動
+    function moveScheduleUp(btn) {
+      const item = btn.closest('.schedule-item');
+      const prev = item.previousElementSibling;
+      if (prev) {
+        item.parentNode.insertBefore(item, prev);
+        saveToLocalStorage();
+      }
+    }
+
+    // 下へ移動
+    function moveScheduleDown(btn) {
+      const item = btn.closest('.schedule-item');
+      const next = item.nextElementSibling;
+      if (next) {
+        item.parentNode.insertBefore(next, item);
+        saveToLocalStorage();
+      }
+    }
+
+    // 削除
+    function deleteScheduleItem(btn) {
+      const item = btn.closest('.schedule-item');
+      item.remove();
+      saveToLocalStorage();
+    }
+
+    // 持ち物アイテム追加
+    function addItem(category, text = '', insertBefore = null) {
+      const container = document.getElementById(`items${category}Container`);
+      const div = document.createElement('div');
+      div.className = 'item-row';
+      div.dataset.category = category;
+      div.innerHTML = `
+        <div class="item-row-main">
+          <input type="checkbox">
+          <input type="text" placeholder="持ち物" value="${text}">
+        </div>
+        <div class="item-buttons">
+          <button class="item-btn insert" onclick="insertItemAbove(this)" title="上に挿入">⊕</button>
+          <button class="item-btn up" onclick="moveItemUp(this)" title="上へ移動">↑</button>
+          <button class="item-btn down" onclick="moveItemDown(this)" title="下へ移動">↓</button>
+          <button class="item-btn delete" onclick="deleteItem(this)" title="削除">✕</button>
+        </div>
+      `;
+      
+      if (insertBefore) {
+        container.insertBefore(div, insertBefore);
+      } else {
+        container.appendChild(div);
+      }
+    }
+
+    // 持ち物 - 上に挿入
+    function insertItemAbove(btn) {
+      const item = btn.closest('.item-row');
+      const category = item.dataset.category;
+      addItem(category, '', item);
+      saveToLocalStorage();
+    }
+
+    // 持ち物 - 上へ移動
+    function moveItemUp(btn) {
+      const item = btn.closest('.item-row');
+      const prev = item.previousElementSibling;
+      if (prev) {
+        item.parentNode.insertBefore(item, prev);
+        saveToLocalStorage();
+      }
+    }
+
+    // 持ち物 - 下へ移動
+    function moveItemDown(btn) {
+      const item = btn.closest('.item-row');
+      const next = item.nextElementSibling;
+      if (next) {
+        item.parentNode.insertBefore(next, item);
+        saveToLocalStorage();
+      }
+    }
+
+    // 持ち物 - 削除
+    function deleteItem(btn) {
+      const item = btn.closest('.item-row');
+      item.remove();
+      saveToLocalStorage();
+    }
+
+    // 車追加
+    function addCar(driver = '', members = '') {
+      const container = document.getElementById('carContainer');
+      const count = container.children.length + 1;
+      const div = document.createElement('div');
+      div.className = 'car-item';
+      div.innerHTML = `
+        <div class="car-item-header">
+          <span>${count}</span>
+          <input type="text" placeholder="運転者" value="${driver}">
+        </div>
+        <input type="text" class="members-input" placeholder="メンバー" value="${members}">
+        <div class="car-item-buttons">
+          <button class="remove-btn" onclick="this.closest('.car-item').remove(); renumberCars();">削除</button>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function renumberCars() {
+      const container = document.getElementById('carContainer');
+      const items = container.querySelectorAll('.car-item');
+      items.forEach((item, index) => {
+        item.querySelector('span').textContent = index + 1;
+      });
+      saveToLocalStorage();
+    }
+
+    // 部屋追加
+    function addRoom(members = '') {
+      const container = document.getElementById('roomContainer');
+      const count = container.children.length + 1;
+      const div = document.createElement('div');
+      div.className = 'member-item room-item';
+      div.innerHTML = `
+        <span style="min-width: 30px; font-weight: bold; color: #155724;">${count}</span>
+        <input type="text" placeholder="部屋メンバー" value="${members}">
+        <button class="remove-btn" onclick="this.closest('.room-item').remove(); renumberRooms();">削除</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function renumberRooms() {
+      const container = document.getElementById('roomContainer');
+      const items = container.querySelectorAll('.room-item');
+      items.forEach((item, index) => {
+        item.querySelector('span').textContent = index + 1;
+      });
+      saveToLocalStorage();
+    }
+
+    // メンバー追加
+    function addMember(type, name = '') {
+      const container = document.getElementById(`${type}Container`);
+      const div = document.createElement('div');
+      div.className = 'member-item';
+      div.innerHTML = `
+        <input type="text" placeholder="名前" value="${name}">
+        <button class="remove-btn" onclick="this.parentElement.remove()">削除</button>
+      `;
+      container.appendChild(div);
+    }
+
+    // データ収集
+    function collectData() {
+      const data = {
+        eventName: document.getElementById('eventName').value,
+        teamName: document.getElementById('teamName').value,
+        date1: document.getElementById('date1').value,
+        date2: document.getElementById('date2').value,
+        coverImage: coverImageData,
+        venue1: document.getElementById('venue1').value,
+        venue2: document.getElementById('venue2').value,
+        hotelName: document.getElementById('hotelName').value,
+        hotelZip: document.getElementById('hotelZip').value,
+        hotelTel: document.getElementById('hotelTel').value,
+        hotelAddress: document.getElementById('hotelAddress').value,
+        dinner: document.getElementById('dinner').value,
+        schedule1: [],
+        schedule2: [],
+        items1: [],
+        items2: [],
+        items3: [],
+        items4: [],
+        itemsNote: document.getElementById('itemsNote').value,
+        cars: [],
+        carNote: document.getElementById('carNote').value,
+        rooms: [],
+        roomNote: document.getElementById('roomNote').value,
+        coaches: [],
+        parents: [],
+        grade6: [],
+        grade5: [],
+        grade4: [],
+        other: [],
+        totalMembers: document.getElementById('totalMembers').value
+      };
+
+      // スケジュール収集
+      document.querySelectorAll('#schedule1Container .schedule-item').forEach(item => {
+        const hourSelect = item.querySelector('.hour-select');
+        const minuteSelect = item.querySelector('.minute-select');
+        const undefinedCheck = item.querySelector('.undefined-check input');
+        const input = item.querySelector('input[type="text"]');
+        
+        let time = '';
+        if (undefinedCheck && undefinedCheck.checked) {
+          time = '未定';
+        } else if (hourSelect.value && minuteSelect.value) {
+          time = `${hourSelect.value}:${minuteSelect.value}`;
+        }
+        
+        data.schedule1.push({ time: time, content: input.value });
+      });
+      document.querySelectorAll('#schedule2Container .schedule-item').forEach(item => {
+        const hourSelect = item.querySelector('.hour-select');
+        const minuteSelect = item.querySelector('.minute-select');
+        const undefinedCheck = item.querySelector('.undefined-check input');
+        const input = item.querySelector('input[type="text"]');
+        
+        let time = '';
+        if (undefinedCheck && undefinedCheck.checked) {
+          time = '未定';
+        } else if (hourSelect.value && minuteSelect.value) {
+          time = `${hourSelect.value}:${minuteSelect.value}`;
+        }
+        
+        data.schedule2.push({ time: time, content: input.value });
+      });
+
+      // 持ち物収集
+      for (let i = 1; i <= 4; i++) {
+        document.querySelectorAll(`#items${i}Container .item-row`).forEach(item => {
+          const text = item.querySelector('input[type="text"]').value;
+          if (text) data[`items${i}`].push(text);
+        });
+      }
+
+      // 車割り収集
+      document.querySelectorAll('#carContainer .car-item').forEach(item => {
+        const inputs = item.querySelectorAll('input');
+        data.cars.push({ driver: inputs[0].value, members: inputs[1].value });
+      });
+
+      // 部屋割り収集
+      document.querySelectorAll('#roomContainer .room-item').forEach(item => {
+        const input = item.querySelector('input');
+        data.rooms.push(input.value);
+      });
+
+      // メンバー収集
+      const memberTypes = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
+      const memberKeys = ['coaches', 'parents', 'grade6', 'grade5', 'grade4', 'other'];
+      memberTypes.forEach((type, idx) => {
+        document.querySelectorAll(`#${type}Container .member-item`).forEach(item => {
+          const input = item.querySelector('input');
+          if (input.value) data[memberKeys[idx]].push(input.value);
+        });
+      });
+
+      return data;
+    }
+
+    // データ復元
+    function restoreData(data) {
+      document.getElementById('eventName').value = data.eventName || '';
+      document.getElementById('teamName').value = data.teamName || '';
+      document.getElementById('date1').value = data.date1 || '';
+      document.getElementById('date2').value = data.date2 || '';
+      document.getElementById('venue1').value = data.venue1 || '';
+      document.getElementById('venue2').value = data.venue2 || '';
+      document.getElementById('hotelName').value = data.hotelName || '';
+      document.getElementById('hotelZip').value = data.hotelZip || '';
+      document.getElementById('hotelTel').value = data.hotelTel || '';
+      document.getElementById('hotelAddress').value = data.hotelAddress || '';
+      document.getElementById('dinner').value = data.dinner || '';
+      document.getElementById('itemsNote').value = data.itemsNote || '';
+      document.getElementById('carNote').value = data.carNote || '';
+      document.getElementById('roomNote').value = data.roomNote || '';
+      document.getElementById('totalMembers').value = data.totalMembers || '';
+
+      // 画像復元
+      coverImageData = data.coverImage || null;
+      displayImagePreview(coverImageData);
+
+      // スケジュール復元
+      document.getElementById('schedule1Container').innerHTML = '';
+      document.getElementById('schedule2Container').innerHTML = '';
+      (data.schedule1 || defaultSchedule1).forEach(s => addScheduleItem(1, s.time, s.content));
+      (data.schedule2 || defaultSchedule2).forEach(s => addScheduleItem(2, s.time, s.content));
+
+      // 持ち物復元
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`items${i}Container`).innerHTML = '';
+        (data[`items${i}`] || defaultItems[`items${i}`]).forEach(item => addItem(i, item));
+      }
+
+      // 車割り復元
+      document.getElementById('carContainer').innerHTML = '';
+      (data.cars || []).forEach(c => addCar(c.driver, c.members));
+
+      // 部屋割り復元
+      document.getElementById('roomContainer').innerHTML = '';
+      (data.rooms || []).forEach(r => addRoom(r));
+
+      // メンバー復元
+      const memberTypes = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
+      const memberKeys = ['coaches', 'parents', 'grade6', 'grade5', 'grade4', 'other'];
+      memberTypes.forEach((type, idx) => {
+        document.getElementById(`${type}Container`).innerHTML = '';
+        (data[memberKeys[idx]] || []).forEach(name => addMember(type, name));
+      });
+    }
+
+    // LocalStorage保存/読込
+    function saveToLocalStorage() {
+      const data = collectData();
+      localStorage.setItem('shiori_current', JSON.stringify(data));
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem('shiori_current');
+      if (saved) {
+        restoreData(JSON.parse(saved));
+      } else {
+        defaultSchedule1.forEach(s => addScheduleItem(1, s.time, s.content));
+        defaultSchedule2.forEach(s => addScheduleItem(2, s.time, s.content));
+        for (let i = 1; i <= 4; i++) {
+          defaultItems[`items${i}`].forEach(item => addItem(i, item));
+        }
+        for (let i = 0; i < 5; i++) addCar();
+        for (let i = 0; i < 8; i++) addRoom();
+      }
+    }
+
+    // 自動保存
+    document.addEventListener('input', function() {
+      saveToLocalStorage();
+    });
+
+    // 履歴管理
+    function saveToHistory() {
+      const data = collectData();
+      const name = data.eventName || '無題のしおり';
+      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+      
+      history.unshift({
+        id: Date.now(),
+        name: name,
+        date: new Date().toLocaleString('ja-JP'),
+        data: data
+      });
+      
+      if (history.length > 20) history.pop();
+      
+      localStorage.setItem('shiori_history', JSON.stringify(history));
+      renderHistoryList();
+      alert('保存しました！');
+    }
+
+    function loadFromHistory(id) {
+      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+      const item = history.find(h => h.id === id);
+      if (item) {
+        restoreData(item.data);
+        alert('読み込みました！');
+      }
+    }
+
+    function deleteFromHistory(id) {
+      if (!confirm('この履歴を削除しますか？')) return;
+      let history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+      history = history.filter(h => h.id !== id);
+      localStorage.setItem('shiori_history', JSON.stringify(history));
+      renderHistoryList();
+    }
+
+    function clearAllHistory() {
+      if (!confirm('全ての履歴を削除しますか？')) return;
+      localStorage.removeItem('shiori_history');
+      renderHistoryList();
+    }
+
+    function renderHistoryList() {
+      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+      const container = document.getElementById('historyList');
+      
+      if (history.length === 0) {
+        container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">保存された履歴はありません</p>';
+        return;
+      }
+      
+      container.innerHTML = history.map(item => `
+        <div class="history-item">
+          <div class="history-item-info">
+            <div class="history-item-name">${item.name}</div>
+            <div class="history-item-date">${item.date}</div>
+          </div>
+          <div class="history-item-buttons">
+            <button class="btn btn-primary btn-small" onclick="loadFromHistory(${item.id})">読込</button>
+            <button class="btn btn-danger btn-small" onclick="deleteFromHistory(${item.id})">削除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 日付フォーマット（曜日なし）
+    function formatDate(dateStr) {
+      if (!dateStr) return '未定';
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+    }
+
+    // PDF用HTMLを生成
+    function generatePDFHTML(data) {
+      const dateRange = data.date1 && data.date2 
+        ? `${formatDate(data.date1)}〜${formatDate(data.date2)}`
+        : '日程未定';
+
+      // 画像HTML生成
+      const coverImageHTML = data.coverImage 
+        ? `<div class="pdf-cover-image"><img src="${data.coverImage}" alt=""></div>` 
+        : '';
+
+      // ページ1: 表紙（左）+ 場所・宿泊（右）
+      const page1 = `
+        <div class="pdf-page" id="pdfPage1">
+          <div class="pdf-half" style="padding-top: 100px;">
+            <div class="pdf-title">${data.eventName || '遠征しおり'}</div>
+            <div class="pdf-subtitle">${dateRange}</div>
+            ${coverImageHTML}
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="font-size: 28px;">${data.teamName || ''} <span class="pdf-input-line" style="width: 50px;"></span>年</div>
+              <div style="font-size: 28px; margin-top: 18px;">名前 <span class="pdf-input-line" style="width: 180px;"></span></div>
+            </div>
+          </div>
+          <div class="pdf-half">
+            <div class="pdf-section-title">📍 場所</div>
+            <div class="pdf-text">
+              <div><strong>会場/1日目:</strong> ${data.venue1 || '未定'}</div>
+              <div><strong>会場/2日目:</strong> ${data.venue2 || '未定'}</div>
+            </div>
+            <div class="pdf-section-title">🏨 宿泊先</div>
+            <div class="pdf-text">
+              <div><strong>${data.hotelName || ''}</strong></div>
+              <div>${data.hotelZip || ''}</div>
+              <div>${data.hotelAddress || ''}</div>
+              <div>Tel: ${data.hotelTel || ''}</div>
+            </div>
+            ${data.dinner ? `
+              <div class="pdf-section-title">🍽️ 夕食</div>
+              <div class="pdf-text">${data.dinner}</div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
+      // ページ2: 行程1日目（左）+ 行程2日目（右）
+      const page2 = `
+        <div class="pdf-page" id="pdfPage2">
+          <div class="pdf-half">
+            <div class="pdf-section-title">📅 行程 1日目</div>
+            <div class="pdf-text">
+              ${(data.schedule1 || []).map(s => `
+                <div class="pdf-schedule-item">
+                  <div class="pdf-schedule-time">${s.time || ''}</div>
+                  <div>${s.content || ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="pdf-half">
+            <div class="pdf-section-title">📅 行程 2日目</div>
+            <div class="pdf-text">
+              ${(data.schedule2 || []).map(s => `
+                <div class="pdf-schedule-item">
+                  <div class="pdf-schedule-time">${s.time || ''}</div>
+                  <div>${s.content || ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ページ3: 持ち物①②（左）+ 持ち物③④（右）
+      const page3 = `
+        <div class="pdf-page" id="pdfPage3">
+          <div class="pdf-half">
+            <div class="pdf-section-title">🎒 持ち物</div>
+            <div class="pdf-item-list">
+              <div style="font-weight: bold; margin-bottom: 10px; font-size: 22px;">① バスケ試合用リュック</div>
+              <div style="padding-left: 25px;">
+                ${(data.items1 || []).map(item => `
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                `).join('')}
+              </div>
+              <div style="font-weight: bold; margin: 20px 0 10px; font-size: 22px;">② 車内に持ち込む物</div>
+              <div style="padding-left: 25px;">
+                ${(data.items2 || []).map(item => `
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="pdf-half">
+            <div class="pdf-section-title">🎒 持ち物（続き）</div>
+            <div class="pdf-item-list">
+              <div style="font-weight: bold; margin-bottom: 10px; font-size: 22px;">③ 2日目試合用</div>
+              <div style="padding-left: 25px;">
+                ${(data.items3 || []).map(item => `
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                `).join('')}
+              </div>
+              <div style="font-weight: bold; margin: 20px 0 10px; font-size: 22px;">④ 宿泊用セット</div>
+              <div style="padding-left: 25px;">
+                ${(data.items4 || []).map(item => `
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                `).join('')}
+              </div>
+              ${data.itemsNote ? `<div class="pdf-note">${data.itemsNote.replace(/\n/g, '<br>')}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ページ4: 車割り（左）+ 部屋割り（右）
+      const page4 = `
+        <div class="pdf-page" id="pdfPage4">
+          <div class="pdf-half">
+            <div class="pdf-section-title">🚗 車割り</div>
+            <div class="pdf-text">
+              <table style="width: 100%; font-size: 20px; border-collapse: collapse;">
+                <tr style="background: #f0f0f0;">
+                  <th style="padding: 10px; border: 1px solid #ccc; width: 40px;">No</th>
+                  <th style="padding: 10px; border: 1px solid #ccc;">運転者</th>
+                  <th style="padding: 10px; border: 1px solid #ccc;">メンバー</th>
+                </tr>
+                ${(data.cars || []).map((car, idx) => `
+                  <tr>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc;">${car.driver || ''}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc;">${car.members || ''}</td>
+                  </tr>
+                `).join('')}
+              </table>
+              ${data.carNote ? `<div class="pdf-note">${data.carNote.replace(/\n/g, '<br>')}</div>` : ''}
+            </div>
+          </div>
+          <div class="pdf-half">
+            <div class="pdf-section-title">🛏️ 部屋割り</div>
+            <div class="pdf-text">
+              <table style="width: 100%; font-size: 20px; border-collapse: collapse;">
+                <tr style="background: #f0f0f0;">
+                  <th style="padding: 10px; border: 1px solid #ccc; width: 70px; white-space: nowrap;">部屋</th>
+                  <th style="padding: 10px; border: 1px solid #ccc;">メンバー</th>
+                </tr>
+                ${(data.rooms || []).map((room, idx) => `
+                  <tr>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc;">${room || ''}</td>
+                  </tr>
+                `).join('')}
+              </table>
+              ${data.roomNote ? `<div class="pdf-note">${data.roomNote.replace(/\n/g, '<br>')}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // ページ5: メンバー2列（左）+ メモ欄（右）
+      const page5 = `
+        <div class="pdf-page" id="pdfPage5">
+          <div class="pdf-half">
+            <div class="pdf-section-title">👥 メンバー</div>
+            <div style="display: flex; gap: 20px;">
+              <div style="flex: 1;">
+                <div style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 10px;">子ども</div>
+                ${data.grade6 && data.grade6.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">6年</div>
+                    <div class="pdf-member-list">${data.grade6.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+                ${data.grade5 && data.grade5.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">5年</div>
+                    <div class="pdf-member-list">${data.grade5.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+                ${data.grade4 && data.grade4.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">4年</div>
+                    <div class="pdf-member-list">${data.grade4.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+                ${data.other && data.other.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">その他</div>
+                    <div class="pdf-member-list">${data.other.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 10px;">大人</div>
+                ${data.coaches && data.coaches.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">コーチ</div>
+                    <div class="pdf-member-list">${data.coaches.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+                ${data.parents && data.parents.length > 0 ? `
+                  <div class="pdf-member-section">
+                    <div class="pdf-member-title">保護者</div>
+                    <div class="pdf-member-list">${data.parents.map(n => `<div>${n}</div>`).join('')}</div>
+                  </div>
+                ` : ''}
+                ${data.totalMembers ? `
+                  <div style="margin-top: 20px; font-weight: bold; font-size: 18px;">${data.totalMembers}</div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="pdf-half">
+            <div class="pdf-section-title">📝 メモ</div>
+          </div>
+        </div>
+      `;
+
+      return { page1, page2, page3, page4, page5 };
+    }
+
+    // PDF生成（別タブで開く）
+    async function generatePDF() {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      loadingOverlay.style.display = 'flex';
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const data = collectData();
+        const pages = generatePDFHTML(data);
+        const pdfContainer = document.getElementById('pdfContainer');
+
+        // A4横向き: 297mm x 210mm
+        const doc = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const pageHTMLs = [pages.page1, pages.page2, pages.page3, pages.page4, pages.page5];
+
+        for (let i = 0; i < pageHTMLs.length; i++) {
+          pdfContainer.innerHTML = pageHTMLs[i];
+          const element = pdfContainer.querySelector('.pdf-page');
+          
+          // 一時的に表示
+          element.style.position = 'absolute';
+          element.style.left = '0';
+          element.style.top = '0';
+          
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          
+          if (i > 0) {
+            doc.addPage();
+          }
+          
+          // A4横向き: 297 x 210 mm
+          doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+        }
+
+        pdfContainer.innerHTML = '';
+
+        // PDFをBlobとして取得して別タブで開く
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank');
+
+      } catch (error) {
+        console.error('PDF生成エラー:', error);
+        alert('PDF生成中にエラーが発生しました。');
+      } finally {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
