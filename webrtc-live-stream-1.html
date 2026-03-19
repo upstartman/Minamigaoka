@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC ライブ配信</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+    
+    .status-bar {
+      background: rgba(255,255,255,0.1);
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #666;
+    }
+    
+    .status-dot.connected { background: #4ade80; }
+    .status-dot.streaming { background: #f43f5e; animation: pulse 1s infinite; }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .video-container {
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+      margin-bottom: 20px;
+    }
+    
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .mode-btn {
+      padding: 15px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .mode-btn.active {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.2);
+    }
+    
+    .room-section {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    
+    .room-section h3 {
+      margin-bottom: 15px;
+      font-size: 1rem;
+      color: #94a3b8;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    
+    input::placeholder {
+      color: #64748b;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .room-id-display {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    
+    .room-id-display code {
+      font-size: 1.2rem;
+      color: #4ade80;
+      letter-spacing: 2px;
+    }
+    
+    .viewers-count {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    
+    .config-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      border: 1px dashed rgba(255,255,255,0.1);
+    }
+    
+    .config-section summary {
+      cursor: pointer;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    
+    .config-section textarea {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 0.8rem;
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📹 WebRTC ライブ配信</h1>
+    
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">待機中</span>
+    </div>
+    
+    <div id="errorBox" class="error hidden"></div>
+    
+    <div class="video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline class="hidden"></video>
+    </div>
+    
+    <div class="controls">
+      <div class="mode-selector">
+        <button class="mode-btn" id="broadcasterBtn" onclick="setMode('broadcaster')">
+          📡 配信する
+        </button>
+        <button class="mode-btn" id="viewerBtn" onclick="setMode('viewer')">
+          👁️ 視聴する
+        </button>
+      </div>
+      
+      <!-- 配信者モード -->
+      <div id="broadcasterSection" class="room-section hidden">
+        <h3>配信者モード</h3>
+        <div id="roomCreated" class="hidden">
+          <div class="room-id-display">
+            <div>
+              <small>Room ID</small><br>
+              <code id="roomIdDisplay">---</code>
+            </div>
+            <button class="btn btn-secondary" onclick="copyRoomId()">📋 コピー</button>
+          </div>
+          <p class="viewers-count">視聴者: <span id="viewerCount">0</span>人</p>
+        </div>
+        <button id="startBroadcastBtn" class="btn btn-primary" onclick="startBroadcast()">
+          配信を開始
+        </button>
+        <button id="stopBroadcastBtn" class="btn btn-danger hidden" onclick="stopBroadcast()">
+          配信を終了
+        </button>
+      </div>
+      
+      <!-- 視聴者モード -->
+      <div id="viewerSection" class="room-section hidden">
+        <h3>視聴者モード</h3>
+        <div class="input-group">
+          <input type="text" id="roomIdInput" placeholder="Room IDを入力" maxlength="6">
+          <button id="joinBtn" class="btn btn-primary" onclick="joinRoom()">参加</button>
+        </div>
+        <button id="leaveBtn" class="btn btn-danger hidden" onclick="leaveRoom()">退出</button>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    // グローバル変数
+    let db = null;
+    let localStream = null;
+    let peerConnections = {}; // 複数の視聴者に対応
+    let currentRoomId = null;
+    let currentMode = null;
+    let unsubscribes = [];
+    
+    // STUN/TURNサーバー設定
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+    
+    // Firebase設定（埋め込み済み）
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAwnwnNyVaOm7i_dhvk8LmtonXmSo3fXfo",
+      authDomain: "webrtc-live-5fb60.firebaseapp.com",
+      projectId: "webrtc-live-5fb60",
+      storageBucket: "webrtc-live-5fb60.firebasestorage.app",
+      messagingSenderId: "21163124588",
+      appId: "1:21163124588:web:7d58502de1a27721057549"
+    };
+    
+    // 初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      initFirebase(FIREBASE_CONFIG);
+    });
+    
+    // Firebase初期化
+    function initFirebase(config) {
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(config);
+        }
+        db = firebase.firestore();
+        updateStatus('connected', 'Firebase接続済み');
+        console.log('Firebase initialized');
+      } catch (e) {
+        showError('Firebase初期化エラー: ' + e.message);
+      }
+    }
+    
+    // モード選択
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('broadcasterBtn').classList.toggle('active', mode === 'broadcaster');
+      document.getElementById('viewerBtn').classList.toggle('active', mode === 'viewer');
+      document.getElementById('broadcasterSection').classList.toggle('hidden', mode !== 'broadcaster');
+      document.getElementById('viewerSection').classList.toggle('hidden', mode !== 'viewer');
+      
+      if (mode === 'broadcaster') {
+        startCamera();
+      } else {
+        stopCamera();
+        document.getElementById('localVideo').classList.add('hidden');
+        document.getElementById('remoteVideo').classList.remove('hidden');
+      }
+    }
+    
+    // カメラ開始
+    async function startCamera() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true
+        });
+        const localVideo = document.getElementById('localVideo');
+        localVideo.srcObject = localStream;
+        localVideo.classList.remove('hidden');
+        document.getElementById('remoteVideo').classList.add('hidden');
+        updateStatus('connected', 'カメラ準備完了');
+      } catch (e) {
+        showError('カメラアクセスエラー: ' + e.message);
+      }
+    }
+    
+    // カメラ停止
+    function stopCamera() {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+    }
+    
+    // Room ID生成
+    function generateRoomId() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+    
+    // 配信開始
+    async function startBroadcast() {
+      if (!db) {
+        showError('Firebase設定を入力してください');
+        return;
+      }
+      if (!localStream) {
+        await startCamera();
+      }
+      
+      currentRoomId = generateRoomId();
+      
+      // Firestoreにルーム作成
+      await db.collection('rooms').doc(currentRoomId).set({
+        created: firebase.firestore.FieldValue.serverTimestamp(),
+        active: true
+      });
+      
+      // UIを更新
+      document.getElementById('roomIdDisplay').textContent = currentRoomId;
+      document.getElementById('roomCreated').classList.remove('hidden');
+      document.getElementById('startBroadcastBtn').classList.add('hidden');
+      document.getElementById('stopBroadcastBtn').classList.remove('hidden');
+      updateStatus('streaming', '配信中: ' + currentRoomId);
+      
+      // 視聴者のオファーを監視
+      const unsubOffer = db.collection('rooms').doc(currentRoomId)
+        .collection('offers').onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(async change => {
+            if (change.type === 'added') {
+              const viewerId = change.doc.id;
+              const data = change.doc.data();
+              console.log('New viewer:', viewerId);
+              await handleViewerOffer(viewerId, data);
+            }
+          });
+        });
+      unsubscribes.push(unsubOffer);
+      
+      updateViewerCount();
+    }
+    
+    // 視聴者のオファーを処理（配信者側）
+    async function handleViewerOffer(viewerId, offerData) {
+      const pc = new RTCPeerConnection(rtcConfig);
+      peerConnections[viewerId] = pc;
+      
+      // ローカルストリームを追加
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+      });
+      
+      // ICE候補を収集
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          db.collection('rooms').doc(currentRoomId)
+            .collection('broadcasterCandidates').doc(viewerId)
+            .collection('candidates').add(event.candidate.toJSON());
+        }
+      };
+      
+      // リモートの説明を設定
+      await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
+      
+      // アンサーを作成
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      
+      // アンサーを保存
+      await db.collection('rooms').doc(currentRoomId)
+        .collection('answers').doc(viewerId).set({
+          answer: { type: answer.type, sdp: answer.sdp }
+        });
+      
+      // 視聴者のICE候補を監視
+      const unsubCandidate = db.collection('rooms').doc(currentRoomId)
+        .collection('viewerCandidates').doc(viewerId)
+        .collection('candidates').onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+            }
+          });
+        });
+      unsubscribes.push(unsubCandidate);
+      
+      pc.onconnectionstatechange = () => {
+        console.log(`Viewer ${viewerId} state:`, pc.connectionState);
+        updateViewerCount();
+      };
+    }
+    
+    // 視聴者数を更新
+    function updateViewerCount() {
+      const count = Object.values(peerConnections)
+        .filter(pc => pc.connectionState === 'connected').length;
+      document.getElementById('viewerCount').textContent = count;
+    }
+    
+    // Room IDをコピー
+    function copyRoomId() {
+      navigator.clipboard.writeText(currentRoomId);
+      alert('コピーしました: ' + currentRoomId);
+    }
+    
+    // 配信終了
+    async function stopBroadcast() {
+      // すべての接続を閉じる
+      Object.values(peerConnections).forEach(pc => pc.close());
+      peerConnections = {};
+      
+      // リスナーを解除
+      unsubscribes.forEach(unsub => unsub());
+      unsubscribes = [];
+      
+      // Firestoreのルームを削除
+      if (currentRoomId) {
+        await db.collection('rooms').doc(currentRoomId).update({ active: false });
+      }
+      
+      currentRoomId = null;
+      document.getElementById('roomCreated').classList.add('hidden');
+      document.getElementById('startBroadcastBtn').classList.remove('hidden');
+      document.getElementById('stopBroadcastBtn').classList.add('hidden');
+      updateStatus('connected', '配信終了');
+    }
+    
+    // ルームに参加（視聴者側）
+    async function joinRoom() {
+      if (!db) {
+        showError('Firebase設定を入力してください');
+        return;
+      }
+      
+      currentRoomId = document.getElementById('roomIdInput').value.toUpperCase();
+      if (!currentRoomId || currentRoomId.length !== 6) {
+        showError('正しいRoom IDを入力してください');
+        return;
+      }
+      
+      // ルームの存在確認
+      const roomDoc = await db.collection('rooms').doc(currentRoomId).get();
+      if (!roomDoc.exists || !roomDoc.data().active) {
+        showError('ルームが見つかりません');
+        return;
+      }
+      
+      const viewerId = generateRoomId(); // 視聴者ID
+      const pc = new RTCPeerConnection(rtcConfig);
+      peerConnections[viewerId] = pc;
+      
+      // リモートストリームを受信
+      pc.ontrack = event => {
+        console.log('Received track:', event.track.kind);
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo.srcObject !== event.streams[0]) {
+          remoteVideo.srcObject = event.streams[0];
+        }
+      };
+      
+      // ICE候補を収集
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          db.collection('rooms').doc(currentRoomId)
+            .collection('viewerCandidates').doc(viewerId)
+            .collection('candidates').add(event.candidate.toJSON());
+        }
+      };
+      
+      // オファーを作成（映像を受信するため）
+      pc.addTransceiver('video', { direction: 'recvonly' });
+      pc.addTransceiver('audio', { direction: 'recvonly' });
+      
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      // オファーを送信
+      await db.collection('rooms').doc(currentRoomId)
+        .collection('offers').doc(viewerId).set({
+          offer: { type: offer.type, sdp: offer.sdp }
+        });
+      
+      // アンサーを監視
+      const unsubAnswer = db.collection('rooms').doc(currentRoomId)
+        .collection('answers').doc(viewerId).onSnapshot(async snapshot => {
+          const data = snapshot.data();
+          if (data && data.answer && !pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+          }
+        });
+      unsubscribes.push(unsubAnswer);
+      
+      // 配信者のICE候補を監視
+      const unsubCandidate = db.collection('rooms').doc(currentRoomId)
+        .collection('broadcasterCandidates').doc(viewerId)
+        .collection('candidates').onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+            }
+          });
+        });
+      unsubscribes.push(unsubCandidate);
+      
+      pc.onconnectionstatechange = () => {
+        console.log('Connection state:', pc.connectionState);
+        if (pc.connectionState === 'connected') {
+          updateStatus('streaming', '視聴中');
+        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+          updateStatus('connected', '接続が切断されました');
+        }
+      };
+      
+      document.getElementById('joinBtn').classList.add('hidden');
+      document.getElementById('leaveBtn').classList.remove('hidden');
+      document.getElementById('roomIdInput').disabled = true;
+      updateStatus('connected', '接続中...');
+    }
+    
+    // ルームから退出
+    function leaveRoom() {
+      Object.values(peerConnections).forEach(pc => pc.close());
+      peerConnections = {};
+      unsubscribes.forEach(unsub => unsub());
+      unsubscribes = [];
+      
+      document.getElementById('remoteVideo').srcObject = null;
+      document.getElementById('joinBtn').classList.remove('hidden');
+      document.getElementById('leaveBtn').classList.add('hidden');
+      document.getElementById('roomIdInput').disabled = false;
+      currentRoomId = null;
+      updateStatus('connected', '退出しました');
+    }
+    
+    // ステータス更新
+    function updateStatus(state, text) {
+      const dot = document.getElementById('statusDot');
+      dot.className = 'status-dot ' + state;
+      document.getElementById('statusText').textContent = text;
+    }
+    
+    // エラー表示
+    function showError(message) {
+      const errorBox = document.getElementById('errorBox');
+      errorBox.textContent = message;
+      errorBox.classList.remove('hidden');
+      setTimeout(() => errorBox.classList.add('hidden'), 5000);
+    }
+    
+    // ページを離れる時にクリーンアップ
+    window.addEventListener('beforeunload', () => {
+      if (currentMode === 'broadcaster' && currentRoomId) {
+        stopBroadcast();
+      } else {
+        leaveRoom();
+      }
+    });
+  </script>
+</body>
+</html>
