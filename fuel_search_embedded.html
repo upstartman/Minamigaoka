@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カタログ燃費検索（国土交通省データ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0efe8;
+    --card: #ffffff;
+    --accent: #1a5632;
+    --accent2: #2a7a4a;
+    --accent-light: #e4efe8;
+    --text: #2c2c2c;
+    --text-sub: #777;
+    --border: #ddd9cf;
+    --shadow: 0 2px 16px rgba(0,0,0,0.06);
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Noto Sans JP','DM Sans',sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 1.5rem 1rem 3rem;
+  }
+  .container { max-width: 700px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 1.8rem; }
+  header h1 {
+    font-family: 'DM Sans',sans-serif;
+    font-size: 1.5rem; font-weight: 700; color: var(--accent);
+    margin-bottom: 0.2rem;
+  }
+  header h1 span {
+    font-family: 'Noto Sans JP',sans-serif;
+    font-size: 1rem; font-weight: 500; color: var(--text); margin-left: 0.3rem;
+  }
+  header p { font-size: 0.78rem; color: var(--text-sub); font-weight: 300; }
+
+  /* Search */
+  .search-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 1.2rem 1.4rem; margin-bottom: 1rem;
+  }
+  .search-card label {
+    display: block; font-size: 0.76rem; font-weight: 500;
+    color: var(--text-sub); margin-bottom: 0.4rem;
+  }
+  .search-row { display: flex; gap: 0.5rem; }
+  .search-row input {
+    flex: 1; padding: 0.65rem 1rem; font-size: 1rem;
+    font-family: 'Noto Sans JP',sans-serif;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    outline: none; background: var(--bg); transition: border-color 0.2s;
+  }
+  .search-row input:focus { border-color: var(--accent); }
+  .btn {
+    padding: 0.6rem 1.3rem; font-size: 0.9rem;
+    font-family: 'Noto Sans JP',sans-serif; font-weight: 600;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; cursor: pointer; white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+
+  .filter-row {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin-top: 0.6rem; align-items: center;
+  }
+  .filter-label { font-size: 0.72rem; color: var(--text-sub); margin-right: 0.2rem; }
+  .filter-btn {
+    font-size: 0.72rem; padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--card); color: var(--text-sub);
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Noto Sans JP',sans-serif;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+
+  .quick-tags {
+    margin-top: 0.6rem; font-size: 0.73rem; color: var(--text-sub);
+  }
+  .quick-tags span {
+    display: inline-block; background: var(--accent-light); color: var(--accent);
+    padding: 0.12rem 0.45rem; border-radius: 4px;
+    margin: 0.1rem 0.15rem; cursor: pointer; font-weight: 500;
+    transition: background 0.15s;
+  }
+  .quick-tags span:hover { background: #d0e2d6; }
+
+  .data-info {
+    font-size: 0.72rem; color: var(--text-sub);
+    margin-top: 0.5rem; text-align: right;
+  }
+
+  /* Results */
+  #results { margin-top: 0.8rem; }
+  .result-count {
+    font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.6rem;
+  }
+
+  .rc {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; margin-bottom: 0.7rem;
+  }
+  .rc-head {
+    background: var(--accent); color: #fff;
+    padding: 0.65rem 1.1rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .rc-name { font-size: 1.05rem; font-weight: 700; }
+  .rc-sub { font-size: 0.72rem; opacity: 0.85; }
+  .rc-badge {
+    font-size: 0.65rem; background: rgba(255,255,255,0.2);
+    padding: 0.1rem 0.4rem; border-radius: 4px;
+  }
+  .rc-body { padding: 0.8rem 1.1rem; }
+
+  .fuel-main {
+    display: flex; align-items: baseline; gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .fuel-main .big {
+    font-family: 'DM Sans',sans-serif;
+    font-size: 2rem; font-weight: 700; color: var(--accent);
+    line-height: 1;
+  }
+  .fuel-main .unit { font-size: 0.8rem; color: var(--text-sub); }
+  .fuel-main .mode-label {
+    font-size: 0.68rem; color: var(--text-sub);
+    background: var(--accent-light); padding: 0.1rem 0.4rem;
+    border-radius: 3px; font-weight: 500;
+  }
+
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0 1.5rem;
+  }
+  .info-item {
+    display: flex; justify-content: space-between;
+    padding: 0.25rem 0; font-size: 0.82rem;
+    border-bottom: 1px dashed var(--border);
+  }
+  .info-item .ik { color: var(--text-sub); font-weight: 300; }
+  .info-item .iv { font-weight: 500; text-align: right; }
+
+  details { margin-top: 0.5rem; }
+  details summary {
+    font-size: 0.73rem; color: var(--text-sub); cursor: pointer;
+    padding: 0.2rem 0;
+  }
+  details summary:hover { color: var(--accent); }
+  .vtable {
+    width: 100%; font-size: 0.7rem; border-collapse: collapse;
+    margin-top: 0.3rem;
+  }
+  .vtable th {
+    background: var(--bg); padding: 0.3rem 0.4rem;
+    text-align: left; font-weight: 500; color: var(--text-sub);
+    position: sticky; top: 0;
+  }
+  .vtable td {
+    padding: 0.25rem 0.4rem; border-bottom: 1px solid var(--border);
+  }
+  .vtable .fuel-val { font-weight: 700; color: var(--accent); text-align: center; }
+
+  .no-results {
+    text-align: center; padding: 2.5rem 1rem;
+    color: var(--text-sub); font-size: 0.9rem;
+  }
+
+  footer {
+    text-align: center; margin-top: 2rem;
+    font-size: 0.68rem; color: var(--text-sub); line-height: 1.7;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 500px) {
+    .info-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>&#9981; Fuel Search <span>カタログ燃費検索</span></h1>
+    <p>国土交通省 自動車燃費一覧（令和7年3月）データ内蔵 ・ 完全無料 ・ オフラインOK</p>
+  </header>
+
+  <div class="search-card">
+    <label>車種名・メーカー名で検索</label>
+    <div class="search-row">
+      <input type="text" id="q" placeholder="例: フィット、ヤリス、N-BOX" autocomplete="off">
+      <button class="btn" onclick="doSearch()">検索</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">メーカー:</span>
+      <button class="filter-btn active" data-maker="all" onclick="toggleMaker(this)">すべて</button>
+    </div>
+    <div class="quick-tags">
+      例:
+      <span onclick="qS('フィット')">フィット</span>
+      <span onclick="qS('ヤリス')">ヤリス</span>
+      <span onclick="qS('ノート')">ノート</span>
+      <span onclick="qS('N-BOX')">N-BOX</span>
+      <span onclick="qS('CX-5')">CX-5</span>
+      <span onclick="qS('アルト')">アルト</span>
+      <span onclick="qS('タント')">タント</span>
+      <span onclick="qS('プリウス')">プリウス</span>
+    </div>
+    <div class="data-info" id="dataInfo"></div>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    出典: 国土交通省「<a href="https://www.mlit.go.jp/jidosha/jidosha_tk10_000048.html" target="_blank">自動車燃費一覧（令和7年3月）</a>」<br>
+    ガソリン乗用車（普通・小型 + 軽自動車）WLTCモードデータを内蔵<br>
+    データはすべてブラウザ内で処理されます。
+  </footer>
+</div>
+
+<script>
+// ====== Embedded Data ======
+const DATA = [{"m":"スズキ","n":"アルト","cat":"軽自動車","fmin":23.5,"fmax":27.7,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A","R06D -WA04C"],"cnt":4,"v":[["5AA-HA97S","0.657L","CVT (E・LTC)","700~710",27.7],["5AA-HA97S","0.657L","CVT (E・LTC)","750~760",25.7],["3BA-HA37S","0.658L","CVT (E・LTC)","680~690",25.2],["3BA-HA37S","0.658L","CVT (E・LTC)","730~740",23.5]]},{"m":"スズキ","n":"アルト ラパン","cat":"軽自動車","fmin":24.6,"fmax":26.2,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["R06A"],"cnt":2,"v":[["5BA-HE33S","0.658L","CVT (E・LTC)","680",26.2],["5BA-HE33S","0.658L","CVT (E・LTC)","730",24.6]]},{"m":"スズキ","n":"イグニス","cat":"普通・小型","fmin":19.0,"fmax":19.8,"d":["1.242L"],"t":["CVT (E・LTC)"],"e":["K12C -WA05A"],"cnt":3,"v":[["5AA-FF21S","1.242L","CVT (E・LTC)","850",19.8],["5AA-FF21S","1.242L","CVT (E・LTC)","880",19.8],["5AA-FF21S","1.242L","CVT (E・LTC)","890~920",19.0]]},{"m":"スズキ","n":"エブリイ","cat":"軽自動車","fmin":15.1,"fmax":15.1,"d":["0.658L"],"t":["CVT"],"e":["R06A"],"cnt":2,"v":[["3BA-DA17W","0.658L","CVT","980~1000",15.1],["3BA-DA17W","0.658L","CVT","1030~1050",15.1]]},{"m":"スズキ","n":"クロスビー","cat":"普通・小型","fmin":17.0,"fmax":18.2,"d":["0.996L"],"t":["6AT (E・LTC)"],"e":["K10C -WA05A"],"cnt":2,"v":[["4AA-MN71S","0.996L","6AT (E・LTC)","960",18.2],["4AA-MN71S","0.996L","6AT (E・LTC)","1000",17.0]]},{"m":"スズキ","n":"ジムニー","cat":"普通・小型","fmin":14.3,"fmax":16.6,"d":["1.46L","0.658L"],"t":["5MT×2","4AT×2 (E・LTC)"],"e":["K15B","R06A"],"cnt":4,"v":[["3BA-JB74W","1.46L","5MT×2","1080",15.4],["3BA-JB74W","1.46L","4AT×2 (E・LTC)","1090",14.3],["3BA-JB64W","0.658L","5MT×2","1040",16.6],["3BA-JB64W","0.658L","4AT×2 (E・LTC)","1050",14.3]]},{"m":"スズキ","n":"スイフト","cat":"普通・小型","fmin":16.6,"fmax":25.4,"d":["1.371L","1.197L"],"t":["5MT","6AT (E・LTC)","CVT (E・LTC)"],"e":["Z12E","Z12E -WA06D"],"cnt":7,"v":[["5AA-ZCEDS","1.197L","5MT","920",25.4],["5AA-ZCEDS","1.197L","CVT (E・LTC)","940~950",24.5],["5AA-ZDEDS","1.197L","CVT (E・LTC)","1020",22.7],["5BA-ZCDDS","1.197L","CVT (E・LTC)","910",23.4],["5BA-ZDDDS","1.197L","CVT (E・LTC)","990",22.0],["4BA-ZC33S","1.371L","6MT","970",17.6],["4BA-ZC33S","1.371L","6AT (E・LTC)","990",16.6]]},{"m":"スズキ","n":"スペーシア","cat":"軽自動車","fmin":19.8,"fmax":25.1,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A -WA05A","R06D -WA04C"],"cnt":5,"v":[["5AA-MK94S","0.657L","CVT (E・LTC)","850",25.1],["5AA-MK94S","0.657L","CVT (E・LTC)","860~910",23.9],["5AA-MK94S","0.657L","CVT (E・LTC)","910~960",22.4],["4AA-MK54S","0.658L","CVT (E・LTC)","910",21.9],["4AA-MK54S","0.658L","CVT (E・LTC)","960",19.8]]},{"m":"スズキ","n":"ソリオ","cat":"普通・小型","fmin":17.8,"fmax":22.3,"d":["1.242L"],"t":["5AT (E)","CVT (E・LTC)"],"e":["K12C -PB05A","K12C"],"cnt":5,"v":[["5AA-MA47S","1.242L","5AT (E)","1050",22.3],["5AA-MA37S","1.242L","CVT (E・LTC)","1000",19.6],["5AA-MA37S","1.242L","CVT (E・LTC)","1040",18.4],["5BA-MA27S","1.242L","CVT (E・LTC)","960",19.0],["5BA-MA27S","1.242L","CVT (E・LTC)","1000~1010",17.8]]},{"m":"スズキ","n":"ハスラー","cat":"軽自動車","fmin":20.8,"fmax":25.0,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A -WA05A","R06D -WA04C"],"cnt":5,"v":[["5AA-MR92S","0.657L","CVT (E・LTC)","810~830",25.0],["5AA-MR92S","0.657L","CVT (E・LTC)","860~880",23.4],["4AA-MR52S","0.658L","CVT (E・LTC)","820",22.6],["4AA-MR52S","0.658L","CVT (E・LTC)","830~840",22.6],["4AA-MR52S","0.658L","CVT (E・LTC)","870~890",20.8]]},{"m":"スズキ","n":"ランディ","cat":"普通・小型","fmin":14.3,"fmax":23.2,"d":["1.986L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR -1VM-1WM","2ZR -1VM"],"cnt":4,"v":[["6AA-ZWR90C","1.797L","CVT (E)","1650",23.2],["6AA-ZWR95C","1.797L","CVT (E)","1700",22.0],["6BA-MZRA90C","1.986L","CVT (E・LTC)","1620",15.1],["6BA-MZRA95C","1.986L","CVT (E・LTC)","1690",14.3]]},{"m":"スズキ","n":"ワゴンR","cat":"軽自動車","fmin":20.9,"fmax":25.2,"d":["0.657L","0.658L"],"t":["5MT","CVT (E・LTC)"],"e":["R06D","R06A -WA05A"],"cnt":8,"v":[["5AA-MH95S","0.657L","CVT (E・LTC)","770~790",25.2],["5AA-MH95S","0.657L","CVT (E・LTC)","820~840",24.2],["5BA-MH85S","0.657L","5MT","730",24.8],["5BA-MH85S","0.657L","CVT (E・LTC)","750",24.4],["5BA-MH85S","0.657L","5MT","780",23.0],["5BA-MH85S","0.657L","CVT (E・LTC)","800",23.2],["4AA-MH55S","0.658L","CVT (E・LTC)","800",22.5],["4AA-MH55S","0.658L","CVT (E・LTC)","850",20.9]]},{"m":"スズキ","n":"ワゴンR スマイル","cat":"軽自動車","fmin":22.5,"fmax":25.1,"d":["0.657L"],"t":["CVT (E・LTC)"],"e":["R06D","R06D -WA04C"],"cnt":5,"v":[["5AA-MX91S","0.657L","CVT (E・LTC)","860~870",25.1],["5AA-MX91S","0.657L","CVT (E・LTC)","910~920",23.6],["5BA-MX81S","0.657L","CVT (E・LTC)","840",23.9],["5BA-MX81S","0.657L","CVT (E・LTC)","850",23.9],["5BA-MX81S","0.657L","CVT (E・LTC)","890~900",22.5]]},{"m":"スバル","n":"BRZ","cat":"普通・小型","fmin":11.6,"fmax":12.8,"d":["1.998L","2.387L"],"t":["6AT","6MT"],"e":["FA24","FA20"],"cnt":9,"v":[["4BA-ZC6","1.998L","6MT","1210~1260",12.8],["4BA-ZC6","1.998L","6AT","1230~1250",12.0],["4BA-ZC6","1.998L","6AT","1240~1280",11.8],["4BA-ZC6","1.998L","6MT","1250",12.6],["4BA-ZC6","1.998L","6AT","1270",11.6],["3BA-ZD8","2.387L","6MT","1260",12.0],["3BA-ZD8","2.387L","6AT","1280",11.8],["3BA-ZD8","2.387L","6MT","1270~1280",11.9],["3BA-ZD8","2.387L","6AT","1290~1300",11.7]]},{"m":"スバル","n":"WRX","cat":"普通・小型","fmin":10.7,"fmax":11.2,"d":["1.998L","2.387L"],"t":["CVT (E・LTC)"],"e":["FA24","FA20"],"cnt":3,"v":[["3BA-VAG","1.998L","CVT (E・LTC)","1540~1590",11.2],["5BA-VBH","2.387L","CVT (E・LTC)","1590~1620",10.8],["5BA-VBH","2.387L","CVT (E・LTC)","1610~1630",10.7]]},{"m":"スバル","n":"XV","cat":"普通・小型","fmin":13.3,"fmax":15.0,"d":["1.995L","1.599L"],"t":["CVT (E・LTC)"],"e":["FB20(内燃機関) MA1(電動機)","FB16"],"cnt":4,"v":[["5AA-GTE","1.995L","CVT (E・LTC)","1540~1560",15.0],["5AA-GTE","1.995L","CVT (E・LTC)","1530",15.0],["3BA-GT3","1.599L","CVT (E・LTC)","1410~1420",13.3],["3BA-GT3","1.599L","CVT (E・LTC)","1430",13.3]]},{"m":"スバル","n":"インプレッサ","cat":"普通・小型","fmin":12.4,"fmax":16.6,"d":["1.995L","1.599L"],"t":["CVT (E・LTC)"],"e":["FB20","FB20(内燃機関) MA1(電動機)"],"cnt":20,"v":[["5AA-GTE","1.995L","CVT (E・LTC)","1520~1530",15.2],["5AA-GUD","1.995L","CVT (E・LTC)","1530",16.6],["5AA-GUD","1.995L","CVT (E・LTC)","1540~1550",16.6],["5AA-GUE","1.995L","CVT (E・LTC)","1570~1590",16.0],["3BA-GK2","1.599L","CVT (E・LTC)","1300~1310",14.1],["3BA-GK2","1.599L","CVT (E・LTC)","1320~1330",14.0],["3BA-GT2","1.599L","CVT (E・LTC)","1300~1310",14.1],["3BA-GT2","1.599L","CVT (E・LTC)","1320~1330",14.0],["3BA-GK3","1.599L","CVT (E・LTC)","1360~1390",13.5],["3BA-GT3","1.599L","CVT (E・LTC)","1360~1390",13.5],["3BA-GK6","1.995L","CVT (E・LTC)","1320~1330",14.0],["3BA-GK6","1.995L","CVT (E・LTC)","1340~1350",13.0],["3BA-GT6","1.995L","CVT (E・LTC)","1320~1330",14.0],["3BA-GT6","1.995L","CVT (E・LTC)","1340~1350",13.0],["3BA-GU6","1.995L","CVT (E・LTC)","1380~1390",14.0],["3BA-GK7","1.995L","CVT (E・LTC)","1370~1380",13.4],["3BA-GK7","1.995L","CVT (E・LTC)","1390~1400",12.4],["3BA-GT7","1.995L","CVT (E・LTC)","1390~1400",12.4],["3BA-GU7","1.995L","CVT (E・LTC)","1420",13.6],["3BA-GU7","1.995L","CVT (E・LTC)","1430~1440",13.6]]},{"m":"スバル","n":"クロストレック","cat":"普通・小型","fmin":15.8,"fmax":16.4,"d":["1.995L"],"t":["CVT (E・LTC)"],"e":["FB20(内燃機関) MA1(電動機)"],"cnt":4,"v":[["5AA-GUD","1.995L","CVT (E・LTC)","1540",16.4],["5AA-GUD","1.995L","CVT (E・LTC)","1550~1580",16.4],["5AA-GUE","1.995L","CVT (E・LTC)","1590",15.8],["5AA-GUE","1.995L","CVT (E・LTC)","1600~1620",15.8]]},{"m":"スバル","n":"シフォン","cat":"軽自動車","fmin":19.6,"fmax":22.7,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":14,"v":[["6BA-LA650F","0.658L","CVT (E・LTC)","880~950",21.2],["6BA-LA650F","0.658L","CVT (E・LTC)","880~960",21.0],["5BA-LA650F","0.658L","CVT (E・LTC)","910~980",20.0],["5BA-LA650F","0.658L","CVT (E・LTC)","880~910",22.7],["5BA-LA650F","0.658L","CVT (E・LTC)","920~930",21.2],["5BA-LA650F","0.658L","CVT (E・LTC)","920",21.9],["5BA-LA650F","0.658L","CVT (E・LTC)","940",20.6],["5BA-LA650F","0.658L","CVT (E・LTC)","940~960",21.9],["5BA-LA650F","0.658L","CVT (E・LTC)","980",20.6],["6BA-LA660F","0.658L","CVT (E・LTC)","930~950",20.2],["6BA-LA660F","0.658L","CVT (E・LTC)","930~960",20.0],["5BA-LA660F","0.658L","CVT (E・LTC)","930~970",21.4],["5BA-LA660F","0.658L","CVT (E・LTC)","970",19.6],["5BA-LA660F","0.658L","CVT (E・LTC)","980~990",19.6]]},{"m":"スバル","n":"ジャスティ","cat":"普通・小型","fmin":16.8,"fmax":18.4,"d":["0.996L"],"t":["CVT (E・LTC)"],"e":["1KR"],"cnt":3,"v":[["5BA-M900F","0.996L","CVT (E・LTC)","1090",18.4],["5BA-M910F","0.996L","CVT (E・LTC)","1140",16.8],["5BA-M910F","0.996L","CVT (E・LTC)","1090",18.4]]},{"m":"スバル","n":"ステラ","cat":"軽自動車","fmin":20.0,"fmax":20.7,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["5BA-LA150F","0.658L","CVT (E・LTC)","820~830",20.7],["5BA-LA160F","0.658L","CVT (E・LTC)","880~890",20.0]]},{"m":"スバル","n":"フォレスター","cat":"普通・小型","fmin":13.2,"fmax":14.0,"d":["1.795L","1.995L","2.498L"],"t":["CVT (E・LTC)"],"e":["FB25","CB18"],"cnt":5,"v":[["5BA-SK9","2.498L","CVT (E・LTC)","1510~1530",13.2],["5BA-SK9","2.498L","CVT (E・LTC)","1540~1560",13.2],["5AA-SKE","1.995L","CVT (E・LTC)","1620~1650",14.0],["5AA-SKE","1.995L","CVT (E・LTC)","1660",14.0],["4BA-SK5","1.795L","CVT (E・LTC)","1570~1590",13.6]]},{"m":"スバル","n":"プレオ プラス","cat":"軽自動車","fmin":23.2,"fmax":25.0,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["5BA-LA350F","0.658L","CVT (E・LTC)","650~670",25.0],["5BA-LA360F","0.658L","CVT (E・LTC)","720~740",23.2]]},{"m":"スバル","n":"レガシィ","cat":"普通・小型","fmin":12.6,"fmax":13.0,"d":["1.795L","2.498L"],"t":["CVT (E・LTC)"],"e":["FB25","CB18"],"cnt":2,"v":[["4BA-BS9","2.498L","CVT (E・LTC)","1570~1600",12.6],["4BA-BT5","1.795L","CVT (E・LTC)","1680~1720",13.0]]},{"m":"スバル","n":"レックス","cat":"普通・小型","fmin":20.7,"fmax":20.7,"d":["1.196L"],"t":["CVT (E・LTC)"],"e":["WA"],"cnt":2,"v":[["5BA-A201F","1.196L","CVT (E・LTC)","970",20.7],["5BA-A201F","1.196L","CVT (E・LTC)","980",20.7]]},{"m":"スバル","n":"レヴォーグ","cat":"普通・小型","fmin":11.0,"fmax":13.7,"d":["1.795L","2.387L"],"t":["CVT (E・LTC)"],"e":["FA24","CB18"],"cnt":4,"v":[["4BA-VN5","1.795L","CVT (E・LTC)","1550",13.7],["4BA-VN5","1.795L","CVT (E・LTC)","1570~1610",13.6],["4BA-VN5","1.795L","CVT (E・LTC)","1560~1610",13.5],["5BA-VNH","2.387L","CVT (E・LTC)","1630~1650",11.0]]},{"m":"ダイハツ","n":"コペン","cat":"軽自動車","fmin":18.6,"fmax":19.2,"d":["0.658L"],"t":["5MT","CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["3BA-LA400K","0.658L","5MT","850",18.6],["3BA-LA400K","0.658L","CVT (E・LTC)","870",19.2]]},{"m":"ダイハツ","n":"タフト","cat":"軽自動車","fmin":18.2,"fmax":21.4,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":8,"v":[["5BA-LA900S","0.658L","CVT (E・LTC)","830",21.4],["5BA-LA900S","0.658L","CVT (E・LTC)","840",21.3],["5BA-LA900S","0.658L","CVT (E・LTC)","830",19.8],["5BA-LA900S","0.658L","CVT (E・LTC)","840",18.7],["5BA-LA910S","0.658L","CVT (E・LTC)","880",21.1],["5BA-LA910S","0.658L","CVT (E・LTC)","890",21.1],["5BA-LA910S","0.658L","CVT (E・LTC)","880",19.4],["5BA-LA910S","0.658L","CVT (E・LTC)","890",18.2]]},{"m":"ダイハツ","n":"タント","cat":"軽自動車","fmin":18.2,"fmax":22.7,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":19,"v":[["5BA-LA650S","0.658L","CVT (E・LTC)","910~970",20.2],["5BA-LA650S","0.658L","CVT (E・LTC)","920~930",20.0],["5BA-LA650S","0.658L","CVT (E・LTC)","980",20.0],["5BA-LA650S","0.658L","CVT (E・LTC)","880~910",22.7],["5BA-LA650S","0.658L","CVT (E・LTC)","920~960",21.9],["5BA-LA650S","0.658L","CVT (E・LTC)","920~930",21.2],["5BA-LA650S","0.658L","CVT (E・LTC)","940",20.6],["5BA-LA650S","0.658L","CVT (E・LTC)","980",20.6],["5BA-LA650S","0.658L","CVT (E・LTC)","880~960",20.1],["5BA-LA650S","0.658L","CVT (E・LTC)","920~940",18.7],["5BA-LA650S","0.658L","CVT (E・LTC)","980",18.7],["5BA-LA660S","0.658L","CVT (E・LTC)","960~970",18.8],["5BA-LA660S","0.658L","CVT (E・LTC)","980",18.8],["5BA-LA660S","0.658L","CVT (E・LTC)","930~970",21.4],["5BA-LA660S","0.658L","CVT (E・LTC)","970",19.6],["5BA-LA660S","0.658L","CVT (E・LTC)","980~990",19.6],["5BA-LA660S","0.658L","CVT (E・LTC)","930~970",19.6],["5BA-LA660S","0.658L","CVT (E・LTC)","970",18.2],["5BA-LA660S","0.658L","CVT (E・LTC)","980~990",18.2]]},{"m":"ダイハツ","n":"トール","cat":"普通・小型","fmin":16.8,"fmax":18.4,"d":["0.996L"],"t":["CVT (E・LTC)"],"e":["1KR"],"cnt":4,"v":[["5BA-M900S","0.996L","CVT (E・LTC)","1080",18.4],["5BA-M900S","0.996L","CVT (E・LTC)","1090",18.4],["4BA-M900S","0.996L","CVT (E・LTC)","1110",16.8],["5BA-M910S","0.996L","CVT (E・LTC)","1140",16.8]]},{"m":"ダイハツ","n":"ミラ イース","cat":"軽自動車","fmin":23.2,"fmax":25.0,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["5BA-LA350S","0.658L","CVT (E・LTC)","650~670",25.0],["5BA-LA360S","0.658L","CVT (E・LTC)","720~740",23.2]]},{"m":"ダイハツ","n":"ムーヴ キャンバス","cat":"軽自動車","fmin":18.2,"fmax":22.9,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":8,"v":[["5BA-LA850S","0.658L","CVT (E・LTC)","870~880",22.9],["5BA-LA850S","0.658L","CVT (E・LTC)","900",22.4],["5BA-LA850S","0.658L","CVT (E・LTC)","870~880",20.9],["5BA-LA850S","0.658L","CVT (E・LTC)","900",18.7],["5BA-LA860S","0.658L","CVT (E・LTC)","920~930",21.6],["5BA-LA860S","0.658L","CVT (E・LTC)","950",20.9],["5BA-LA860S","0.658L","CVT (E・LTC)","920~930",20.0],["5BA-LA860S","0.658L","CVT (E・LTC)","950",18.2]]},{"m":"ダイハツ","n":"ロッキー","cat":"普通・小型","fmin":17.4,"fmax":28.0,"d":["0.996L","1.196L"],"t":["-","CVT (E・LTC)"],"e":["WA-E1A","WA"],"cnt":4,"v":[["5AA-A202S","1.196L","-","1060~1070",28.0],["5BA-A201S","1.196L","CVT (E・LTC)","970",20.7],["5BA-A201S","1.196L","CVT (E・LTC)","980",20.7],["3BA-A210S","0.996L","CVT (E・LTC)","1040~1050",17.4]]},{"m":"トヨタ","n":"86","cat":"普通・小型","fmin":11.8,"fmax":12.8,"d":["1.998L"],"t":["6AT","6MT"],"e":["FA20"],"cnt":3,"v":[["4BA-ZN6","1.998L","6MT","1210~1260",12.8],["4BA-ZN6","1.998L","6AT","1230~1250",12.0],["4BA-ZN6","1.998L","6AT","1240~1280",11.8]]},{"m":"トヨタ","n":"GR ヤリス","cat":"普通・小型","fmin":10.8,"fmax":12.4,"d":["1.618L"],"t":["8AT (E・LTC)","6MT"],"e":["G16E"],"cnt":2,"v":[["4BA-GXPA16","1.618L","6MT","1240~1280",12.4],["4BA-GXPA16","1.618L","8AT (E・LTC)","1260~1300",10.8]]},{"m":"トヨタ","n":"GR86","cat":"普通・小型","fmin":11.7,"fmax":12.0,"d":["2.387L"],"t":["6AT","6MT"],"e":["FA24"],"cnt":4,"v":[["3BA-ZN8","2.387L","6MT","1260~1270",12.0],["3BA-ZN8","2.387L","6MT","1270~1280",11.9],["3BA-ZN8","2.387L","6AT","1280~1290",11.8],["3BA-ZN8","2.387L","6AT","1290~1300",11.7]]},{"m":"トヨタ","n":"GRカローラ","cat":"普通・小型","fmin":12.4,"fmax":12.4,"d":["1.618L"],"t":["6MT"],"e":["G16E"],"cnt":1,"v":[["4BA-GZEA14H","1.618L","6MT","1470~1480",12.4]]},{"m":"トヨタ","n":"RAV4","cat":"普通・小型","fmin":15.2,"fmax":21.4,"d":["2.487L","1.986L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["A25A (内燃機関) 3NM (電動機) 4NM (電動機)","M20A"],"cnt":5,"v":[["6AA-AXAH52","2.487L","CVT (E)","1620~1640",21.4],["6AA-AXAH54","2.487L","CVT (E)","1670~1710",20.6],["6AA-AXAH54","2.487L","CVT (E)","1690~1720",20.3],["6BA-MXAA52","1.986L","CVT (E・LTC)","1500~1520",15.8],["6BA-MXAA54","1.986L","CVT (E・LTC)","1570~1650",15.2]]},{"m":"トヨタ","n":"アクア","cat":"普通・小型","fmin":29.3,"fmax":34.6,"d":["1.49L"],"t":["CVT (E)"],"e":["M15A (内燃機関) 1NM (電動機)","M15A (内燃機関) 1NM (電動機) 1MM (電動機)"],"cnt":5,"v":[["6AA-MXPK11","1.49L","CVT (E)","1120",34.6],["6AA-MXPK11","1.49L","CVT (E)","1120~1160",33.6],["6AA-MXPK11","1.49L","CVT (E)","1140~1150",32.0],["6AA-MXPK11","1.49L","CVT (E)","1150~1160",29.3],["6AA-MXPK16","1.49L","CVT (E)","1220~1250",30.0]]},{"m":"トヨタ","n":"アルファード","cat":"普通・小型","fmin":10.5,"fmax":18.9,"d":["2.493L","2.487L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["A25A (内燃機関) 5NM (電動機) 4NM (電動機)","A25A (内燃機関) 5NM (電動機)"],"cnt":20,"v":[["6AA-AAHH40W","2.487L","CVT (E)","2130~2160",18.9],["6AA-AAHH40W","2.487L","CVT (E)","2160~2180",18.7],["6AA-AAHH40W","2.487L","CVT (E)","2200",18.7],["6AA-AAHH40W","2.487L","CVT (E)","2160",18.0],["6AA-AAHH40W","2.487L","CVT (E)","2180~2200",18.0],["6AA-AAHH45W","2.487L","CVT (E)","2190~2210",17.5],["6AA-AAHH45W","2.487L","CVT (E)","2220",17.5],["6AA-AAHH45W","2.487L","CVT (E)","2220",17.3],["6AA-AAHH45W","2.487L","CVT (E)","2240~2260",17.3],["6AA-AAHH45W","2.487L","CVT (E)","2220~2240",17.0],["6AA-AAHH45W","2.487L","CVT (E)","2260",17.0],["3BA-AGH40W","2.493L","CVT (E・LTC)","2020~2040",11.1],["3BA-AGH40W","2.493L","CVT (E・LTC)","2050",11.1],["3BA-AGH40W","2.493L","CVT (E・LTC)","2050",11.0],["3BA-AGH40W","2.493L","CVT (E・LTC)","2070~2090",11.0],["3BA-AGH40W","2.493L","CVT (E・LTC)","2050~2090",10.8],["3BA-AGH45W","2.493L","CVT (E・LTC)","2080~2100",10.6],["3BA-AGH45W","2.493L","CVT (E・LTC)","2110",10.6],["3BA-AGH45W","2.493L","CVT (E・LTC)","2110~2130",10.5],["3BA-AGH45W","2.493L","CVT (E・LTC)","2150",10.5]]},{"m":"トヨタ","n":"アルファード ヴェルファイア","cat":"普通・小型","fmin":10.3,"fmax":18.6,"d":["2.493L","2.487L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["A25A (内燃機関) 5NM (電動機) 4NM (電動機)","A25A (内燃機関) 5NM (電動機)"],"cnt":18,"v":[["6AA-AAHH40W","2.487L","CVT (E)","2150~2180",18.6],["6AA-AAHH40W","2.487L","CVT (E)","2190~2210",18.6],["6AA-AAHH40W","2.487L","CVT (E)","2160~2190",17.7],["6AA-AAHH40W","2.487L","CVT (E)","2200~2220",17.7],["6AA-AAHH40W","2.487L","CVT (E)","2230~2270",17.5],["6AA-AAHH45W","2.487L","CVT (E)","2210~2230",17.2],["6AA-AAHH45W","2.487L","CVT (E)","2240~2270",17.2],["6AA-AAHH45W","2.487L","CVT (E)","2220~2270",16.7],["6AA-AAHH45W","2.487L","CVT (E)","2280",16.7],["6AA-AAHH45W","2.487L","CVT (E)","2290~2330",16.5],["3BA-AGH40W","2.493L","CVT (E・LTC)","2050~2080",10.9],["3BA-AGH40W","2.493L","CVT (E・LTC)","2090~2100",10.9],["3BA-AGH40W","2.493L","CVT (E・LTC)","2110",10.9],["3BA-AGH40W","2.493L","CVT (E・LTC)","2050~2100",10.6],["3BA-AGH40W","2.493L","CVT (E・LTC)","2110~2120",10.6],["3BA-AGH45W","2.493L","CVT (E・LTC)","2110~2150",10.4],["3BA-AGH45W","2.493L","CVT (E・LTC)","2160~2170",10.4],["3BA-AGH45W","2.493L","CVT (E・LTC)","2110~2170",10.3]]},{"m":"トヨタ","n":"カローラ","cat":"普通・小型","fmin":18.1,"fmax":30.2,"d":["1.49L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機) 1WM (電動機)","M15A"],"cnt":7,"v":[["6AA-ZWE219","1.797L","CVT (E)","1330~1350",30.2],["6AA-ZWE219","1.797L","CVT (E)","1370",27.9],["6AA-ZWE215","1.797L","CVT (E)","1390~1410",28.1],["6AA-ZWE215","1.797L","CVT (E)","1430",25.3],["5BA-MZEA17","1.49L","CVT (E・LTC)","1230",19.4],["5BA-MZEA17","1.49L","CVT (E・LTC)","1260",19.4],["5BA-MZEA17","1.49L","CVT (E・LTC)","1280",18.1]]},{"m":"トヨタ","n":"カローラ アクシオ","cat":"普通・小型","fmin":15.6,"fmax":27.8,"d":["1.496L"],"t":["5MT","CVT (E・LTC)","CVT (E)"],"e":["1NZ (内燃機関) 1LM (電動機)","2NR"],"cnt":5,"v":[["6AA-NKE165","1.496L","CVT (E)","1140",27.8],["5BA-NRE161","1.496L","CVT (E・LTC)","1090",19.8],["3BA-NZE161","1.496L","CVT (E・LTC)","1090",17.6],["3BA-NZE161","1.496L","5MT","1070",17.2],["3BA-NZE164","1.496L","CVT (E・LTC)","1170",15.6]]},{"m":"トヨタ","n":"カローラ スポーツ","cat":"普通・小型","fmin":17.2,"fmax":30.0,"d":["1.986L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機)","M20A"],"cnt":6,"v":[["6AA-ZWE219H","1.797L","CVT (E)","1360",30.0],["6AA-ZWE219H","1.797L","CVT (E)","1360",29.5],["6AA-ZWE219H","1.797L","CVT (E)","1390",27.2],["6AA-ZWE219H","1.797L","CVT (E)","1390",27.1],["6BA-MZEA12H","1.986L","CVT (E・LTC)","1350",18.3],["6BA-MZEA12H","1.986L","CVT (E・LTC)","1380",17.2]]},{"m":"トヨタ","n":"カローラ ツーリング","cat":"普通・小型","fmin":17.8,"fmax":29.5,"d":["1.49L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機) 1WM (電動機)","M15A"],"cnt":9,"v":[["6AA-ZWE219W","1.797L","CVT (E)","1350",29.5],["6AA-ZWE219W","1.797L","CVT (E)","1370",29.3],["6AA-ZWE219W","1.797L","CVT (E)","1390",27.3],["6AA-ZWE215W","1.797L","CVT (E)","1400",27.8],["6AA-ZWE215W","1.797L","CVT (E)","1420",27.5],["6AA-ZWE215W","1.797L","CVT (E)","1440",24.9],["5BA-MZEA17W","1.49L","CVT (E・LTC)","1260",19.1],["5BA-MZEA17W","1.49L","CVT (E・LTC)","1280",19.0],["5BA-MZEA17W","1.49L","CVT (E・LTC)","1300",17.8]]},{"m":"トヨタ","n":"カローラ フィールダー","cat":"普通・小型","fmin":15.6,"fmax":27.8,"d":["1.496L"],"t":["5MT","CVT (E・LTC)","CVT (E)"],"e":["1NZ (内燃機関) 1LM (電動機)","2NR"],"cnt":4,"v":[["6AA-NKE165G","1.496L","CVT (E)","1170",27.8],["5BA-NRE161G","1.496L","CVT (E・LTC)","1120~1130",19.8],["3BA-NZE161G","1.496L","5MT","1100~1110",17.2],["3BA-NZE164G","1.496L","CVT (E・LTC)","1180~1190",15.6]]},{"m":"トヨタ","n":"カローラクロス","cat":"普通・小型","fmin":16.6,"fmax":26.4,"d":["1.986L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機) 1WM (電動機)","2ZR (内燃機関) 1VM (電動機)"],"cnt":3,"v":[["6AA-ZVG13","1.797L","CVT (E)","1370~1410",26.4],["6AA-ZVG16","1.797L","CVT (E)","1470~1500",24.5],["4BA-MXGA10","1.986L","CVT (E・LTC)","1360~1390",16.6]]},{"m":"トヨタ","n":"クラウン","cat":"普通・小型","fmin":11.8,"fmax":22.4,"d":["1.998L","2.487L","2.393L"],"t":["8AT (E・LTC)","6AT (E)","CVT (E)"],"e":["8AR","A25A (内燃機関) 2NM (電動機)"],"cnt":11,"v":[["6AA-AZSH35","2.487L","CVT (E)","1740~1760",22.4],["6AA-AZSH35","2.487L","CVT (E)","1780",22.4],["6AA-AZSH35","2.487L","CVT (E)","1780~1790",22.2],["6AA-AZSH35","2.487L","CVT (E)","1800~1840",22.2],["6AA-AZSH36W","2.487L","CVT (E)","1800~1820",21.3],["6AA-AZSH32","2.487L","CVT (E)","1980",18.3],["6AA-AZSH32","2.487L","CVT (E)","2010",18.0],["6AA-AZSH32","2.487L","CVT (E)","2020~2030",18.0],["6AA-AZSH21","2.487L","CVT (E)","1840",18.2],["5AA-TZSH35","2.393L","6AT (E)","1890~1940",15.7],["3BA-ARS220","1.998L","8AT (E・LTC)","1720~1730",11.8]]},{"m":"トヨタ","n":"コペン","cat":"軽自動車","fmin":18.6,"fmax":19.2,"d":["0.658L"],"t":["5MT","CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["3BA-LA400A","0.658L","CVT (E・LTC)","870",19.2],["3BA-LA400A","0.658L","5MT","850",18.6]]},{"m":"トヨタ","n":"シエンタ","cat":"普通・小型","fmin":18.0,"fmax":28.8,"d":["1.49L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["M15A (内燃機関) 1NM (電動機)","M15A"],"cnt":11,"v":[["6AA-MXPL10G","1.49L","CVT (E)","1330",28.8],["6AA-MXPL10G","1.49L","CVT (E)","1350",28.5],["6AA-MXPL10G","1.49L","CVT (E)","1340~1350",28.4],["6AA-MXPL10G","1.49L","CVT (E)","1350~1370",28.2],["6AA-MXPL12G","1.49L","CVT (E)","1390~1410",27.5],["6AA-MXPL15G","1.49L","CVT (E)","1380~1420",25.3],["5BA-MXPC10G","1.49L","CVT (E・LTC)","1270~1280",18.4],["5BA-MXPC10G","1.49L","CVT (E・LTC)","1290~1300",18.3],["5BA-MXPC10G","1.49L","CVT (E・LTC)","1290~1310",18.2],["5BA-MXPC10G","1.49L","CVT (E・LTC)","1320",18.2],["5BA-MXPC12G","1.49L","CVT (E・LTC)","1330~1350",18.0]]},{"m":"トヨタ","n":"センチュリー","cat":"普通・小型","fmin":12.4,"fmax":12.4,"d":["4.968L"],"t":["CVT (E)"],"e":["2UR (内燃機関) 1KM (電動機)"],"cnt":1,"v":[["6AA-UWG60","4.968L","CVT (E)","2370",12.4]]},{"m":"トヨタ","n":"ノア","cat":"普通・小型","fmin":14.1,"fmax":23.6,"d":["1.986L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機)","M20A"],"cnt":13,"v":[["6AA-ZWR90W","1.797L","CVT (E)","1610~1650",23.6],["6AA-ZWR90W","1.797L","CVT (E)","1630~1650",23.4],["6AA-ZWR90W","1.797L","CVT (E)","1660~1670",23.4],["6AA-ZWR90W","1.797L","CVT (E)","1610~1650",23.2],["6AA-ZWR90W","1.797L","CVT (E)","1660~1680",23.2],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1580~1610",15.3],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1580~1640",15.1],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1650",14.4],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1660~1690",14.4],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1700",14.4],["6BA-MZRA97W","1.986L","CVT (E・LTC)","1710~1740",14.1],["6BA-MZRA97W","1.986L","CVT (E・LTC)","1750~1760",14.1],["6BA-MZRA97W","1.986L","CVT (E・LTC)","1770",14.1]]},{"m":"トヨタ","n":"ハイエース","cat":"普通・小型","fmin":8.1,"fmax":8.8,"d":["2.693L"],"t":["6AT (E・LTC)"],"e":["2TR"],"cnt":4,"v":[["3BA-TRH214W","2.693L","6AT (E・LTC)","1930~1980",8.8],["3BA-TRH224W","2.693L","6AT (E・LTC)","2040~2050",8.8],["3BA-TRH219W","2.693L","6AT (E・LTC)","2040~2090",8.1],["3BA-TRH229W","2.693L","6AT (E・LTC)","2150~2160",8.1]]},{"m":"トヨタ","n":"ハリアー","cat":"普通・小型","fmin":14.7,"fmax":22.3,"d":["2.487L","1.986L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["A25A (内燃機関) 3NM (電動機) 4NM (電動機)","M20A"],"cnt":10,"v":[["6AA-AXUH80","2.487L","CVT (E)","1650",22.3],["6AA-AXUH80","2.487L","CVT (E)","1680~1710",22.3],["6AA-AXUH85","2.487L","CVT (E)","1720~1740",21.6],["6AA-AXUH85","2.487L","CVT (E)","1750~1760",21.6],["6AA-AXUH85","2.487L","CVT (E)","1770",21.6],["6BA-MXUA80","1.986L","CVT (E・LTC)","1570~1620",15.4],["6BA-MXUA80","1.986L","CVT (E・LTC)","1530",15.4],["6BA-MXUA85","1.986L","CVT (E・LTC)","1630",14.7],["6BA-MXUA85","1.986L","CVT (E・LTC)","1650",14.7],["6BA-MXUA85","1.986L","CVT (E・LTC)","1660~1680",14.7]]},{"m":"トヨタ","n":"ピクシス エポック","cat":"軽自動車","fmin":23.2,"fmax":25.0,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["KF"],"cnt":2,"v":[["5BA-LA350A","0.658L","CVT (E・LTC)","650~670",25.0],["5BA-LA360A","0.658L","CVT (E・LTC)","720~740",23.2]]},{"m":"トヨタ","n":"プリウス","cat":"普通・小型","fmin":26.7,"fmax":32.6,"d":["1.986L","1.797L"],"t":["CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機) 1WM (電動機)","M20A (内燃機関) 1VM (電動機) 1WM (電動機)"],"cnt":7,"v":[["6AA-ZVW60","1.797L","CVT (E)","1350~1360",32.6],["6AA-MXWH60","1.986L","CVT (E)","1380~1420",31.5],["6AA-MXWH60","1.986L","CVT (E)","1400~1420",28.6],["6AA-MXWH60","1.986L","CVT (E)","1440",28.6],["6AA-ZVW65","1.797L","CVT (E)","1410~1420",30.7],["6AA-MXWH65","1.986L","CVT (E)","1440~1480",29.2],["6AA-MXWH65","1.986L","CVT (E)","1460~1500",26.7]]},{"m":"トヨタ","n":"ヤリス","cat":"普通・小型","fmin":18.8,"fmax":36.0,"d":["0.996L","1.49L"],"t":["6MT","CVT (E・LTC)","CVT (E)"],"e":["M15A (内燃機関) 1NM (電動機)","M15A"],"cnt":22,"v":[["6AA-MXPH14","1.49L","CVT (E)","1050",36.0],["6AA-MXPH14","1.49L","CVT (E)","1060",35.8],["6AA-MXPH14","1.49L","CVT (E)","1050~1080",35.4],["6AA-MXPH14","1.49L","CVT (E)","1090",35.4],["6AA-MXPH14","1.49L","CVT (E)","1060",32.6],["6AA-MXPH14","1.49L","CVT (E)","1100",32.6],["6AA-MXPH17","1.49L","CVT (E)","1160~1170",30.2],["6AA-MXPH17","1.49L","CVT (E)","1180",30.2],["6AA-MXPH17","1.49L","CVT (E)","1180~1190",29.8],["6AA-MXPH17","1.49L","CVT (E)","1170~1190",29.0],["5BA-MXPA10","1.49L","CVT (E・LTC)","990~1030",21.3],["5BA-MXPA10","1.49L","CVT (E・LTC)","1000~1050",21.0],["5BA-MXPA10","1.49L","CVT (E・LTC)","1030~1040",20.8],["5BA-MXPA10","1.49L","6MT","980~1030",19.0],["5BA-MXPA10","1.49L","6MT","1040",19.0],["5BA-KSP210","0.996L","CVT (E・LTC)","940~970",20.2],["5BA-KSP210","0.996L","CVT (E・LTC)","980",20.2],["5BA-KSP210","0.996L","CVT (E・LTC)","950~970",20.0],["5BA-KSP210","0.996L","CVT (E・LTC)","980~1000",20.0],["5BA-MXPA15","1.49L","CVT (E・LTC)","1100~1140",19.1],["5BA-MXPA15","1.49L","CVT (E・LTC)","1110~1140",18.9],["5BA-MXPA15","1.49L","CVT (E・LTC)","1140~1150",18.8]]},{"m":"トヨタ","n":"ヤリス クロス","cat":"普通・小型","fmin":17.1,"fmax":30.8,"d":["1.49L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["M15A (内燃機関) 1NM (電動機)","M15A"],"cnt":19,"v":[["6AA-MXPJ10","1.49L","CVT (E)","1160",30.8],["6AA-MXPJ10","1.49L","CVT (E)","1160~1170",30.2],["6AA-MXPJ10","1.49L","CVT (E)","1180~1190",30.2],["6AA-MXPJ10","1.49L","CVT (E)","1200",30.2],["6AA-MXPJ10","1.49L","CVT (E)","1170~1190",27.8],["6AA-MXPJ10","1.49L","CVT (E)","1200~1210",27.8],["6AA-MXPJ10","1.49L","CVT (E)","1180~1190",25.0],["6AA-MXPJ15","1.49L","CVT (E)","1250",28.7],["6AA-MXPJ15","1.49L","CVT (E)","1250~1270",28.1],["6AA-MXPJ15","1.49L","CVT (E)","1280",28.1],["6AA-MXPJ15","1.49L","CVT (E)","1260~1290",26.0],["5BA-MXPB10","1.49L","CVT (E・LTC)","1110",19.8],["5BA-MXPB10","1.49L","CVT (E・LTC)","1110~1150",19.4],["5BA-MXPB10","1.49L","CVT (E・LTC)","1130~1160",18.3],["5BA-MXPB10","1.49L","CVT (E・LTC)","1130~1140",17.6],["5BA-MXPB15","1.49L","CVT (E・LTC)","1200",18.4],["5BA-MXPB15","1.49L","CVT (E・LTC)","1200~1230",18.1],["5BA-MXPB15","1.49L","CVT (E・LTC)","1240",18.1],["5BA-MXPB15","1.49L","CVT (E・LTC)","1220~1250",17.1]]},{"m":"トヨタ","n":"ライズ","cat":"普通・小型","fmin":17.4,"fmax":28.0,"d":["0.996L","1.196L"],"t":["-","CVT (E・LTC)"],"e":["WA-E1A","WA"],"cnt":4,"v":[["5AA-A202A","1.196L","-","1060~1070",28.0],["5BA-A201A","1.196L","CVT (E・LTC)","970",20.7],["5BA-A201A","1.196L","CVT (E・LTC)","980",20.7],["3BA-A210A","0.996L","CVT (E・LTC)","1040~1050",17.4]]},{"m":"トヨタ","n":"ランドクルーザー","cat":"普通・小型","fmin":7.5,"fmax":8.0,"d":["2.693L","3.444L"],"t":["6AT×2 (E・LTC)","10AT×2 (E・LTC)"],"e":["V35A","2TR"],"cnt":5,"v":[["3BA-VJA300W","3.444L","10AT×2 (E・LTC)","2360~2380",8.0],["3BA-VJA300W","3.444L","10AT×2 (E・LTC)","2390~2470",8.0],["3BA-VJA300W","3.444L","10AT×2 (E・LTC)","2440~2490",7.9],["3BA-VJA300W","3.444L","10AT×2 (E・LTC)","2500~2550",7.9],["3BA-TRJ250W","2.693L","6AT×2 (E・LTC)","2170~2250",7.5]]},{"m":"トヨタ","n":"ルーミー","cat":"普通・小型","fmin":16.8,"fmax":18.4,"d":["0.996L"],"t":["CVT (E・LTC)"],"e":["1KR"],"cnt":4,"v":[["5BA-M900A","0.996L","CVT (E・LTC)","1080",18.4],["5BA-M900A","0.996L","CVT (E・LTC)","1090",18.4],["4BA-M900A","0.996L","CVT (E・LTC)","1110",16.8],["5BA-M910A","0.996L","CVT (E・LTC)","1140",16.8]]},{"m":"トヨタ","n":"ヴェルファイア","cat":"普通・小型","fmin":10.2,"fmax":10.9,"d":["2.393L"],"t":["8AT (E・LTC)"],"e":["T24A"],"cnt":6,"v":[["5BA-TAHA40W","2.393L","8AT (E・LTC)","2160~2190",10.9],["5BA-TAHA40W","2.393L","8AT (E・LTC)","2180~2210",10.3],["5BA-TAHA40W","2.393L","8AT (E・LTC)","2190~2230",10.2],["5BA-TAHA45W","2.393L","8AT (E・LTC)","2220~2250",10.4],["5BA-TAHA45W","2.393L","8AT (E・LTC)","2240~2270",10.2],["5BA-TAHA45W","2.393L","8AT (E・LTC)","2290",10.2]]},{"m":"トヨタ","n":"ヴォクシー ノア","cat":"普通・小型","fmin":14.1,"fmax":23.0,"d":["1.986L","1.797L"],"t":["CVT (E・LTC)","CVT (E)"],"e":["2ZR (内燃機関) 1VM (電動機) 1WM (電動機)","2ZR (内燃機関) 1VM (電動機)"],"cnt":20,"v":[["6AA-ZWR90W","1.797L","CVT (E)","1610~1650",23.0],["6AA-ZWR90W","1.797L","CVT (E)","1660~1710",23.0],["6AA-ZWR90W","1.797L","CVT (E)","1680~1730",22.7],["6AA-ZWR92W","1.797L","CVT (E)","1670~1740",22.7],["6AA-ZWR95W","1.797L","CVT (E)","1680~1700",22.0],["6AA-ZWR95W","1.797L","CVT (E)","1710~1740",22.0],["6AA-ZWR95W","1.797L","CVT (E)","1680~1710",21.9],["6AA-ZWR95W","1.797L","CVT (E)","1720~1740",21.9],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1580~1590",15.0],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1600~1650",15.0],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1660~1680",15.0],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1650",14.8],["6BA-MZRA90W","1.986L","CVT (E・LTC)","1660~1690",14.8],["6BA-MZRA92W","1.986L","CVT (E・LTC)","1630~1650",14.8],["6BA-MZRA92W","1.986L","CVT (E・LTC)","1660~1710",14.8],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1650",14.3],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1660~1700",14.3],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1710~1720",14.3],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1720~1740",14.1],["6BA-MZRA95W","1.986L","CVT (E・LTC)","1750~1760",14.1]]},{"m":"ニッサン","n":"DAYZ","cat":"軽自動車","fmin":16.8,"fmax":23.3,"d":["0.659L"],"t":["CVT(E・LTC)"],"e":["BR06-SM21","BR06"],"cnt":17,"v":[["5AA-B44W","0.659L","CVT(E・LTC)","850",23.3],["5AA-B44W","0.659L","CVT(E・LTC)","870",23.3],["5AA-B44W","0.659L","CVT(E・LTC)","840",21.2],["5AA-B44W","0.659L","CVT(E・LTC)","860~870",21.2],["5AA-B44W","0.659L","CVT(E・LTC)","850",21.0],["5AA-B44W","0.659L","CVT(E・LTC)","860",21.0],["5AA-B44W","0.659L","CVT(E・LTC)","870",21.0],["5BA-B43W","0.659L","CVT(E・LTC)","840",23.2],["5BA-B43W","0.659L","CVT(E・LTC)","830~840",21.2],["4AA-B45W","0.659L","CVT(E・LTC)","870~880",21.5],["4AA-B45W","0.659L","CVT(E・LTC)","860~880",19.2],["5BA-B46W","0.659L","CVT(E・LTC)","900",21.0],["5BA-B46W","0.659L","CVT(E・LTC)","890~900",18.2],["5AA-B47W","0.659L","CVT(E・LTC)","910~930",21.1],["5AA-B47W","0.659L","CVT(E・LTC)","900~930",18.8],["4AA-B48W","0.659L","CVT(E・LTC)","930~940",19.4],["4AA-B48W","0.659L","CVT(E・LTC)","920~940",16.8]]},{"m":"ニッサン","n":"GT-R","cat":"普通・小型","fmin":7.5,"fmax":7.8,"d":["3.799L"],"t":["6AT"],"e":["VR38"],"cnt":7,"v":[["4BA-R35","3.799L","6AT","1770",7.8],["4BA-R35","3.799L","6AT","1760",7.8],["4BA-R35","3.799L","6AT","1750",7.8],["4BA-R35","3.799L","6AT","1740",7.8],["4BA-R35","3.799L","6AT","1730",7.8],["4BA-R35","3.799L","6AT","1730",7.5],["4BA-R35","3.799L","6AT","1720",7.5]]},{"m":"ニッサン","n":"NV200","cat":"普通・小型","fmin":10.8,"fmax":10.8,"d":["1.597L"],"t":["4AT(E・LTC)"],"e":["HR16"],"cnt":2,"v":[["3BA-M20","1.597L","4AT(E・LTC)","1370",10.8],["3BA-M20","1.597L","4AT(E・LTC)","1380",10.8]]},{"m":"ニッサン","n":"NV200 バネット","cat":"普通・小型","fmin":12.0,"fmax":13.6,"d":["1.597L"],"t":["4AT(E・LTC)","CVT"],"e":["HR16"],"cnt":6,"v":[["3BA-M20","1.597L","CVT","1390~1400",13.6],["3BA-M20","1.597L","CVT","1350",13.6],["3BA-M20","1.597L","4AT(E・LTC)","1370",12.0],["3BA-M20","1.597L","4AT(E・LTC)","1360",12.0],["3BA-M20","1.597L","4AT(E・LTC)","1350",12.0],["3BA-M20","1.597L","4AT(E・LTC)","1310",12.0]]},{"m":"ニッサン","n":"ROOX","cat":"軽自動車","fmin":17.5,"fmax":20.9,"d":["0.659L"],"t":["CVT(E・LTC)"],"e":["BR06-SM21"],"cnt":8,"v":[["5AA-B44A","0.659L","CVT(E・LTC)","980",20.9],["5AA-B44A","0.659L","CVT(E・LTC)","950~970",20.9],["4AA-B45A","0.659L","CVT(E・LTC)","970",19.2],["4AA-B45A","0.659L","CVT(E・LTC)","990",19.2],["4AA-B45A","0.659L","CVT(E・LTC)","1010",19.2],["5AA-B47A","0.659L","CVT(E・LTC)","1040",19.0],["5AA-B47A","0.659L","CVT(E・LTC)","1010~1030",19.0],["4AA-B48A","0.659L","CVT(E・LTC)","1030~1060",17.5]]},{"m":"ニッサン","n":"エクストレイル","cat":"普通・小型","fmin":18.2,"fmax":19.7,"d":["1.497L"],"t":["-"],"e":["KR15-BM46-MM48","KR15-BM46"],"cnt":8,"v":[["6AA-T33","1.497L","-","1740~1760",19.7],["6AA-T33","1.497L","-","1770~1780",19.7],["6AA-T33","1.497L","-","1790~1800",19.4],["6AA-SNT33","1.497L","-","1840~1860",18.4],["6AA-SNT33","1.497L","-","1870",18.4],["6AA-SNT33","1.497L","-","1880~1890",18.4],["6AA-SNT33","1.497L","-","1880~1900",18.3],["6AA-SNT33","1.497L","-","1900~1930",18.2]]},{"m":"ニッサン","n":"エルグランド","cat":"普通・小型","fmin":8.4,"fmax":10.0,"d":["3.498L","2.488L"],"t":["CVT(E・LTC)"],"e":["QR25","VQ35"],"cnt":11,"v":[["5BA-TE52","2.488L","CVT(E・LTC)","1970",10.0],["5BA-TE52","2.488L","CVT(E・LTC)","1950",10.0],["5BA-TE52","2.488L","CVT(E・LTC)","1930",10.0],["5BA-TNE52","2.488L","CVT(E・LTC)","2020",9.7],["5BA-TNE52","2.488L","CVT(E・LTC)","2000",9.7],["5BA-PE52","3.498L","CVT(E・LTC)","2040",8.7],["5BA-PE52","3.498L","CVT(E・LTC)","2020",8.7],["5BA-PE52","3.498L","CVT(E・LTC)","2000",8.7],["5BA-PNE52","3.498L","CVT(E・LTC)","2100",8.4],["5BA-PNE52","3.498L","CVT(E・LTC)","2080",8.4],["5BA-PNE52","3.498L","CVT(E・LTC)","2060",8.4]]},{"m":"ニッサン","n":"キャラバン","cat":"普通・小型","fmin":8.3,"fmax":8.9,"d":["2.488L"],"t":["7AT(E・LTC)"],"e":["QR25"],"cnt":6,"v":[["3BA-KS2E26","2.488L","7AT(E・LTC)","1870",8.9],["3BA-KS2E26","2.488L","7AT(E・LTC)","1910",8.9],["3BA-KS4E26","2.488L","7AT(E・LTC)","2010",8.7],["3BA-KS6E26","2.488L","7AT(E・LTC)","1970",8.5],["3BA-KS6E26","2.488L","7AT(E・LTC)","2010",8.5],["3BA-KS8E26","2.488L","7AT(E・LTC)","2110",8.3]]},{"m":"ニッサン","n":"クリッパーリオ","cat":"軽自動車","fmin":15.1,"fmax":15.1,"d":["0.658L"],"t":["CVT"],"e":["R06A"],"cnt":2,"v":[["3BA-DR17W","0.658L","CVT","980~1000",15.1],["3BA-DR17W","0.658L","CVT","1030~1050",15.1]]},{"m":"ニッサン","n":"スカイライン","cat":"普通・小型","fmin":10.0,"fmax":10.0,"d":["2.997L"],"t":["7AT(E・LTC)"],"e":["VR30"],"cnt":9,"v":[["5BA-RV37","2.997L","7AT(E・LTC)","1780",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1770",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1760",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1750",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1740",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1730",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1720",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1710",10.0],["5BA-RV37","2.997L","7AT(E・LTC)","1700",10.0]]},{"m":"ニッサン","n":"セレナ","cat":"普通・小型","fmin":11.6,"fmax":20.7,"d":["1.433L","1.997L"],"t":["CVT(E・LTC)","-"],"e":["MR20","HR14-EM57"],"cnt":15,"v":[["6AA-GC28","1.433L","-","1780",20.7],["6AA-GC28","1.433L","-","1790",20.6],["6AA-GC28","1.433L","-","1800",19.4],["6AA-GC28","1.433L","-","1810",19.3],["6AA-GFC28","1.433L","-","1800",19.4],["6AA-GFC28","1.433L","-","1810",19.3],["6AA-GFC28","1.433L","-","1850",18.4],["6AA-SNC28","1.433L","-","1900",17.0],["6AA-SNC28","1.433L","-","1920",16.2],["6AA-SFNC28","1.433L","-","1930",16.1],["5BA-C28","1.997L","CVT(E・LTC)","1670",13.4],["5BA-C28","1.997L","CVT(E・LTC)","1680",13.0],["5BA-FC28","1.997L","CVT(E・LTC)","1690",13.0],["5BA-NC28","1.997L","CVT(E・LTC)","1780~1790",11.6],["5BA-FNC28","1.997L","CVT(E・LTC)","1790",11.6]]},{"m":"ニッサン","n":"ノート","cat":"普通・小型","fmin":23.2,"fmax":28.4,"d":["1.198L"],"t":["-"],"e":["HR12-EM47","HR12-EM47-MM48"],"cnt":4,"v":[["6AA-E13","1.198L","-","1230",28.4],["6AA-E13","1.198L","-","1230",27.8],["6AA-SNE13","1.198L","-","1350",23.8],["6AA-SNE13","1.198L","-","1350",23.2]]},{"m":"ニッサン","n":"ノート オーラ","cat":"普通・小型","fmin":22.7,"fmax":27.2,"d":["1.198L"],"t":["-"],"e":["HR12-EM47","HR12-EM47-MM48"],"cnt":3,"v":[["6AA-FE13","1.198L","-","1270",27.2],["6AA-FE13","1.198L","-","1280",23.3],["6AA-FSNE13","1.198L","-","1380",22.7]]},{"m":"ニッサン","n":"フェアレディZ","cat":"普通・小型","fmin":9.2,"fmax":10.2,"d":["2.997L"],"t":["9AT(E・LTC)","6MT"],"e":["VR30"],"cnt":6,"v":[["5BA-RZ34","2.997L","9AT(E・LTC)","1600",10.2],["5BA-RZ34","2.997L","9AT(E・LTC)","1610",10.2],["5BA-RZ34","2.997L","9AT(E・LTC)","1620",10.2],["5BA-RZ34","2.997L","9AT(E・LTC)","1680",9.2],["3BA-RZ34","2.997L","6MT","1570",9.5],["3BA-RZ34","2.997L","6MT","1580~1590",9.5]]},{"m":"ホンダ","n":"FREED","cat":"普通・小型","fmin":15.6,"fmax":20.9,"d":["1.496L"],"t":["7AT (E)","CVT (E・LTC)"],"e":["L15B","LEB(内燃機関) -H1(電動機)"],"cnt":6,"v":[["6AA-GB7","1.496L","7AT (E)","1410",20.9],["6AA-GB7","1.496L","7AT (E)","1430~1470",20.9],["6AA-GB8","1.496L","7AT (E)","1500~1520",19.8],["5BA-GB5","1.496L","CVT (E・LTC)","1350~1410",17.0],["5BA-GB6","1.496L","CVT (E・LTC)","1490",15.6],["5BA-GB6","1.496L","CVT (E・LTC)","1430~1460",15.6]]},{"m":"ホンダ","n":"FREED+","cat":"普通・小型","fmin":15.6,"fmax":20.9,"d":["1.496L"],"t":["7AT (E)","CVT (E・LTC)"],"e":["L15B","LEB(内燃機関) -H1(電動機)"],"cnt":5,"v":[["6AA-GB7","1.496L","7AT (E)","1410~1420",20.9],["6AA-GB7","1.496L","7AT (E)","1430~1450",20.9],["6AA-GB8","1.496L","7AT (E)","1490~1510",19.8],["5BA-GB5","1.496L","CVT (E・LTC)","1360~1380",17.0],["5BA-GB6","1.496L","CVT (E・LTC)","1430~1460",15.6]]},{"m":"ホンダ","n":"N-BOX","cat":"軽自動車","fmin":19.1,"fmax":21.6,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["S07B"],"cnt":4,"v":[["6BA-JF5","0.658L","CVT (E・LTC)","910",21.6],["6BA-JF5","0.658L","CVT (E・LTC)","960",21.1],["6BA-JF6","0.658L","CVT (E・LTC)","980",19.4],["6BA-JF6","0.658L","CVT (E・LTC)","1020",19.1]]},{"m":"ホンダ","n":"N-BOX CUSTOM","cat":"軽自動車","fmin":18.4,"fmax":21.5,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["S07B"],"cnt":6,"v":[["6BA-JF5","0.658L","CVT (E・LTC)","920",21.5],["6BA-JF5","0.658L","CVT (E・LTC)","940",20.3],["6BA-JF5","0.658L","CVT (E・LTC)","960",21.1],["6BA-JF6","0.658L","CVT (E・LTC)","980",19.4],["6BA-JF6","0.658L","CVT (E・LTC)","1000",18.4],["6BA-JF6","0.658L","CVT (E・LTC)","1030",19.0]]},{"m":"ホンダ","n":"N-BOX JOY","cat":"軽自動車","fmin":18.4,"fmax":21.3,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["S07B"],"cnt":4,"v":[["6BA-JF5","0.658L","CVT (E・LTC)","920",21.3],["6BA-JF5","0.658L","CVT (E・LTC)","930",20.2],["6BA-JF6","0.658L","CVT (E・LTC)","980",19.3],["6BA-JF6","0.658L","CVT (E・LTC)","990",18.4]]},{"m":"ホンダ","n":"N-ONE","cat":"軽自動車","fmin":20.1,"fmax":23.0,"d":["0.658L"],"t":["CVT (E・LTC)","6MT"],"e":["S07B"],"cnt":5,"v":[["6BA-JG3","0.658L","CVT (E・LTC)","840",23.0],["6BA-JG3","0.658L","CVT (E・LTC)","860",21.8],["6BA-JG3","0.658L","6MT","840",21.6],["6BA-JG4","0.658L","CVT (E・LTC)","900",21.0],["6BA-JG4","0.658L","CVT (E・LTC)","920",20.1]]},{"m":"ホンダ","n":"N-WGN","cat":"軽自動車","fmin":21.2,"fmax":23.2,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["S07B"],"cnt":2,"v":[["6BA-JH3","0.658L","CVT (E・LTC)","850",23.2],["6BA-JH4","0.658L","CVT (E・LTC)","910",21.2]]},{"m":"ホンダ","n":"N-WGN Custom","cat":"軽自動車","fmin":20.0,"fmax":23.2,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["S07B"],"cnt":4,"v":[["6BA-JH3","0.658L","CVT (E・LTC)","850",23.2],["6BA-JH3","0.658L","CVT (E・LTC)","870",21.2],["6BA-JH4","0.658L","CVT (E・LTC)","920",21.2],["6BA-JH4","0.658L","CVT (E・LTC)","930",20.0]]},{"m":"ホンダ","n":"VEZEL","cat":"普通・小型","fmin":15.0,"fmax":26.0,"d":["1.496L"],"t":["―","CVT (E・LTC)"],"e":["L15Z","LEC(内燃機関) -H5(電動機)"],"cnt":10,"v":[["6AA-RV5","1.496L","―","1350~1370",25.0],["6AA-RV5","1.496L","―","1380~1400",24.8],["6AA-RV5","1.496L","―","1350",26.0],["6AA-RV5","1.496L","―","1380",25.3],["6AA-RV5","1.496L","―","1400",25.2],["6AA-RV6","1.496L","―","1430~1450",22.0],["6AA-RV6","1.496L","―","1430",21.5],["6AA-RV6","1.496L","―","1450",21.3],["6AA-RV6","1.496L","―","1480",21.2],["5BA-RV4","1.496L","CVT (E・LTC)","1320",15.0]]},{"m":"ホンダ","n":"ZR-V","cat":"普通・小型","fmin":13.9,"fmax":22.1,"d":["1.993L","1.496L"],"t":["―","CVT (E・LTC)"],"e":["L15C","LFC(内燃機関) -H4(電動機)"],"cnt":8,"v":[["6AA-RZ4","1.993L","―","1560",22.1],["6AA-RZ4","1.993L","―","1580",22.0],["6AA-RZ6","1.993L","―","1610",21.7],["6AA-RZ6","1.993L","―","1630",21.5],["5BA-RZ3","1.496L","CVT (E・LTC)","1460",14.6],["5BA-RZ3","1.496L","CVT (E・LTC)","1490",14.5],["5BA-RZ5","1.496L","CVT (E・LTC)","1520",13.9],["5BA-RZ5","1.496L","CVT (E・LTC)","1540",13.9]]},{"m":"ホンダ","n":"シビック","cat":"普通・小型","fmin":12.5,"fmax":24.2,"d":["1.993L","1.496L","1.995L"],"t":["―","CVT (E・LTC)","6MT"],"e":["L15C","LFC(内燃機関) -H4(電動機)"],"cnt":4,"v":[["5BA-FL1","1.496L","CVT (E・LTC)","1360~1370",15.7],["5BA-FL1","1.496L","6MT","1350",15.3],["6AA-FL4","1.993L","―","1460~1490",24.2],["6BA-FL5","1.995L","6MT","1430",12.5]]},{"m":"ホンダ","n":"ステップワゴン","cat":"普通・小型","fmin":12.9,"fmax":20.0,"d":["1.993L","1.496L"],"t":["―","CVT (E・LTC)"],"e":["LFA(内燃機関) -H4(電動機)","L15C"],"cnt":11,"v":[["6AA-RP8","1.993L","―","1810",20.0],["6AA-RP8","1.993L","―","1830~1840",19.6],["6AA-RP8","1.993L","―","1840",19.5],["5BA-RP6","1.496L","CVT (E・LTC)","1710",13.9],["5BA-RP6","1.496L","CVT (E・LTC)","1730~1740",13.7],["5BA-RP6","1.496L","CVT (E・LTC)","1780",13.5],["5BA-RP6","1.496L","CVT (E・LTC)","1790",13.4],["5BA-RP6","1.496L","CVT (E・LTC)","1740",13.2],["5BA-RP7","1.496L","CVT (E・LTC)","1790",13.3],["5BA-RP7","1.496L","CVT (E・LTC)","1800~1810",13.1],["5BA-RP7","1.496L","CVT (E・LTC)","1860",12.9]]},{"m":"ホンダ","n":"フィット","cat":"普通・小型","fmin":15.9,"fmax":30.2,"d":["1.496L"],"t":["―","CVT (E・LTC)"],"e":["LEB(内燃機関) -H5(電動機)","L15Z"],"cnt":25,"v":[["6AA-GR3","1.496L","―","1190",30.2],["6AA-GR3","1.496L","―","1190",29.0],["6AA-GR3","1.496L","―","1200",27.6],["6AA-GR3","1.496L","―","1210",27.4],["6AA-GR3","1.496L","―","1210",27.2],["6AA-GR3","1.496L","―","1190",28.9],["6AA-GR3","1.496L","―","1200",28.7],["6AA-GR6","1.496L","―","1210",27.1],["6AA-GR4","1.496L","―","1260",25.4],["6AA-GR4","1.496L","―","1270",25.3],["6AA-GR4","1.496L","―","1280",23.5],["6AA-GR4","1.496L","―","1270",24.4],["6AA-GR8","1.496L","―","1280",24.2],["6AA-GR8","1.496L","―","1290",24.2],["5BA-GS4","1.496L","CVT (E・LTC)","1080",18.7],["5BA-GS4","1.496L","CVT (E・LTC)","1090",18.5],["5BA-GS4","1.496L","CVT (E・LTC)","1100",17.9],["5BA-GS4","1.496L","CVT (E・LTC)","1110",17.8],["5BA-GS4","1.496L","CVT (E・LTC)","1090",18.5],["5BA-GS5","1.496L","CVT (E・LTC)","1110",17.6],["5BA-GS6","1.496L","CVT (E・LTC)","1160",16.6],["5BA-GS6","1.496L","CVT (E・LTC)","1170",16.0],["5BA-GS6","1.496L","CVT (E・LTC)","1180",15.9],["5BA-GS6","1.496L","CVT (E・LTC)","1160~1170",16.4],["5BA-GS7","1.496L","CVT (E・LTC)","1180",16.1]]},{"m":"マツダ","n":"CX-60","cat":"普通・小型","fmin":13.0,"fmax":14.2,"d":["2.488L"],"t":["8AT(E)"],"e":["PY"],"cnt":7,"v":[["5BA-KH5P","2.488L","8AT(E)","1670~1700",14.2],["5BA-KH5P","2.488L","8AT(E)","1710~1730",14.1],["5BA-KH5P","2.488L","8AT(E)","1750",14.0],["5BA-KH5P","2.488L","8AT(E)","1710~1720",13.1],["5BA-KH5P","2.488L","8AT(E)","1740",13.1],["5BA-KH5P","2.488L","8AT(E)","1750~1760",13.0],["5BA-KH5P","2.488L","8AT(E)","1770~1790",13.0]]},{"m":"マツダ","n":"MAZDA 2","cat":"普通・小型","fmin":18.1,"fmax":20.3,"d":["1.496L"],"t":["6AT(E・LTC)","6MT"],"e":["P5"],"cnt":5,"v":[["5BA-DJLFS","1.496L","6AT(E・LTC)","1090~1100",20.3],["5BA-DJLFS","1.496L","6MT","1060",20.2],["5BA-DJLFS","1.496L","6MT","1070~1080",20.2],["3BA-DJLFS","1.496L","6MT","1020~1040",20.2],["5BA-DJLAS","1.496L","6AT(E・LTC)","1160~1180",18.1]]},{"m":"マツダ","n":"MAZDA 3","cat":"普通・小型","fmin":15.9,"fmax":17.7,"d":["1.496L","1.997L"],"t":["6AT(E・LTC)","6MT"],"e":["PE-MJ","HF-MK"],"cnt":7,"v":[["5AA-BPEK3R","1.997L","6MT","1470~1500",17.7],["5AA-BPEK3R","1.997L","6AT(E・LTC)","1500~1530",16.7],["5AA-BPFJ3R","1.997L","6MT","1360",17.5],["5AA-BPFJ3R","1.997L","6AT(E・LTC)","1380",16.7],["5AA-BPFJ3R","1.997L","6AT(E・LTC)","1380",16.4],["5AA-BPFJ3R","1.997L","6AT(E・LTC)","1450",15.9],["6BA-BP5R","1.496L","6AT(E・LTC)","1340",16.6]]},{"m":"マツダ","n":"MAZDA CX-30","cat":"普通・小型","fmin":15.5,"fmax":16.2,"d":["1.997L"],"t":["6AT(E・LTC)"],"e":["PE-MJ"],"cnt":2,"v":[["5AA-DMEJ3R","1.997L","6AT(E・LTC)","1420",16.2],["5AA-DMEJ3R","1.997L","6AT(E・LTC)","1500",15.5]]},{"m":"マツダ","n":"MAZDA CX-5","cat":"普通・小型","fmin":13.0,"fmax":14.6,"d":["1.997L","2.488L"],"t":["6AT(E・LTC)"],"e":["PY","PE"],"cnt":4,"v":[["6BA-KFEP","1.997L","6AT(E・LTC)","1540~1550",14.6],["6BA-KFEP","1.997L","6AT(E・LTC)","1600~1610",14.0],["6BA-KF5P","2.488L","6AT(E・LTC)","1590",13.8],["6BA-KF5P","2.488L","6AT(E・LTC)","1650",13.0]]},{"m":"マツダ","n":"MAZDA MX-30","cat":"普通・小型","fmin":15.1,"fmax":15.6,"d":["1.997L"],"t":["6AT(E・LTC)"],"e":["PE-MJ"],"cnt":2,"v":[["5AA-DREJ3R","1.997L","6AT(E・LTC)","1460",15.6],["5AA-DREJ3R","1.997L","6AT(E・LTC)","1520",15.1]]},{"m":"マツダ","n":"MAZDA ROADSTER","cat":"普通・小型","fmin":15.2,"fmax":17.2,"d":["1.496L","1.997L"],"t":["6AT(E・LTC)","6MT"],"e":["PE","P5"],"cnt":4,"v":[["5BA-ND5RE","1.496L","6AT(E・LTC)","1060~1070",17.2],["5BA-ND5RE","1.496L","6MT","1010~1040",16.8],["5BA-NDERE","1.997L","6MT","1110",15.8],["5BA-NDERE","1.997L","6AT(E・LTC)","1130",15.2]]},{"m":"マツダ","n":"キャロル","cat":"軽自動車","fmin":23.5,"fmax":27.7,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A","R06D -WA04C"],"cnt":4,"v":[["5AA-HB97S","0.657L","CVT (E・LTC)","700~710",27.7],["5AA-HB97S","0.657L","CVT (E・LTC)","750",25.7],["3BA-HB37S","0.658L","CVT (E・LTC)","680~690",25.2],["3BA-HB37S","0.658L","CVT (E・LTC)","730~740",23.5]]},{"m":"マツダ","n":"スクラム","cat":"軽自動車","fmin":15.1,"fmax":15.1,"d":["0.658L"],"t":["CVT (E・LTC)"],"e":["R06A"],"cnt":2,"v":[["3BA-DG17W","0.658L","CVT (E・LTC)","980~1000",15.1],["3BA-DG17W","0.658L","CVT (E・LTC)","1030~1050",15.1]]},{"m":"マツダ","n":"フレア","cat":"軽自動車","fmin":20.9,"fmax":25.2,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A -WA05A","R06D -WA04C"],"cnt":4,"v":[["5AA-MJ95S","0.657L","CVT (E・LTC)","770~790",25.2],["5AA-MJ95S","0.657L","CVT (E・LTC)","820~840",24.2],["4AA-MJ55S","0.658L","CVT (E・LTC)","800",22.5],["4AA-MJ55S","0.658L","CVT (E・LTC)","850",20.9]]},{"m":"マツダ","n":"フレア クロスオーバー","cat":"軽自動車","fmin":20.8,"fmax":25.0,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A -WA05A","R06D -WA04C"],"cnt":4,"v":[["5AA-MS92S","0.657L","CVT (E・LTC)","820~830",25.0],["5AA-MS92S","0.657L","CVT (E・LTC)","870",23.4],["4AA-MS52S","0.658L","CVT (E・LTC)","840",22.6],["4AA-MS52S","0.658L","CVT (E・LTC)","890",20.8]]},{"m":"マツダ","n":"フレア ワゴン","cat":"軽自動車","fmin":19.8,"fmax":25.1,"d":["0.657L","0.658L"],"t":["CVT (E・LTC)"],"e":["R06A -WA05A","R06D -WA04C"],"cnt":5,"v":[["5AA-MM94S","0.657L","CVT (E・LTC)","850",25.1],["5AA-MM94S","0.657L","CVT (E・LTC)","860~910",23.9],["5AA-MM94S","0.657L","CVT (E・LTC)","910~960",22.4],["4AA-MM54S","0.658L","CVT (E・LTC)","910",21.9],["4AA-MM54S","0.658L","CVT (E・LTC)","960",19.8]]},{"m":"マツダ","n":"マツダ教習車","cat":"普通・小型","fmin":17.4,"fmax":18.6,"d":["1.496L"],"t":["6AT(E・LTC)","6MT"],"e":["P5"],"cnt":2,"v":[["4BA-DJLFJ","1.496L","6MT","1050",18.6],["4BA-DJLFJ","1.496L","6AT(E・LTC)","1080",17.4]]},{"m":"レクサス","n":"ES300h","cat":"普通・小型","fmin":22.3,"fmax":22.3,"d":["2.487L"],"t":["CVT (E)"],"e":["A25A (内燃機関) 3NM (電動機)"],"cnt":1,"v":[["6AA-AXZH11","2.487L","CVT (E)","1670~1720",22.3]]},{"m":"レクサス","n":"GX550","cat":"普通・小型","fmin":8.1,"fmax":8.3,"d":["3.444L"],"t":["10AT×2 (E・LTC)"],"e":["V35A"],"cnt":3,"v":[["3BA-VJA252W","3.444L","10AT×2 (E・LTC)","2460~2470",8.3],["3BA-VJA252W","3.444L","10AT×2 (E・LTC)","2460",8.1],["3BA-VJA252W","3.444L","10AT×2 (E・LTC)","2470~2530",8.1]]},{"m":"レクサス","n":"IS300","cat":"普通・小型","fmin":12.2,"fmax":12.2,"d":["1.998L"],"t":["8AT (E・LTC)"],"e":["8AR"],"cnt":2,"v":[["3BA-ASE30","1.998L","8AT (E・LTC)","1640~1650",12.2],["3BA-ASE30","1.998L","8AT (E・LTC)","1660~1670",12.2]]},{"m":"レクサス","n":"IS300h","cat":"普通・小型","fmin":16.2,"fmax":18.0,"d":["2.493L"],"t":["CVT (E)"],"e":["2AR (内燃機関) 1KM (電動機)"],"cnt":3,"v":[["6AA-AVE30","2.493L","CVT (E)","1690~1720",18.0],["6AA-AVE30","2.493L","CVT (E)","1730",17.9],["6AA-AVE35","2.493L","CVT (E)","1780~1790",16.2]]},{"m":"レクサス","n":"IS350","cat":"普通・小型","fmin":10.7,"fmax":10.7,"d":["3.456L"],"t":["8AT (E・LTC)"],"e":["2GR"],"cnt":1,"v":[["3BA-GSE31","3.456L","8AT (E・LTC)","1660~1680",10.7]]},{"m":"レクサス","n":"IS500","cat":"普通・小型","fmin":9.0,"fmax":9.0,"d":["4.968L"],"t":["8AT (E・LTC)"],"e":["2UR"],"cnt":1,"v":[["5BA-USE30","4.968L","8AT (E・LTC)","1720~1740",9.0]]},{"m":"レクサス","n":"LBX","cat":"普通・小型","fmin":10.7,"fmax":28.2,"d":["1.618L","1.49L"],"t":["6MT","8AT (E・LTC)","CVT (E)"],"e":["G16E","M15A (内燃機関) 1VM (電動機) 1MM (電動機)"],"cnt":9,"v":[["6AA-MAYH10","1.49L","CVT (E)","1280",28.2],["6AA-MAYH10","1.49L","CVT (E)","1290~1300",28.0],["6AA-MAYH10","1.49L","CVT (E)","1310",27.7],["6AA-MAYH10","1.49L","CVT (E)","1320",27.7],["6AA-MAYH15","1.49L","CVT (E)","1360",26.6],["6AA-MAYH15","1.49L","CVT (E)","1370~1380",26.4],["6AA-MAYH15","1.49L","CVT (E)","1390~1400",26.2],["4BA-GAYA16","1.618L","6MT","1430~1450",12.5],["4BA-GAYA16","1.618L","8AT (E・LTC)","1450~1480",10.7]]},{"m":"レクサス","n":"LC500","cat":"普通・小型","fmin":8.0,"fmax":8.4,"d":["4.968L"],"t":["10AT (E・LTC)"],"e":["2UR"],"cnt":2,"v":[["5BA-URZ100","4.968L","10AT (E・LTC)","1930~1950",8.4],["5BA-URZ100","4.968L","10AT (E・LTC)","2040~2050",8.0]]},{"m":"レクサス","n":"LC500h","cat":"普通・小型","fmin":14.4,"fmax":14.4,"d":["3.456L"],"t":["CVT (E)"],"e":["8GR (内燃機関) 2NM (電動機)"],"cnt":2,"v":[["6AA-GWZ100","3.456L","CVT (E)","1990",14.4],["6AA-GWZ100","3.456L","CVT (E)","2010",14.4]]},{"m":"レクサス","n":"LM350h","cat":"普通・小型","fmin":17.5,"fmax":17.9,"d":["2.487L"],"t":["CVT (E)"],"e":["A25A (内燃機関) 5NM (電動機) 4NM (電動機)","A25A (内燃機関) 5NM (電動機)"],"cnt":8,"v":[["6AA-AAWH10W","2.487L","CVT (E)","2270",17.9],["6AA-AAWH10W","2.487L","CVT (E)","2290",17.9],["6AA-AAWH10W","2.487L","CVT (E)","2270",17.8],["6AA-AAWH10W","2.487L","CVT (E)","2290",17.8],["6AA-AAWH15W","2.487L","CVT (E)","2320",17.6],["6AA-AAWH15W","2.487L","CVT (E)","2340",17.6],["6AA-AAWH15W","2.487L","CVT (E)","2320",17.5],["6AA-AAWH15W","2.487L","CVT (E)","2340",17.5]]},{"m":"レクサス","n":"LM500h","cat":"普通・小型","fmin":13.5,"fmax":13.8,"d":["2.393L"],"t":["6AT (E)"],"e":["T24A (内燃機関) 1ZM (電動機) 1YM (電動機)"],"cnt":2,"v":[["5AA-TAWH15W","2.393L","6AT (E)","2420~2440",13.8],["5AA-TAWH15W","2.393L","6AT (E)","2440~2460",13.5]]},{"m":"レクサス","n":"LS500","cat":"普通・小型","fmin":9.5,"fmax":10.1,"d":["3.444L"],"t":["10AT (E・LTC)"],"e":["V35A"],"cnt":5,"v":[["3BA-VXFA50","3.444L","10AT (E・LTC)","2130~2180",10.1],["3BA-VXFA50","3.444L","10AT (E・LTC)","2200~2240",10.1],["3BA-VXFA55","3.444L","10AT (E・LTC)","2230~2270",9.5],["3BA-VXFA55","3.444L","10AT (E・LTC)","2280",9.5],["3BA-VXFA55","3.444L","10AT (E・LTC)","2300~2340",9.5]]},{"m":"レクサス","n":"LS500h","cat":"普通・小型","fmin":12.5,"fmax":13.6,"d":["3.456L"],"t":["CVT (E)"],"e":["8GR (内燃機関) 2NM (電動機)"],"cnt":8,"v":[["6AA-GVF50","3.456L","CVT (E)","2190~2260",13.6],["6AA-GVF50","3.456L","CVT (E)","2270",13.6],["6AA-GVF50","3.456L","CVT (E)","2280~2300",13.6],["6AA-GVF55","3.456L","CVT (E)","2380~2410",12.6],["6AA-GVF55","3.456L","CVT (E)","2270",12.5],["6AA-GVF55","3.456L","CVT (E)","2280~2290",12.5],["6AA-GVF55","3.456L","CVT (E)","2310~2370",12.5],["6AA-GVF55","3.456L","CVT (E)","2380",12.5]]},{"m":"レクサス","n":"LX600","cat":"普通・小型","fmin":8.0,"fmax":8.1,"d":["3.444L"],"t":["10AT×2 (E・LTC)"],"e":["V35A"],"cnt":4,"v":[["3BA-VJA310W","3.444L","10AT×2 (E・LTC)","2540",8.1],["3BA-VJA310W","3.444L","10AT×2 (E・LTC)","2550~2590",8.1],["3BA-VJA310W","3.444L","10AT×2 (E・LTC)","2550",8.0],["3BA-VJA310W","3.444L","10AT×2 (E・LTC)","2560~2610",8.0]]},{"m":"レクサス","n":"NX250","cat":"普通・小型","fmin":13.5,"fmax":14.4,"d":["2.487L"],"t":["8AT (E・LTC)"],"e":["A25A"],"cnt":11,"v":[["5BA-AAZA20","2.487L","8AT (E・LTC)","1620",14.4],["5BA-AAZA20","2.487L","8AT (E・LTC)","1630~1650",14.2],["5BA-AAZA20","2.487L","8AT (E・LTC)","1660~1670",14.2],["5BA-AAZA20","2.487L","8AT (E・LTC)","1650",14.1],["5BA-AAZA20","2.487L","8AT (E・LTC)","1660~1690",14.1],["5BA-AAZA20","2.487L","8AT (E・LTC)","1640~1650",13.9],["5BA-AAZA20","2.487L","8AT (E・LTC)","1660~1690",13.9],["5BA-AAZA25","2.487L","8AT (E・LTC)","1680",13.9],["5BA-AAZA25","2.487L","8AT (E・LTC)","1690~1730",13.8],["5BA-AAZA25","2.487L","8AT (E・LTC)","1710~1750",13.7],["5BA-AAZA25","2.487L","8AT (E・LTC)","1700~1750",13.5]]},{"m":"レクサス","n":"NX350","cat":"普通・小型","fmin":11.7,"fmax":12.0,"d":["2.393L"],"t":["8AT (E・LTC)"],"e":["T24A"],"cnt":4,"v":[["5BA-TAZA25","2.393L","8AT (E・LTC)","1770~1820",12.0],["5BA-TAZA25","2.393L","8AT (E・LTC)","1790~1840",11.9],["5BA-TAZA25","2.393L","8AT (E・LTC)","1780",11.7],["5BA-TAZA25","2.393L","8AT (E・LTC)","1790~1840",11.7]]},{"m":"レクサス","n":"NX350h","cat":"普通・小型","fmin":19.9,"fmax":22.2,"d":["2.487L"],"t":["CVT (E)"],"e":["A25A (内燃機関) 5NM (電動機) 4NM (電動機)","A25A (内燃機関) 5NM (電動機)"],"cnt":15,"v":[["6AA-AAZH20","2.487L","CVT (E)","1730",22.2],["6AA-AAZH20","2.487L","CVT (E)","1740~1760",21.7],["6AA-AAZH20","2.487L","CVT (E)","1770~1790",21.7],["6AA-AAZH20","2.487L","CVT (E)","1760",21.5],["6AA-AAZH20","2.487L","CVT (E)","1770~1810",21.5],["6AA-AAZH20","2.487L","CVT (E)","1750~1760",20.9],["6AA-AAZH20","2.487L","CVT (E)","1770~1810",20.9],["6AA-AAZH25","2.487L","CVT (E)","1790",21.6],["6AA-AAZH25","2.487L","CVT (E)","1800",21.5],["6AA-AAZH25","2.487L","CVT (E)","1820~1830",21.1],["6AA-AAZH25","2.487L","CVT (E)","1810~1850",21.0],["6AA-AAZH25","2.487L","CVT (E)","1840~1870",20.7],["6AA-AAZH25","2.487L","CVT (E)","1810~1850",20.1],["6AA-AAZH25","2.487L","CVT (E)","1810",19.9],["6AA-AAZH25","2.487L","CVT (E)","1820~1870",19.9]]},{"m":"レクサス","n":"RC F","cat":"普通・小型","fmin":8.5,"fmax":8.5,"d":["4.968L"],"t":["8AT (E・LTC)"],"e":["2UR"],"cnt":2,"v":[["5BA-USC10","4.968L","8AT (E・LTC)","1720~1760",8.5],["5BA-USC10","4.968L","8AT (E・LTC)","1770~1790",8.5]]},{"m":"レクサス","n":"RC300","cat":"普通・小型","fmin":12.0,"fmax":12.0,"d":["1.998L"],"t":["8AT (E・LTC)"],"e":["8AR"],"cnt":1,"v":[["3BA-ASC10","1.998L","8AT (E・LTC)","1680~1700",12.0]]},{"m":"レクサス","n":"RC300h","cat":"普通・小型","fmin":17.7,"fmax":17.7,"d":["2.493L"],"t":["CVT (E)"],"e":["2AR (内燃機関) 1KM (電動機)"],"cnt":1,"v":[["6AA-AVC10","2.493L","CVT (E)","1740~1760",17.7]]},{"m":"レクサス","n":"RC350","cat":"普通・小型","fmin":10.6,"fmax":10.6,"d":["3.456L"],"t":["8AT (E・LTC)"],"e":["2GR"],"cnt":1,"v":[["3BA-GSC10","3.456L","8AT (E・LTC)","1690~1720",10.6]]},{"m":"レクサス","n":"RX350","cat":"普通・小型","fmin":11.2,"fmax":11.8,"d":["2.393L"],"t":["8AT (E・LTC)"],"e":["T24A"],"cnt":3,"v":[["5BA-TALA10","2.393L","8AT (E・LTC)","1830~1870",11.8],["5BA-TALA10","2.393L","8AT (E・LTC)","1880~1910",11.8],["5BA-TALA15","2.393L","8AT (E・LTC)","1900~1990",11.2]]},{"m":"レクサス","n":"RX350h","cat":"普通・小型","fmin":18.7,"fmax":20.2,"d":["2.487L"],"t":["CVT (E)"],"e":["A25A (内燃機関) 5NM (電動機) 4NM (電動機)","A25A (内燃機関) 5NM (電動機)"],"cnt":4,"v":[["6AA-AALH10","2.487L","CVT (E)","1900~1980",20.2],["6AA-AALH15","2.487L","CVT (E)","1960~1990",18.7],["6AA-AALH15","2.487L","CVT (E)","2010~2020",18.7],["6AA-AALH15","2.487L","CVT (E)","2030~2050",18.7]]},{"m":"レクサス","n":"RX500h","cat":"普通・小型","fmin":14.4,"fmax":14.4,"d":["2.393L"],"t":["6AT (E)"],"e":["T24A (内燃機関) 1ZM (電動機) 1YM (電動機)"],"cnt":2,"v":[["5AA-TALH17","2.393L","6AT (E)","2100",14.4],["5AA-TALH17","2.393L","6AT (E)","2110~2140",14.4]]},{"m":"レクサス","n":"UX300h","cat":"普通・小型","fmin":23.4,"fmax":26.3,"d":["1.986L"],"t":["CVT (E)"],"e":["M20A (内燃機関) 1VM (電動機) 1WM (電動機)","M20A (内燃機関) 1VM (電動機)"],"cnt":7,"v":[["6AA-MZAH11","1.986L","CVT (E)","1510~1530",26.3],["6AA-MZAH11","1.986L","CVT (E)","1540~1550",26.3],["6AA-MZAH11","1.986L","CVT (E)","1530",24.7],["6AA-MZAH11","1.986L","CVT (E)","1540~1580",24.7],["6AA-MZAH16","1.986L","CVT (E)","1570~1600",25.2],["6AA-MZAH16","1.986L","CVT (E)","1580~1610",25.0],["6AA-MZAH16","1.986L","CVT (E)","1590~1640",23.4]]},{"m":"三菱","n":"DELICA MINI","cat":"軽自動車","fmin":17.5,"fmax":20.9,"d":["0.659L"],"t":["CVT(E・LTC)"],"e":["BR06-SM21"],"cnt":10,"v":[["5AA-B34A","0.659L","CVT(E・LTC)","990",20.9],["5AA-B34A","0.659L","CVT(E・LTC)","970",20.9],["4AA-B35A","0.659L","CVT(E・LTC)","970",19.2],["4AA-B35A","0.659L","CVT(E・LTC)","980",19.2],["4AA-B35A","0.659L","CVT(E・LTC)","1000",19.2],["5AA-B37A","0.659L","CVT(E・LTC)","1030",19.0],["5AA-B37A","0.659L","CVT(E・LTC)","1050",19.0],["4AA-B38A","0.659L","CVT(E・LTC)","1030",17.5],["4AA-B38A","0.659L","CVT(E・LTC)","1040",17.5],["4AA-B38A","0.659L","CVT(E・LTC)","1060",17.5]]},{"m":"三菱","n":"eK","cat":"軽自動車","fmin":16.8,"fmax":23.3,"d":["0.659L"],"t":["CVT(E・LTC)"],"e":["BR06-SM21","BR06"],"cnt":27,"v":[["5BA-B33W","0.659L","CVT(E・LTC)","850",21.2],["5BA-B33W","0.659L","CVT(E・LTC)","840",21.2],["5BA-B33W","0.659L","CVT(E・LTC)","840",23.2],["5BA-B33W","0.659L","CVT(E・LTC)","850",23.2],["5AA-B34W","0.659L","CVT(E・LTC)","850",21.2],["5AA-B34W","0.659L","CVT(E・LTC)","870",21.0],["5AA-B34W","0.659L","CVT(E・LTC)","880",21.0],["5AA-B34W","0.659L","CVT(E・LTC)","860",21.0],["5AA-B34W","0.659L","CVT(E・LTC)","850",23.3],["5AA-B34W","0.659L","CVT(E・LTC)","860",23.3],["5AA-B34W","0.659L","CVT(E・LTC)","870~880",23.3],["4AA-B35W","0.659L","CVT(E・LTC)","870",19.2],["4AA-B35W","0.659L","CVT(E・LTC)","880",19.2],["4AA-B35W","0.659L","CVT(E・LTC)","870~880",21.5],["5BA-B36W","0.659L","CVT(E・LTC)","910",18.2],["5BA-B36W","0.659L","CVT(E・LTC)","900",18.2],["5BA-B36W","0.659L","CVT(E・LTC)","900",21.0],["5BA-B36W","0.659L","CVT(E・LTC)","910",21.0],["5AA-B37W","0.659L","CVT(E・LTC)","930",18.8],["5AA-B37W","0.659L","CVT(E・LTC)","940",18.8],["5AA-B37W","0.659L","CVT(E・LTC)","910",18.8],["5AA-B37W","0.659L","CVT(E・LTC)","920",18.8],["5AA-B37W","0.659L","CVT(E・LTC)","910~920",21.1],["5AA-B37W","0.659L","CVT(E・LTC)","930~940",21.1],["4AA-B38W","0.659L","CVT(E・LTC)","930",16.8],["4AA-B38W","0.659L","CVT(E・LTC)","940",16.8],["4AA-B38W","0.659L","CVT(E・LTC)","930",19.4]]},{"m":"三菱","n":"eK SPACE","cat":"軽自動車","fmin":19.0,"fmax":20.9,"d":["0.659L"],"t":["CVT(E・LTC)"],"e":["BR06-SM21"],"cnt":4,"v":[["5AA-B34A","0.659L","CVT(E・LTC)","970",20.9],["5AA-B34A","0.659L","CVT(E・LTC)","950~960",20.9],["5AA-B37A","0.659L","CVT(E・LTC)","1020~1030",19.0],["5AA-B37A","0.659L","CVT(E・LTC)","1010",19.0]]},{"m":"三菱","n":"エクリプス クロス","cat":"普通・小型","fmin":12.4,"fmax":13.4,"d":["1.498L"],"t":["CVT(E・LTC)"],"e":["4B40"],"cnt":3,"v":[["5BA-GK1W","1.498L","CVT(E・LTC)","1450~1530",13.4],["5BA-GK1W","1.498L","CVT(E・LTC)","1520~1530",12.4],["5BA-GK1W","1.498L","CVT(E・LTC)","1540~1600",12.4]]},{"m":"三菱","n":"タウンボックス","cat":"軽自動車","fmin":15.1,"fmax":15.1,"d":["0.658L"],"t":["CVT"],"e":["R06A"],"cnt":2,"v":[["3BA-DS17W","0.658L","CVT","980~1000",15.1],["3BA-DS17W","0.658L","CVT","1030~1050",15.1]]},{"m":"三菱","n":"デリカD:2","cat":"普通・小型","fmin":17.8,"fmax":19.6,"d":["1.242L"],"t":["CVT (E・LTC)"],"e":["K12C","K12C -WA05A"],"cnt":4,"v":[["5AA-MB37S","1.242L","CVT (E・LTC)","1000",19.6],["5AA-MB37S","1.242L","CVT (E・LTC)","1040",18.4],["5BA-MB27S","1.242L","CVT (E・LTC)","960",19.0],["5BA-MB27S","1.242L","CVT (E・LTC)","1000~1010",17.8]]}];
+
+// ====== Init ======
+let activeMaker = 'all';
+const qInput = document.getElementById('q');
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Build maker filter buttons
+  const makers = [...new Set(DATA.map(d => d.m))].sort();
+  const filterRow = document.querySelector('.filter-row');
+  makers.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.maker = m;
+    btn.textContent = m;
+    btn.onclick = function() { toggleMaker(this); };
+    filterRow.appendChild(btn);
+  });
+
+  const totalVariants = DATA.reduce((s, d) => s + d.cnt, 0);
+  document.getElementById('dataInfo').textContent =
+    DATA.length + '車種 / ' + totalVariants + 'グレード収録';
+
+  qInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  qInput.addEventListener('input', () => { if (qInput.value.length >= 2) doSearch(); });
+
+  // Show all on load
+  renderResults(DATA.slice(0, 20), '', true);
+});
+
+function toggleMaker(el) {
+  const maker = el.dataset.maker;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeMaker = maker;
+  doSearch();
+}
+
+function qS(term) { qInput.value = term; doSearch(); }
+
+function doSearch() {
+  const query = qInput.value.trim().toLowerCase();
+  const normalize = s => s.toLowerCase()
+    .replace(/[\s\u3000]+/g, '')
+    .replace(/[\-\uff0d]/g, '-');
+
+  let results = DATA;
+
+  // Maker filter
+  if (activeMaker !== 'all') {
+    results = results.filter(d => d.m === activeMaker);
+  }
+
+  // Text search
+  if (query) {
+    const nq = normalize(query);
+    const terms = query.split(/\s+/);
+    results = results.filter(d => {
+      const text = normalize(d.m + d.n + (d.e ? d.e.join('') : ''));
+      return terms.every(t => text.includes(normalize(t)));
+    });
+  }
+
+  renderResults(results, query, !query);
+}
+
+function renderResults(results, query, isDefault) {
+  const container = document.getElementById('results');
+
+  if (results.length === 0) {
+    container.innerHTML = '<div class="no-results">一致する車種が見つかりません。<br><span style="font-size:0.8rem;">検索語を短くするか、メーカー名で絞り込んでください。</span></div>';
+    return;
+  }
+
+  let html = '';
+  if (query) {
+    html += '<div class="result-count">' + esc(query) + ' : ' + results.length + '車種</div>';
+  } else if (isDefault) {
+    html += '<div class="result-count">全 ' + results.length + ' 車種（検索語を入力して絞り込み）</div>';
+  }
+
+  const show = results.slice(0, 50);
+  show.forEach(d => {
+    const fuelDisplay = d.fmin === d.fmax
+      ? d.fmin.toFixed(1)
+      : d.fmin.toFixed(1) + ' ～ ' + d.fmax.toFixed(1);
+
+    html += '<div class="rc">'
+      + '<div class="rc-head">'
+      + '<div><div class="rc-name">' + esc(d.n) + '</div>'
+      + '<div class="rc-sub">' + esc(d.m) + ' ・ ' + esc(d.cat) + '</div></div>'
+      + '<div class="rc-badge">' + d.cnt + 'グレード</div>'
+      + '</div>'
+      + '<div class="rc-body">'
+      + '<div class="fuel-main">'
+      + '<span class="mode-label">WLTC</span>'
+      + '<span class="big">' + fuelDisplay + '</span>'
+      + '<span class="unit">km/L</span>'
+      + '</div>'
+      + '<div class="info-grid">'
+      + infoItem('排気量', d.d.join(' / ') || '—')
+      + infoItem('エンジン', (d.e || []).join(' / ') || '—')
+      + infoItem('変速機', d.t.join(' / ') || '—')
+      + infoItem('グレード数', d.cnt + '種')
+      + '</div>';
+
+    // Variant details
+    if (d.v && d.v.length > 1) {
+      html += '<details><summary>全グレード詳細を表示</summary>'
+        + '<div style="max-height:260px;overflow-y:auto;">'
+        + '<table class="vtable"><tr><th>型式</th><th>排気量</th><th>変速</th><th>重量</th><th>WLTC</th></tr>';
+      d.v.forEach(v => {
+        html += '<tr>'
+          + '<td>' + esc(v[0]) + '</td>'
+          + '<td style="text-align:center;">' + esc(v[1] || '—') + '</td>'
+          + '<td style="text-align:center;">' + esc(v[2] || '—') + '</td>'
+          + '<td style="text-align:center;">' + (v[3] ? esc(v[3]) + 'kg' : '—') + '</td>'
+          + '<td class="fuel-val">' + v[4].toFixed(1) + '</td>'
+          + '</tr>';
+      });
+      html += '</table></div></details>';
+    }
+
+    html += '</div></div>';
+  });
+
+  if (results.length > 50) {
+    html += '<div class="no-results">他 ' + (results.length - 50) + ' 車種は省略。検索語で絞り込んでください。</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function infoItem(key, val) {
+  return '<div class="info-item"><span class="ik">' + esc(key) + '</span><span class="iv">' + esc(val) + '</span></div>';
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
