@@ -703,7 +703,7 @@
         
         <h3>🖼️ 表紙画像</h3>
         <div class="form-group">
-          <label>画像を選択（表紙の日程の下に表示されます）</label>
+          <label>画像を選択（表紙の日程の下に表示、1MB以下）</label>
           <input type="file" id="coverImage" accept="image/*" onchange="handleImageUpload(event)">
           <div id="imagePreview" class="image-preview"></div>
           <button type="button" class="btn btn-secondary btn-small" onclick="clearImage()" style="margin-top: 8px; display: none;" id="clearImageBtn">画像を削除</button>
@@ -729,7 +729,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>郵便番号</label>
-            <input type="text" id="hotelZip" placeholder="例: 〒273-0107">
+            <input type="text" id="hotelZip" placeholder="例: 273-0107">
           </div>
           <div class="form-group">
             <label>電話番号</label>
@@ -745,6 +745,12 @@
         <div class="form-group">
           <label>夕食場所</label>
           <input type="text" id="dinner" placeholder="例: 日高屋（予定）">
+        </div>
+
+        <h3>♨️ 温泉</h3>
+        <div class="form-group">
+          <label>温泉・入浴施設</label>
+          <input type="text" id="onsen" placeholder="例: ○○温泉（入らない場合は空欄）">
         </div>
       </div>
     </div>
@@ -793,7 +799,8 @@
 
         <h3>注意事項</h3>
         <div class="form-group">
-          <textarea id="itemsNote" rows="3" placeholder="例: 持ち物全てに必ず名前を書いてください！&#10;お小遣いは、夕飯・道の駅で買うものなどで使うので、多めに持たせてください"></textarea>
+          <textarea id="itemsNote" rows="3">持ち物全てに必ず名前を書いてください！
+お小遣いは、夕飯・道の駅で買うものなどで使うので、多めに持たせてください</textarea>
         </div>
       </div>
     </div>
@@ -809,7 +816,8 @@
           <button class="add-btn" onclick="addCar()">+ 車追加</button>
           <div class="form-group" style="margin-top: 16px;">
             <label>車割り注意事項</label>
-            <textarea id="carNote" rows="2" placeholder="例: 給油,ETCカードか支払う手段を忘れずに★&#10;駐車場では他の車に気を付けて！"></textarea>
+            <textarea id="carNote" rows="2">給油,ETCカードか支払う手段を忘れずに★
+駐車場では他の車に気を付けて！</textarea>
           </div>
         </div>
 
@@ -819,7 +827,7 @@
           <button class="add-btn" onclick="addRoom()">+ 部屋追加</button>
           <div class="form-group" style="margin-top: 16px;">
             <label>部屋割り注意事項</label>
-            <textarea id="roomNote" rows="2" placeholder="例: 部屋番号は当日わかります"></textarea>
+            <textarea id="roomNote" rows="2">部屋番号は当日わかります</textarea>
           </div>
         </div>
       </div>
@@ -866,9 +874,10 @@
           <button class="add-btn" onclick="addMember('other')">+ その他追加</button>
         </div>
 
-        <div class="form-group" style="margin-top: 20px;">
-          <label>合計人数メモ</label>
-          <input type="text" id="totalMembers" placeholder="例: 子ども16名 大人11名 合計27名">
+        <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px; font-size: 1.1rem;">
+          <strong>📊 合計人数</strong>
+          <div id="totalMembersDisplay" style="margin-top: 8px;">子ども 0名 / 大人 0名 / 合計 0名</div>
+          <input type="hidden" id="totalMembers">
         </div>
       </div>
     </div>
@@ -883,7 +892,6 @@
         </div>
         <div class="action-buttons">
           <button class="btn btn-success" onclick="saveToHistory()">💾 現在のデータを保存</button>
-          <button class="btn btn-danger" onclick="clearAllHistory()">🗑️ 全履歴削除</button>
         </div>
         <div class="history-list" id="historyList"></div>
       </div>
@@ -998,6 +1006,13 @@
       items4: ['着替え（バスケ練習着3セット）※寝間着にも使用', '洗濯ネット（必ず名前を書く）', 'ハンガー4本', '汚れものを入れるビニール袋', '必要な子は常備薬', 'その他、各自必要なもの']
     };
 
+    // デフォルトの注意事項
+    const defaultNotes = {
+      itemsNote: '持ち物全てに必ず名前を書いてください！\nお小遣いは、夕飯・道の駅で買うものなどで使うので、多めに持たせてください',
+      carNote: '給油,ETCカードか支払う手段を忘れずに★\n駐車場では他の車に気を付けて！',
+      roomNote: '部屋番号は当日わかります'
+    };
+
     // 画像データ保持用
     let coverImageData = null;
 
@@ -1006,9 +1021,9 @@
       const file = event.target.files[0];
       if (!file) return;
       
-      // ファイルサイズチェック（2MB以下）
-      if (file.size > 2 * 1024 * 1024) {
-        alert('画像サイズは2MB以下にしてください');
+      // ファイルサイズチェック（1MB以下 - Firebase対応）
+      if (file.size > 1 * 1024 * 1024) {
+        alert('画像サイズは1MB以下にしてください（Firebase保存のため）');
         event.target.value = '';
         return;
       }
@@ -1313,10 +1328,29 @@
       const div = document.createElement('div');
       div.className = 'member-item';
       div.innerHTML = `
-        <input type="text" placeholder="名前" value="${name}">
-        <button class="remove-btn" onclick="this.parentElement.remove()">削除</button>
+        <input type="text" placeholder="名前" value="${name}" oninput="saveToLocalStorage()">
+        <button class="remove-btn" onclick="this.parentElement.remove(); updateTotalMembers(); saveToLocalStorage();">削除</button>
       `;
       container.appendChild(div);
+      updateTotalMembers();
+    }
+
+    // 合計人数を自動計算
+    function updateTotalMembers() {
+      const coaches = document.querySelectorAll('#coachContainer .member-item input').length;
+      const parents = document.querySelectorAll('#parentContainer .member-item input').length;
+      const grade6 = document.querySelectorAll('#grade6Container .member-item input').length;
+      const grade5 = document.querySelectorAll('#grade5Container .member-item input').length;
+      const grade4 = document.querySelectorAll('#grade4Container .member-item input').length;
+      const other = document.querySelectorAll('#otherContainer .member-item input').length;
+      
+      const children = grade6 + grade5 + grade4 + other;
+      const adults = coaches + parents;
+      const total = children + adults;
+      
+      const displayText = `子ども ${children}名 / 大人 ${adults}名 / 合計 ${total}名`;
+      document.getElementById('totalMembersDisplay').textContent = displayText;
+      document.getElementById('totalMembers').value = displayText;
     }
 
     // データ収集
@@ -1334,6 +1368,7 @@
         hotelTel: document.getElementById('hotelTel').value,
         hotelAddress: document.getElementById('hotelAddress').value,
         dinner: document.getElementById('dinner').value,
+        onsen: document.getElementById('onsen').value,
         schedule1: [],
         schedule2: [],
         items1: [],
@@ -1432,9 +1467,10 @@
       document.getElementById('hotelTel').value = data.hotelTel || '';
       document.getElementById('hotelAddress').value = data.hotelAddress || '';
       document.getElementById('dinner').value = data.dinner || '';
-      document.getElementById('itemsNote').value = data.itemsNote || '';
-      document.getElementById('carNote').value = data.carNote || '';
-      document.getElementById('roomNote').value = data.roomNote || '';
+      document.getElementById('onsen').value = data.onsen || '';
+      document.getElementById('itemsNote').value = data.itemsNote !== undefined ? data.itemsNote : defaultNotes.itemsNote;
+      document.getElementById('carNote').value = data.carNote !== undefined ? data.carNote : defaultNotes.carNote;
+      document.getElementById('roomNote').value = data.roomNote !== undefined ? data.roomNote : defaultNotes.roomNote;
       document.getElementById('totalMembers').value = data.totalMembers || '';
 
       // 画像復元
@@ -1468,6 +1504,9 @@
         document.getElementById(`${type}Container`).innerHTML = '';
         (data[memberKeys[idx]] || []).forEach(name => addMember(type, name));
       });
+      
+      // 合計人数を更新
+      updateTotalMembers();
     }
 
     // LocalStorage保存/読込
@@ -1686,8 +1725,8 @@
             <div class="pdf-subtitle">${dateRange}</div>
             ${coverImageHTML}
             <div style="text-align: center; margin: 30px 0;">
-              <div style="font-size: 28px;">${data.teamName || ''} <span class="pdf-input-line" style="width: 50px;"></span>年</div>
-              <div style="font-size: 28px; margin-top: 18px;">名前 <span class="pdf-input-line" style="width: 180px;"></span></div>
+              <div style="font-size: 28px;">${data.teamName || ''} <span class="pdf-input-line" style="width: 25px;"></span>年</div>
+              <div style="font-size: 28px; margin-top: 18px;">名前 <span class="pdf-input-line" style="width: 220px;"></span></div>
             </div>
           </div>
           <div class="pdf-half">
@@ -1699,13 +1738,17 @@
             <div class="pdf-section-title">🏨 宿泊先</div>
             <div class="pdf-text">
               <div><strong>${data.hotelName || ''}</strong></div>
-              <div>${data.hotelZip || ''}</div>
+              <div>${data.hotelZip ? '〒' + data.hotelZip : ''}</div>
               <div>${data.hotelAddress || ''}</div>
               <div>Tel: ${data.hotelTel || ''}</div>
             </div>
             ${data.dinner ? `
               <div class="pdf-section-title">🍽️ 夕食</div>
               <div class="pdf-text">${data.dinner}</div>
+            ` : ''}
+            ${data.onsen ? `
+              <div class="pdf-section-title">♨️ 温泉</div>
+              <div class="pdf-text">${data.onsen}</div>
             ` : ''}
           </div>
         </div>
