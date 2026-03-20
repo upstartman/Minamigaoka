@@ -209,6 +209,11 @@
       letter-spacing: 2px;
     }
     
+    .room-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
     .viewers-count {
       color: #94a3b8;
       font-size: 0.9rem;
@@ -291,7 +296,10 @@
               <small>Room ID</small><br>
               <code id="roomIdDisplay">---</code>
             </div>
-            <button class="btn btn-secondary" onclick="copyRoomId()">📋 コピー</button>
+            <div class="room-actions">
+              <button class="btn btn-secondary" onclick="copyRoomId()">📋</button>
+              <button class="btn btn-primary" onclick="shareRoom()">📤 共有</button>
+            </div>
           </div>
           <p class="viewers-count">視聴者: <span id="viewerCount">0</span>人</p>
         </div>
@@ -351,6 +359,16 @@
     // 初期化
     document.addEventListener('DOMContentLoaded', () => {
       initFirebase(FIREBASE_CONFIG);
+      
+      // URLパラメータからRoom IDを取得して自動参加
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        document.getElementById('roomIdInput').value = roomParam.toUpperCase();
+        setMode('viewer');
+        // 少し待ってから自動参加
+        setTimeout(() => joinRoom(), 500);
+      }
     });
     
     // Firebase初期化
@@ -561,6 +579,41 @@
     function copyRoomId() {
       navigator.clipboard.writeText(currentRoomId);
       alert('コピーしました: ' + currentRoomId);
+    }
+    
+    // ルームを共有
+    async function shareRoom() {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
+      const shareData = {
+        title: 'ライブ配信に参加',
+        text: `ライブ配信を視聴できます（Room: ${currentRoomId}）`,
+        url: shareUrl
+      };
+      
+      // Web Share APIが使える場合（主にスマホ）
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        try {
+          await navigator.share(shareData);
+        } catch (e) {
+          if (e.name !== 'AbortError') {
+            // キャンセル以外のエラーはフォールバック
+            fallbackShare(shareUrl);
+          }
+        }
+      } else {
+        // PCなどShare API非対応の場合
+        fallbackShare(shareUrl);
+      }
+    }
+    
+    // フォールバック共有（クリップボードにコピー）
+    function fallbackShare(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('リンクをコピーしました:\n' + url);
+      }).catch(() => {
+        // クリップボードも使えない場合はプロンプト表示
+        prompt('このリンクを共有してください:', url);
+      });
     }
     
     // 配信終了
