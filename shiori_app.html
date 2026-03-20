@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>遠征しおり作成アプリ - 南ヶ丘MBC</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- PDF生成 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -873,6 +877,10 @@
     <div id="history" class="tab-content">
       <div class="card">
         <h2>📚 保存履歴</h2>
+        <div id="firebaseStatus" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+          <span id="statusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: #ccc;"></span>
+          <span id="statusText">接続中...</span>
+        </div>
         <div class="action-buttons">
           <button class="btn btn-success" onclick="saveToHistory()">💾 現在のデータを保存</button>
           <button class="btn btn-danger" onclick="clearAllHistory()">🗑️ 全履歴削除</button>
@@ -909,6 +917,53 @@
   <div id="pdfContainer"></div>
 
   <script>
+    // Firebase設定
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDL3tC_ZXgoPyoM4bdFfQpAaqiax2XF_Ww",
+      authDomain: "minamigaoka-shiori.firebaseapp.com",
+      projectId: "minamigaoka-shiori",
+      storageBucket: "minamigaoka-shiori.firebasestorage.app",
+      messagingSenderId: "9753870123",
+      appId: "1:9753870123:web:4b0273b81d463b49730f6e"
+    };
+
+    // Firebase初期化
+    let db = null;
+    let isFirebaseConnected = false;
+
+    function initFirebase() {
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        db = firebase.firestore();
+        isFirebaseConnected = true;
+        updateConnectionStatus(true);
+        console.log('Firebase connected');
+        renderHistoryList();
+      } catch (error) {
+        console.error('Firebase connection error:', error);
+        isFirebaseConnected = false;
+        updateConnectionStatus(false);
+      }
+    }
+
+    function updateConnectionStatus(connected) {
+      const indicator = document.getElementById('statusIndicator');
+      const text = document.getElementById('statusText');
+      if (indicator && text) {
+        if (connected) {
+          indicator.style.background = '#27ae60';
+          text.textContent = '☁️ クラウド接続中';
+          text.style.color = '#27ae60';
+        } else {
+          indicator.style.background = '#e74c3c';
+          text.textContent = '⚠️ オフライン（ローカル保存）';
+          text.style.color = '#e74c3c';
+        }
+      }
+    }
+
     // デフォルトデータ
     const defaultSchedule1 = [
       { time: '6:00', content: '南小集合・出発' },
@@ -992,7 +1047,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       initTabs();
       loadFromLocalStorage();
-      renderHistoryList();
+      initFirebase(); // Firebase初期化（履歴リストも読み込む）
     });
 
     // タブ切り替え
@@ -1441,70 +1496,168 @@
       saveToLocalStorage();
     });
 
-    // 履歴管理
-    function saveToHistory() {
+    // 履歴管理（Firebase Firestore）
+    async function saveToHistory() {
       const data = collectData();
       const name = data.eventName || '無題のしおり';
-      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
       
-      history.unshift({
-        id: Date.now(),
-        name: name,
-        date: new Date().toLocaleString('ja-JP'),
-        data: data
-      });
-      
-      if (history.length > 20) history.pop();
-      
-      localStorage.setItem('shiori_history', JSON.stringify(history));
-      renderHistoryList();
-      alert('保存しました！');
-    }
-
-    function loadFromHistory(id) {
-      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-      const item = history.find(h => h.id === id);
-      if (item) {
-        restoreData(item.data);
-        alert('読み込みました！');
-      }
-    }
-
-    function deleteFromHistory(id) {
-      if (!confirm('この履歴を削除しますか？')) return;
-      let history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-      history = history.filter(h => h.id !== id);
-      localStorage.setItem('shiori_history', JSON.stringify(history));
-      renderHistoryList();
-    }
-
-    function clearAllHistory() {
-      if (!confirm('全ての履歴を削除しますか？')) return;
-      localStorage.removeItem('shiori_history');
-      renderHistoryList();
-    }
-
-    function renderHistoryList() {
-      const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-      const container = document.getElementById('historyList');
-      
-      if (history.length === 0) {
-        container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">保存された履歴はありません</p>';
+      if (!isFirebaseConnected || !db) {
+        // オフライン時はLocalStorageに保存
+        const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+        history.unshift({
+          id: Date.now(),
+          name: name,
+          date: new Date().toLocaleString('ja-JP'),
+          data: data
+        });
+        if (history.length > 20) history.pop();
+        localStorage.setItem('shiori_history', JSON.stringify(history));
+        renderHistoryList();
+        alert('ローカルに保存しました（オフライン）');
         return;
       }
+
+      try {
+        await db.collection('shiori_history').add({
+          name: name,
+          date: new Date().toLocaleString('ja-JP'),
+          data: data,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        renderHistoryList();
+        alert('クラウドに保存しました！');
+      } catch (error) {
+        console.error('Save error:', error);
+        alert('保存に失敗しました: ' + error.message);
+      }
+    }
+
+    async function loadFromHistory(id) {
+      if (!isFirebaseConnected || !db) {
+        // オフライン時はLocalStorageから読み込み
+        const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+        const item = history.find(h => h.id === id);
+        if (item) {
+          restoreData(item.data);
+          alert('読み込みました！');
+        }
+        return;
+      }
+
+      try {
+        const doc = await db.collection('shiori_history').doc(id).get();
+        if (doc.exists) {
+          restoreData(doc.data().data);
+          alert('読み込みました！');
+        }
+      } catch (error) {
+        console.error('Load error:', error);
+        alert('読み込みに失敗しました: ' + error.message);
+      }
+    }
+
+    async function deleteFromHistory(id) {
+      if (!confirm('この履歴を削除しますか？')) return;
       
-      container.innerHTML = history.map(item => `
-        <div class="history-item">
-          <div class="history-item-info">
-            <div class="history-item-name">${item.name}</div>
-            <div class="history-item-date">${item.date}</div>
+      if (!isFirebaseConnected || !db) {
+        // オフライン時はLocalStorageから削除
+        let history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+        history = history.filter(h => h.id !== id);
+        localStorage.setItem('shiori_history', JSON.stringify(history));
+        renderHistoryList();
+        return;
+      }
+
+      try {
+        await db.collection('shiori_history').doc(id).delete();
+        renderHistoryList();
+      } catch (error) {
+        console.error('Delete error:', error);
+        alert('削除に失敗しました: ' + error.message);
+      }
+    }
+
+    async function clearAllHistory() {
+      if (!confirm('全ての履歴を削除しますか？')) return;
+      
+      if (!isFirebaseConnected || !db) {
+        // オフライン時はLocalStorageをクリア
+        localStorage.removeItem('shiori_history');
+        renderHistoryList();
+        return;
+      }
+
+      try {
+        const snapshot = await db.collection('shiori_history').get();
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+        renderHistoryList();
+        alert('全履歴を削除しました');
+      } catch (error) {
+        console.error('Clear all error:', error);
+        alert('削除に失敗しました: ' + error.message);
+      }
+    }
+
+    async function renderHistoryList() {
+      const container = document.getElementById('historyList');
+      if (!container) return;
+      
+      if (!isFirebaseConnected || !db) {
+        // オフライン時はLocalStorageから読み込み
+        const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+        if (history.length === 0) {
+          container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">保存された履歴はありません</p>';
+          return;
+        }
+        container.innerHTML = history.map(item => `
+          <div class="history-item">
+            <div class="history-item-info">
+              <div class="history-item-name">${item.name}</div>
+              <div class="history-item-date">${item.date}</div>
+            </div>
+            <div class="history-item-buttons">
+              <button class="btn btn-primary btn-small" onclick="loadFromHistory(${item.id})">読込</button>
+              <button class="btn btn-danger btn-small" onclick="deleteFromHistory(${item.id})">削除</button>
+            </div>
           </div>
-          <div class="history-item-buttons">
-            <button class="btn btn-primary btn-small" onclick="loadFromHistory(${item.id})">読込</button>
-            <button class="btn btn-danger btn-small" onclick="deleteFromHistory(${item.id})">削除</button>
-          </div>
-        </div>
-      `).join('');
+        `).join('');
+        return;
+      }
+
+      try {
+        const snapshot = await db.collection('shiori_history')
+          .orderBy('createdAt', 'desc')
+          .limit(20)
+          .get();
+        
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">保存された履歴はありません</p>';
+          return;
+        }
+        
+        container.innerHTML = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return `
+            <div class="history-item">
+              <div class="history-item-info">
+                <div class="history-item-name">${item.name}</div>
+                <div class="history-item-date">${item.date}</div>
+              </div>
+              <div class="history-item-buttons">
+                <button class="btn btn-primary btn-small" onclick="loadFromHistory('${doc.id}')">読込</button>
+                <button class="btn btn-danger btn-small" onclick="deleteFromHistory('${doc.id}')">削除</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Render history error:', error);
+        container.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">履歴の読み込みに失敗しました</p>';
+      }
     }
 
     // 日付フォーマット（曜日なし）
