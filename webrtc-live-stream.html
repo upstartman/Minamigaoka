@@ -60,14 +60,35 @@
       background: #000;
       border-radius: 12px;
       overflow: hidden;
-      aspect-ratio: 16/9;
       margin-bottom: 20px;
+      min-height: 300px;
+      max-height: 70vh;
     }
     
     video {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+    }
+    
+    .switch-camera-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      z-index: 10;
+      transition: background 0.2s;
+    }
+    
+    .switch-camera-btn:hover {
+      background: rgba(0,0,0,0.8);
     }
     
     .controls {
@@ -248,6 +269,7 @@
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
       <video id="remoteVideo" autoplay playsinline class="hidden"></video>
+      <button id="switchCameraBtn" class="switch-camera-btn hidden" onclick="switchCamera()">🔄</button>
     </div>
     
     <div class="controls">
@@ -306,6 +328,7 @@
     let currentRoomId = null;
     let currentMode = null;
     let unsubscribes = [];
+    let facingMode = 'environment'; // 'environment'=背面, 'user'=前面
     
     // STUN/TURNサーバー設定
     const rtcConfig = {
@@ -364,17 +387,60 @@
     // カメラ開始
     async function startCamera() {
       try {
+        // 既存のストリームを停止
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+        }
+        
         localStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: true
         });
         const localVideo = document.getElementById('localVideo');
         localVideo.srcObject = localStream;
         localVideo.classList.remove('hidden');
         document.getElementById('remoteVideo').classList.add('hidden');
+        document.getElementById('switchCameraBtn').classList.remove('hidden');
+        
+        // 前面カメラの場合はミラー表示
+        localVideo.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+        
+        // 映像サイズに合わせてコンテナを調整
+        localVideo.onloadedmetadata = () => {
+          const ratio = localVideo.videoHeight / localVideo.videoWidth;
+          const container = document.querySelector('.video-container');
+          if (ratio > 1) {
+            // 縦向き映像
+            container.style.maxWidth = '400px';
+            container.style.margin = '0 auto 20px';
+          } else {
+            container.style.maxWidth = '100%';
+          }
+        };
+        
         updateStatus('connected', 'カメラ準備完了');
       } catch (e) {
         showError('カメラアクセスエラー: ' + e.message);
+      }
+    }
+    
+    // カメラ切り替え
+    async function switchCamera() {
+      facingMode = facingMode === 'environment' ? 'user' : 'environment';
+      
+      // 配信中の場合、ストリームを更新
+      if (Object.keys(peerConnections).length > 0) {
+        await startCamera();
+        // 各接続のビデオトラックを置き換え
+        const videoTrack = localStream.getVideoTracks()[0];
+        Object.values(peerConnections).forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
+      } else {
+        await startCamera();
       }
     }
     
@@ -384,6 +450,7 @@
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
       }
+      document.getElementById('switchCameraBtn').classList.add('hidden');
     }
     
     // Room ID生成
@@ -548,6 +615,18 @@
         const remoteVideo = document.getElementById('remoteVideo');
         if (remoteVideo.srcObject !== event.streams[0]) {
           remoteVideo.srcObject = event.streams[0];
+          
+          // 映像サイズに合わせてコンテナを調整
+          remoteVideo.onloadedmetadata = () => {
+            const ratio = remoteVideo.videoHeight / remoteVideo.videoWidth;
+            const container = document.querySelector('.video-container');
+            if (ratio > 1) {
+              container.style.maxWidth = '400px';
+              container.style.margin = '0 auto 20px';
+            } else {
+              container.style.maxWidth = '100%';
+            }
+          };
         }
       };
       
