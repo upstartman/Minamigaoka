@@ -1648,24 +1648,44 @@
                     return;
                 }
 
+                // 各注文のサマリー情報を取得
+                const summaryPromises = sortedData.map(order => getOrderSummary({ orderId: order.orderId }));
+                const summaries = await Promise.all(summaryPromises);
+
                 let html = '';
-                sortedData.forEach(order => {
+                sortedData.forEach((order, index) => {
                     const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
                     const statusText = order.status === 'open' ? '受付中' : '締切済';
                     const formattedDate = formatDate(order.orderDate);
                     const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
                     
+                    // サマリー情報を取得
+                    const summary = summaries[index];
+                    let totalUsers = 0;
+                    let totalQuantity = 0;
+                    let totalAmount = 0;
+                    
+                    if (summary.success) {
+                        totalUsers = Object.keys(summary.data.userOrders).length;
+                        totalQuantity = summary.data.menuSummary.reduce((sum, m) => sum + m.totalQuantity, 0);
+                        totalAmount = summary.data.totalAmount;
+                    }
+                    
                     html += `
-                        <div class="order-card">
+                        <div class="order-card" onclick="showOrderDetail('${order.orderId}')" style="cursor: pointer;">
                             <div class="order-card-header">
                                 <div class="order-date">${formattedDate}${shopInfo}</div>
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
-                            <div class="order-card-body">
+                            <div class="order-card-summary" style="display: flex; gap: 15px; padding: 8px 0; font-size: 0.9em; color: #555; border-bottom: 1px solid #eee; margin-bottom: 8px;">
+                                <span>👤 ${totalUsers}人</span>
+                                <span>📦 ${totalQuantity}個</span>
+                                <span>💰 ¥${totalAmount.toLocaleString()}</span>
+                            </div>
+                            <div class="order-card-body" style="font-size: 0.85em; color: #666;">
                                 項目: ${order.menus.map(m => m.name).join(', ')}
                             </div>
-                            <div class="admin-actions">
-                                <button class="btn" onclick="showOrderDetail('${order.orderId}')">詳細</button>
+                            <div class="admin-actions" onclick="event.stopPropagation();">
                                 <button class="btn" onclick="showEditOrderPage('${order.orderId}')">編集</button>
                                 <button class="btn btn-danger" onclick="deleteOrderPage('${order.orderId}')">削除</button>
                             </div>
@@ -1698,9 +1718,29 @@
                 const formattedDate = formatDate(orderPage.orderDate);
                 const shopInfo = orderPage.shopName ? ` - ${orderPage.shopName}` : '';
                 
+                // サマリー用の計算を先に行う
+                const totalQuantity = menuSummary.reduce((sum, menu) => sum + menu.totalQuantity, 0);
+                const totalUsers = Object.keys(userOrders).length;
+                
                 let html = `
                     <h2>${formattedDate}${shopInfo}の注文詳細</h2>
-                    <p>ステータス: <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}">${orderPage.status === 'open' ? '受付中' : '締切済'}</span></p>
+                    <div class="order-summary-header" style="display: flex; gap: 15px; flex-wrap: wrap; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 15px; border-radius: 10px; margin: 15px 0; color: white;">
+                        <div style="text-align: center; min-width: 60px;">
+                            <div style="font-size: 1.3em; font-weight: bold;">${totalUsers}</div>
+                            <div style="font-size: 0.75em; opacity: 0.9;">注文人数</div>
+                        </div>
+                        <div style="text-align: center; min-width: 60px;">
+                            <div style="font-size: 1.3em; font-weight: bold;">${totalQuantity}</div>
+                            <div style="font-size: 0.75em; opacity: 0.9;">合計数量</div>
+                        </div>
+                        <div style="text-align: center; min-width: 80px;">
+                            <div style="font-size: 1.3em; font-weight: bold;">¥${totalAmount.toLocaleString()}</div>
+                            <div style="font-size: 0.75em; opacity: 0.9;">合計金額</div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-left: auto;">
+                            <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}" style="font-size: 0.9em;">${orderPage.status === 'open' ? '受付中' : '締切済'}</span>
+                        </div>
+                    </div>
                 `;
                 
                 if (orderPage.status === 'open') {
@@ -1736,9 +1776,6 @@
                     `;
                 });
                 
-                // 数量の合計を計算
-                const totalQuantity = menuSummary.reduce((sum, menu) => sum + menu.totalQuantity, 0);
-                
                 html += `
                             </tbody>
                             <tfoot>
@@ -1754,7 +1791,6 @@
                 
                 // ユーザー別注文
                 const paidUsers = orderPage.paidUsers || [];
-                const totalUsers = Object.keys(userOrders).length;
                 const paidCount = Object.keys(userOrders).filter(u => paidUsers.includes(u)).length;
                 
                 // 未集金の合計金額を計算
