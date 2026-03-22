@@ -248,6 +248,30 @@
             margin-left: 10px;
         }
 
+        /* 支払い対象者（負の金額）用スタイル */
+        .user-order.payment-target {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .user-order.payment-target:not(.paid) {
+            background: #e7f5ff;
+            border: 2px solid #17a2b8;
+        }
+
+        .user-order.payment-target.paid {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .user-order.payment-target.paid h4 {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+        }
+
+        .user-order.payment-target.paid h4::after {
+            content: ' ✓ 支払済';
+        }
+
         .btn-paid {
             background: #28a745;
             font-size: 0.85em;
@@ -1766,12 +1790,18 @@
                 `;
                 
                 menuSummary.forEach(menu => {
+                    const priceDisplay = menu.price < 0 
+                        ? `<span style="color: #17a2b8;">-¥${Math.abs(menu.price).toLocaleString()}</span>`
+                        : `¥${menu.price.toLocaleString()}`;
+                    const totalDisplay = menu.totalAmount < 0 
+                        ? `<span style="color: #17a2b8;">-¥${Math.abs(menu.totalAmount).toLocaleString()}</span>`
+                        : `¥${menu.totalAmount.toLocaleString()}`;
                     html += `
                         <tr>
                             <td>${menu.menuName}</td>
-                            <td>¥${menu.price.toLocaleString()}</td>
+                            <td>${priceDisplay}</td>
                             <td>${menu.totalQuantity}</td>
-                            <td>¥${menu.totalAmount.toLocaleString()}</td>
+                            <td>${totalDisplay}</td>
                         </tr>
                     `;
                 });
@@ -1793,51 +1823,85 @@
                 const paidUsers = orderPage.paidUsers || [];
                 const paidCount = Object.keys(userOrders).filter(u => paidUsers.includes(u)).length;
                 
-                // 未集金の合計金額を計算
-                let unpaidAmount = 0;
+                // 未集金・未支払の合計金額を計算
+                let unpaidCollectAmount = 0;  // 未集金額（正の金額）
+                let unpaidPaymentAmount = 0;  // 未支払額（負の金額）
                 for (let userName in userOrders) {
                     if (!paidUsers.includes(userName)) {
+                        let userTotal = 0;
                         userOrders[userName].forEach(order => {
-                            unpaidAmount += order.amount;
+                            userTotal += order.amount;
                         });
+                        if (userTotal > 0) {
+                            unpaidCollectAmount += userTotal;
+                        } else {
+                            unpaidPaymentAmount += Math.abs(userTotal);
+                        }
                     }
+                }
+                
+                let paymentSummaryHtml = `<p><strong>完了状況:</strong> ${paidCount} / ${totalUsers} 人</p>`;
+                if (unpaidCollectAmount > 0) {
+                    paymentSummaryHtml += `<p><strong>未集金額:</strong> <span style="color: #dc3545;">¥${unpaidCollectAmount.toLocaleString()}</span></p>`;
+                }
+                if (unpaidPaymentAmount > 0) {
+                    paymentSummaryHtml += `<p><strong>未支払額:</strong> <span style="color: #17a2b8;">¥${unpaidPaymentAmount.toLocaleString()}</span></p>`;
+                }
+                if (unpaidCollectAmount === 0 && unpaidPaymentAmount === 0 && totalUsers > 0) {
+                    paymentSummaryHtml += `<p style="color: #28a745;"><strong>✅ 全員完了！</strong></p>`;
                 }
                 
                 html += `
                     <div class="user-order-section">
                         <h3>ユーザー別注文</h3>
                         <div class="payment-summary" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <p><strong>集金状況:</strong> ${paidCount} / ${totalUsers} 人完了</p>
-                            <p><strong>未集金額:</strong> ¥${unpaidAmount.toLocaleString()}</p>
+                            ${paymentSummaryHtml}
                         </div>
                 `;
                 
                 for (let userName in userOrders) {
                     const orders = userOrders[userName];
                     let userTotal = 0;
+                    orders.forEach(order => userTotal += order.amount);
+                    
                     const isPaid = paidUsers.includes(userName);
                     const escapedUserName = userName.replace(/'/g, "\\'");
+                    const isPayment = userTotal < 0; // 負の金額=支払い対象
+                    
+                    // 支払い対象者用のスタイル
+                    let cardClass = isPaid ? 'paid' : '';
+                    if (isPayment) cardClass += ' payment-target';
+                    
+                    // ボタンラベルを集金/支払いで切り替え
+                    const paidLabel = isPayment ? '支払済みにする' : '集金済みにする';
+                    const unpaidLabel = isPayment ? '未支払に戻す' : '未集金に戻す';
                     
                     html += `
-                        <div class="user-order ${isPaid ? 'paid' : ''}">
+                        <div class="user-order ${cardClass}">
                             <div class="user-order-header">
-                                <h4>${userName}</h4>
+                                <h4>${userName}${isPayment ? ' <span style="background: #28a745; color: white; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; margin-left: 5px;">支払</span>' : ''}</h4>
                                 ${isPaid 
-                                    ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">未集金に戻す</button>`
-                                    : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">集金済みにする</button>`
+                                    ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">${unpaidLabel}</button>`
+                                    : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">${paidLabel}</button>`
                                 }
                             </div>
                             <ul>
                     `;
                     
                     orders.forEach(order => {
-                        html += `<li>${order.menuName} × ${order.quantity} = ¥${order.amount.toLocaleString()}</li>`;
-                        userTotal += order.amount;
+                        const amountDisplay = order.amount < 0 
+                            ? `<span style="color: #28a745;">-¥${Math.abs(order.amount).toLocaleString()}</span>`
+                            : `¥${order.amount.toLocaleString()}`;
+                        html += `<li>${order.menuName} × ${order.quantity} = ${amountDisplay}</li>`;
                     });
+                    
+                    const totalDisplay = userTotal < 0
+                        ? `<span style="color: #28a745;">-¥${Math.abs(userTotal).toLocaleString()}</span>（支払い）`
+                        : `¥${userTotal.toLocaleString()}`;
                     
                     html += `
                             </ul>
-                            <p><strong>小計: ¥${userTotal.toLocaleString()}</strong></p>
+                            <p><strong>小計: ${totalDisplay}</strong></p>
                         </div>
                     `;
                 }
