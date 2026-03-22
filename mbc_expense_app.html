@@ -846,6 +846,10 @@
                 <button class="btn btn-secondary btn-block" onclick="openSettlementPrintView()">
                     🖨️ 清算表を印刷用表示
                 </button>
+                
+                <button class="btn btn-primary btn-block" onclick="sendToCollectionApp()" style="margin-top: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    📤 集金アプリに送信
+                </button>
             </div>
         </div>
     </main>
@@ -924,6 +928,18 @@
             appId: "1:232670962803:web:8ea72a9350c90eaf093606"
         };
 
+        // 弁当注文集計アプリ（集金アプリ）用のFirebase設定
+        const BENTO_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyACgA83z7xBWICIFLUK1_AwDFL9_EXRJW8",
+            authDomain: "minamigaoka-bento.firebaseapp.com",
+            projectId: "minamigaoka-bento",
+            storageBucket: "minamigaoka-bento.firebasestorage.app",
+            messagingSenderId: "160499455872",
+            appId: "1:160499455872:web:7ac0b1f07770cc6d121365"
+        };
+
+        let bentoDb = null; // 弁当注文集計アプリ用のFirestore
+
         // ==================== Firebase Connection ====================
         function autoConnect() {
             try {
@@ -931,6 +947,14 @@
                     firebase.initializeApp(FIREBASE_CONFIG);
                 }
                 db = firebase.firestore();
+                
+                // 弁当注文集計アプリ用のFirebaseを初期化（2つ目のアプリとして）
+                let bentoApp = firebase.apps.find(app => app.name === 'bentoApp');
+                if (!bentoApp) {
+                    bentoApp = firebase.initializeApp(BENTO_FIREBASE_CONFIG, 'bentoApp');
+                }
+                bentoDb = bentoApp.firestore();
+                
                 document.getElementById('firebaseStatus').classList.add('connected');
                 document.getElementById('firebaseStatusText').textContent = '接続済み';
                 loadAllData();
@@ -1954,6 +1978,195 @@
             const printWindow = window.open('', '_blank');
             printWindow.document.write(html);
             printWindow.document.close();
+        }
+
+        // ==================== 集金アプリへ送信 ====================
+        async function sendToCollectionApp() {
+            const selectedIds = Array.from(document.querySelectorAll('#settlementExpeditions input:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) {
+                alert('遠征を選択してください');
+                return;
+            }
+
+            if (!bentoDb) {
+                alert('集金アプリへの接続に失敗しました。ページを再読み込みしてください。');
+                return;
+            }
+
+            const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
+            
+            // 清算データを計算
+            const settlementData = {};
+            const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
+
+            members.forEach(member => {
+                settlementData[member.id] = {
+                    name: member.name,
+                    totalCost: 0,
+                    totalIncome: 0
+                };
+            });
+
+            selectedExpeditions.forEach(exp => {
+                exp.selectedMemberIds?.forEach(memberId => {
+                    if (settlementData[memberId]) {
+                        settlementData[memberId].totalCost += exp.perPerson;
+                    }
+                });
+                exp.vehicleDetails?.forEach(vehicle => {
+                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
+                        settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
+                    }
+                });
+            });
+
+            // 集金・支払いデータを作成（正=集金、負=支払い）
+            const collectItems = [];
+            const paymentItems = [];
+            let roundingRemainder = 0;
+
+            Object.entries(settlementData).forEach(([memberId, data]) => {
+                if (data.totalCost === 0 && data.totalIncome === 0) return;
+
+                const rawCollectAmount = data.totalCost - data.totalIncome;
+                let roundedCollectAmount;
+
+                if (rawCollectAmount > 0) {
+                    roundedCollectAmount = Math.ceil(rawCollectAmount / 100) * 100;
+                } else if (rawCollectAmount < 0) {
+                    roundedCollectAmount = -Math.floor(Math.abs(rawCollectAmount) / 100) * 100;
+                } else {
+                    roundedCollectAmount = 0;
+                }
+                roundingRemainder += roundedCollectAmount - rawCollectAmount;
+
+                if (roundedCollectAmount > 0) {
+                    collectItems.push({
+                        name: data.name,
+                        amount: roundedCollectAmount
+                    });
+                } else if (roundedCollectAmount < 0) {
+                    paymentItems.push({
+                        name: data.name,
+                        amount: roundedCollectAmount  // 負の値のまま
+                    });
+                }
+            });
+
+            if (collectItems.length === 0 && paymentItems.length === 0) {
+                alert('集金・支払い対象者がいません。');
+                return;
+            }
+
+            // 日付範囲を取得
+            const sortedExpeditions = [...selectedExpeditions].sort((a, b) => a.date.localeCompare(b.date));
+            const dateRange = sortedExpeditions.length > 1
+                ? `${sortedExpeditions[0].date} ～ ${sortedExpeditions[sortedExpeditions.length - 1].date}`
+                : sortedExpeditions[0].date;
+
+            // 確認ダイアログ
+            const totalRemainder = baseRemainder + roundingRemainder;
+            const totalCollect = collectItems.reduce((sum, item) => sum + item.amount, 0);
+            const totalPayment = paymentItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            
+            let confirmMsg = `以下の内容で集金アプリに送信します。\n\n`;
+            confirmMsg += `📅 期間: ${dateRange}\n`;
+            confirmMsg += `💰 集金合計: ¥${totalCollect.toLocaleString()}（${collectItems.length}人）\n`;
+            confirmMsg += `💸 支払合計: ¥${totalPayment.toLocaleString()}（${paymentItems.length}人）\n`;
+            confirmMsg += `📝 残金: ¥${Math.round(totalRemainder).toLocaleString()}\n\n`;
+            
+            if (collectItems.length > 0) {
+                confirmMsg += `【集金対象者】\n`;
+                collectItems.forEach(item => {
+                    confirmMsg += `・${item.name}: ¥${item.amount.toLocaleString()}\n`;
+                });
+            }
+            if (paymentItems.length > 0) {
+                confirmMsg += `\n【支払対象者（車両提供者等）】\n`;
+                paymentItems.forEach(item => {
+                    confirmMsg += `・${item.name}: ¥${Math.abs(item.amount).toLocaleString()}\n`;
+                });
+            }
+            confirmMsg += `\n送信しますか？`;
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            try {
+                // 注文ページを作成
+                const today = new Date().toISOString().split('T')[0];
+                const destinations = selectedExpeditions.map(exp => exp.destination).join('、');
+                const shopName = `遠征費用清算（${destinations.length > 20 ? destinations.slice(0, 20) + '…' : destinations}）`;
+                
+                // メニュー項目を作成（集金用と支払用）
+                const menus = [];
+                if (collectItems.length > 0) {
+                    menus.push({ name: '遠征費用（集金）', price: 100 });
+                }
+                if (paymentItems.length > 0) {
+                    menus.push({ name: '遠征費用（支払）', price: -100 });
+                }
+                
+                const orderPageRef = await bentoDb.collection('orderPages').add({
+                    orderDate: today,
+                    shopName: shopName,
+                    memo: `期間: ${dateRange}\n残金（部費へ繰入れ）: ¥${Math.round(totalRemainder).toLocaleString()}\n\n※金額が負の人は支払い対象です`,
+                    menus: menus,
+                    status: 'open',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    paidUsers: []
+                });
+
+                const orderId = orderPageRef.id;
+
+                // 各メンバーの注文を作成
+                const batch = bentoDb.batch();
+                
+                // 集金対象者
+                collectItems.forEach(item => {
+                    const orderRef = bentoDb.collection('orders').doc();
+                    batch.set(orderRef, {
+                        orderId: orderId,
+                        orderDate: today,
+                        menuName: '遠征費用（集金）',
+                        price: item.amount,
+                        userName: item.name,
+                        quantity: 1,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                
+                // 支払対象者（負の金額）
+                paymentItems.forEach(item => {
+                    const orderRef = bentoDb.collection('orders').doc();
+                    batch.set(orderRef, {
+                        orderId: orderId,
+                        orderDate: today,
+                        menuName: '遠征費用（支払）',
+                        price: item.amount,  // 負の値のまま登録
+                        userName: item.name,
+                        quantity: 1,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                
+                await batch.commit();
+
+                // 選択された遠征を清算済みにする
+                for (const expId of selectedIds) {
+                    await db.collection('expeditions').doc(expId).update({ settled: true });
+                }
+
+                alert(`✅ 集金アプリへの送信が完了しました！\n\n集金アプリを開いて「${shopName}」を確認してください。\n\n💰 集金: ${collectItems.length}人\n💸 支払: ${paymentItems.length}人`);
+                
+                // 画面を更新
+                loadAllData();
+
+            } catch (error) {
+                console.error('Send to collection app error:', error);
+                alert('送信に失敗しました: ' + error.message);
+            }
         }
 
         // ==================== Tab Navigation ====================
