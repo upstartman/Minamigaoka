@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>南ヶ丘MBC 名簿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #D32F2F;
+      --primary-light: #FFCDD2;
+      --secondary: #1976D2;
+      --bg: #F5F5F5;
+      --card: #FFFFFF;
+      --text: #212121;
+      --text-sub: #757575;
+      --border: #E0E0E0;
+      --success: #388E3C;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .sync-status {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+    .sync-status.syncing { color: #FFEB3B; }
+    .sync-status.error { color: #FF8A80; }
+
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 44px;
+      z-index: 99;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 2px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      position: relative;
+    }
+    .tab.active { color: var(--primary); font-weight: 700; }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 5%;
+      right: 5%;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .content { padding: 12px; padding-bottom: 80px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--text-sub);
+    }
+    .loading-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      background: #FAFAFA;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .member-entry {
+      background: #FAFAFA;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+    .member-entry-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      color: white;
+    }
+    .type-badge.member { background: var(--primary); }
+    .type-badge.sibling { background: var(--secondary); }
+    .type-badge.parent { background: var(--success); }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: var(--secondary); color: white; }
+    .btn-outline { background: transparent; border: 1px dashed var(--border); color: var(--text-sub); }
+
+    .family-item {
+      background: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .family-head {
+      background: #37474F;
+      color: white;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .family-actions { display: flex; gap: 8px; }
+    .family-actions button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .family-body { padding: 8px 12px; }
+    .family-member {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      gap: 8px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+    .family-member:last-child { border-bottom: none; }
+    .family-member .type-badge { font-size: 9px; padding: 2px 6px; }
+    .family-member-info { flex: 1; }
+    .family-member-name { font-weight: 500; font-size: 13px; }
+    .family-member-sub { font-size: 11px; color: var(--text-sub); }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .stat { background: var(--card); border-radius: 10px; padding: 12px 8px; text-align: center; }
+    .stat-num { font-size: 24px; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 10px; color: var(--text-sub); }
+
+    .section-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      padding: 12px 0 8px;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .grade-section { margin-bottom: 16px; }
+    .grade-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .grade-badge {
+      min-width: 28px; height: 28px;
+      padding: 0 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: white;
+    }
+    .grade-title { font-weight: 700; font-size: 13px; }
+    .grade-count { font-size: 11px; color: var(--text-sub); }
+
+    .member-row {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .member-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+    .member-num.no-num { font-size: 12px; }
+    .member-main { flex: 1; min-width: 0; }
+    .member-name {
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .member-sub { font-size: 11px; color: var(--text-sub); }
+
+    .role-section { margin-bottom: 14px; }
+    .role-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-sub);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .parent-row {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .parent-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .parent-name { font-weight: 600; font-size: 13px; }
+    .parent-badges { display: flex; gap: 4px; align-items: center; }
+    .ins-badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .ins-badge.referee { background: #E3F2FD; color: #1565C0; }
+    .ins-badge.insured { background: #E8F5E9; color: #2E7D32; }
+    .ins-badge.none { background: #FFEBEE; color: #C62828; }
+    .role-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; color: white; }
+    .role-tag.coach { background: var(--primary); }
+    .role-tag.president { background: #6A1B9A; }
+    .role-tag.vice { background: #8E24AA; }
+    .role-tag.accountant { background: #00695C; }
+    .parent-children { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+
+    /* Jersey Tab */
+    .jersey-row {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 6px 8px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: grab;
+      touch-action: none;
+    }
+    .jersey-row.dragging { opacity: 0.5; }
+    .jersey-row.drag-over { border: 2px dashed var(--primary); }
+    .jersey-num-box {
+      width: 28px; height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+    .jersey-num-box.no-num { background: #9E9E9E; font-size: 11px; }
+    .jersey-name {
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .jersey-jba {
+      font-size: 9px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      max-width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .jersey-grade-box {
+      background: #424242;
+      color: white;
+      font-weight: 700;
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .reversi-box {
+      background: var(--secondary);
+      color: white;
+      font-weight: 700;
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .jersey-spacer { flex: 1; }
+    .jersey-btns { display: flex; gap: 2px; flex-shrink: 0; }
+    .jersey-btns button {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      width: 22px; height: 22px;
+      cursor: pointer;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .jersey-btns button:active { background: var(--primary); color: white; border-color: var(--primary); }
+    .jersey-btns button:disabled { opacity: 0.3; }
+
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-sub); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 14px; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--card);
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--card);
+    }
+    .modal-title { font-weight: 700; font-size: 16px; }
+    .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-sub); }
+    .modal-body { padding: 16px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    .modal-footer .btn { flex: 1; }
+
+    .output-section { margin-bottom: 20px; }
+    .output-desc { font-size: 12px; color: var(--text-sub); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    🏀 南ヶ丘MBC 名簿
+    <span class="sync-status" id="sync-status"></span>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="input">入力</button>
+    <button class="tab" data-tab="members">部員</button>
+    <button class="tab" data-tab="parents">コーチ・保護者</button>
+    <button class="tab" data-tab="jersey">背番号</button>
+    <button class="tab" data-tab="output">出力</button>
+  </nav>
+
+  <main class="content">
+    <div id="input-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-title">👨‍👩‍👧‍👦 家庭情報を登録</div>
+        <div class="form-group">
+          <label>家庭名（姓）</label>
+          <input type="text" id="family-name" placeholder="山田">
+        </div>
+        <div id="members-container"></div>
+        <button class="btn btn-outline" onclick="addMemberForm()" style="margin-bottom:12px">＋ 家族を追加</button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveFamily()">登録する</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 登録済み家庭</div>
+        <div id="families-list"><div class="loading"><div class="loading-spinner"></div><div>読み込み中...</div></div></div>
+      </div>
+    </div>
+
+    <div id="members-tab" class="tab-content">
+      <div class="stats">
+        <div class="stat"><div class="stat-num" id="total-members">0</div><div class="stat-label">部員</div></div>
+        <div class="stat"><div class="stat-num" id="total-siblings">0</div><div class="stat-label">兄弟</div></div>
+        <div class="stat"><div class="stat-num" id="total-families">0</div><div class="stat-label">家庭</div></div>
+      </div>
+      <div id="members-list"></div>
+    </div>
+
+    <div id="parents-tab" class="tab-content">
+      <div id="parents-list"></div>
+    </div>
+
+    <div id="jersey-tab" class="tab-content">
+      <div class="card">
+        <div class="card-title">🎽 背番号割り当て</div>
+        <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">▲▼で並び替え</p>
+        <div id="jersey-list"></div>
+      </div>
+    </div>
+
+    <div id="output-tab" class="tab-content">
+      <div class="card">
+        <div class="card-title">📄 PDF出力</div>
+        <p class="output-desc">A4サイズのPDFとして名簿を出力します。印刷ダイアログが表示されたら「PDFに保存」を選択してください。</p>
+        <div class="output-section">
+          <button class="btn btn-primary" onclick="exportPDF()">📄 名簿PDFを出力</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">家庭情報を編集</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="edit-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">キャンセル</button>
+        <button class="btn btn-primary" id="update-btn" onclick="updateFamily()">更新</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBG5BQ4Ek7cHFrFzcVhr151thB0MzqYFkM",
+      authDomain: "minamigaoka-meibo.firebaseapp.com",
+      projectId: "minamigaoka-meibo",
+      storageBucket: "minamigaoka-meibo.firebasestorage.app",
+      messagingSenderId: "611767162084",
+      appId: "1:611767162084:web:3f9bbf7f3d7bc4c7a448f1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let families = [];
+    let jerseyOrder = [];
+    let editingFamilyId = null;
+    let memberFormCounter = 0;
+    let editMemberCounter = 0;
+    let isLoading = true;
+
+    function setSyncStatus(status, message) {
+      const el = document.getElementById('sync-status');
+      el.className = 'sync-status ' + status;
+      el.textContent = message;
+      if (status !== 'error') setTimeout(() => { el.textContent = ''; }, 2000);
+    }
+
+    async function loadData() {
+      try {
+        setSyncStatus('syncing', '同期中...');
+        const familiesSnapshot = await db.collection('families').get();
+        families = familiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const settingsDoc = await db.collection('settings').doc('jerseyOrder').get();
+        jerseyOrder = settingsDoc.exists ? (settingsDoc.data().order || []) : [];
+        isLoading = false;
+        setSyncStatus('', '');
+        renderFamiliesList();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setSyncStatus('error', '読み込みエラー');
+        isLoading = false;
+        renderFamiliesList();
+      }
+    }
+
+    async function saveFamilyToFirestore(family) {
+      try {
+        setSyncStatus('syncing', '保存中...');
+        if (family.id) {
+          await db.collection('families').doc(family.id).set(family);
+        } else {
+          const docRef = await db.collection('families').add(family);
+          family.id = docRef.id;
+        }
+        setSyncStatus('', '✓ 保存完了');
+        return family;
+      } catch (error) {
+        console.error('Error saving family:', error);
+        setSyncStatus('error', '保存エラー');
+        throw error;
+      }
+    }
+
+    async function deleteFamilyFromFirestore(id) {
+      try {
+        setSyncStatus('syncing', '削除中...');
+        await db.collection('families').doc(id).delete();
+        setSyncStatus('', '✓ 削除完了');
+      } catch (error) {
+        console.error('Error deleting family:', error);
+        setSyncStatus('error', '削除エラー');
+        throw error;
+      }
+    }
+
+    async function saveJerseyOrder() {
+      try {
+        await db.collection('settings').doc('jerseyOrder').set({ order: jerseyOrder });
+      } catch (error) {
+        console.error('Error saving jersey order:', error);
+      }
+    }
+
+    // 学年計算（中学・高校以上対応）
+    function getGrade(age) {
+      if (age >= 18) return 99; // 大学以上
+      if (age >= 17) return 12; // 高3
+      if (age >= 16) return 11; // 高2
+      if (age >= 15) return 10; // 高1
+      if (age >= 14) return 9;  // 中3
+      if (age >= 13) return 8;  // 中2
+      if (age >= 12) return 7;  // 中1
+      if (age >= 11) return 6;  // 小6
+      if (age >= 10) return 5;  // 小5
+      if (age >= 9) return 4;   // 小4
+      if (age >= 8) return 3;   // 小3
+      if (age >= 7) return 2;   // 小2
+      if (age >= 6) return 1;   // 小1
+      return 0; // 未就学
+    }
+
+    function getGradeLabel(g) {
+      if (g === 0) return '未就学';
+      if (g <= 6) return `小${g}`;
+      if (g <= 9) return `中${g - 6}`;
+      if (g <= 12) return `高${g - 9}`;
+      return '大学以上';
+    }
+
+    function getGradeColor(g) {
+      if (g === 0) return '#607D8B';  // 未就学
+      if (g === 1) return '#7B1FA2';  // 小1
+      if (g === 2) return '#1976D2';  // 小2
+      if (g === 3) return '#388E3C';  // 小3
+      if (g === 4) return '#FBC02D';  // 小4
+      if (g === 5) return '#F57C00';  // 小5
+      if (g === 6) return '#D32F2F';  // 小6
+      if (g <= 9) return '#00796B';   // 中学
+      if (g <= 12) return '#5D4037';  // 高校
+      return '#455A64'; // 大学以上
+    }
+
+    function getGradeBadgeText(g) {
+      if (g === 0) return '未';
+      if (g <= 6) return g;
+      if (g <= 9) return `中${g - 6}`;
+      if (g <= 12) return `高${g - 9}`;
+      return '大';
+    }
+
+    const getRoleLabel = r => ({coach:'コーチ',president:'会長','vice-president':'副会長',accountant:'会計'}[r] || '');
+    const getInsLabel = i => ({referee:'審判',insured:'加入有',none:'加入無'}[i] || '加入無');
+
+    // 学年リスト（中学・高校以上対応）
+    const allGrades = [6,5,4,3,2,1,0,7,8,9,10,11,12,99];
+    const memberGrades = [6,5,4,3,2,1,0]; // 部員用（小学生）
+    const siblingGrades = [99,12,11,10,9,8,7,6,5,4,3,2,1,0]; // 兄弟用（高い学年から）
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+        if (tab.dataset.tab === 'members') renderMembersTab();
+        if (tab.dataset.tab === 'parents') renderParentsTab();
+        if (tab.dataset.tab === 'jersey') renderJerseyTab();
+      });
+    });
+
+    function addMemberForm(data = null) {
+      memberFormCounter++;
+      const id = memberFormCounter;
+      const type = data?.type || 'member';
+      const container = document.getElementById('members-container');
+      const div = document.createElement('div');
+      div.className = 'member-entry';
+      div.id = `member-form-${id}`;
+      div.innerHTML = `
+        <div class="member-entry-head">
+          <span class="type-badge ${type}" id="badge-${id}">${type==='member'?'部員':type==='sibling'?'兄弟':'保護者'}</span>
+          <button class="remove-btn" onclick="removeMemberForm(${id})">×</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>名（下の名前）</label><input type="text" id="name-${id}" value="${data?.name||''}" placeholder="太郎"></div>
+          <div class="form-group"><label>読み</label><input type="text" id="reading-${id}" value="${data?.reading||''}" placeholder="たろう"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>4/1時点の年齢</label><input type="number" id="age-${id}" value="${data?.age||''}" min="1" max="99"></div>
+          <div class="form-group"><label>種別</label>
+            <select id="type-${id}" onchange="onTypeChange(${id})">
+              <option value="member" ${type==='member'?'selected':''}>部員</option>
+              <option value="sibling" ${type==='sibling'?'selected':''}>兄弟</option>
+              <option value="parent" ${type==='parent'?'selected':''}>保護者</option>
+            </select>
+          </div>
+        </div>
+        <div id="member-fields-${id}" style="display:${type==='member'?'block':'none'}">
+          <div class="form-row">
+            <div class="form-group"><label>リバーシ背番号</label><input type="number" id="reversi-${id}" value="${data?.reversiNumber||''}" min="1" max="99"></div>
+            <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="jba-${id}" value="${data?.jbaLicense||''}" placeholder=""></div>
+          </div>
+        </div>
+        <div id="parent-fields-${id}" style="display:${type==='parent'?'block':'none'}">
+          <div class="form-row">
+            <div class="form-group"><label>スポ安保険</label>
+              <select id="insurance-${id}">
+                <option value="none" ${(!data?.insurance||data?.insurance==='none')?'selected':''}>加入無</option>
+                <option value="insured" ${data?.insurance==='insured'?'selected':''}>加入有</option>
+                <option value="referee" ${data?.insurance==='referee'?'selected':''}>審判</option>
+              </select>
+            </div>
+            <div class="form-group"><label>役職</label>
+              <select id="role-${id}">
+                <option value="" ${!data?.role?'selected':''}>なし</option>
+                <option value="coach" ${data?.role==='coach'?'selected':''}>コーチ</option>
+                <option value="president" ${data?.role==='president'?'selected':''}>会長</option>
+                <option value="vice-president" ${data?.role==='vice-president'?'selected':''}>副会長</option>
+                <option value="accountant" ${data?.role==='accountant'?'selected':''}>会計</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeMemberForm(id) { document.getElementById(`member-form-${id}`)?.remove(); }
+
+    function onTypeChange(id) {
+      const type = document.getElementById(`type-${id}`).value;
+      const badge = document.getElementById(`badge-${id}`);
+      badge.className = `type-badge ${type}`;
+      badge.textContent = type==='member'?'部員':type==='sibling'?'兄弟':'保護者';
+      document.getElementById(`member-fields-${id}`).style.display = type==='member'?'block':'none';
+      document.getElementById(`parent-fields-${id}`).style.display = type==='parent'?'block':'none';
+    }
+
+    async function saveFamily() {
+      const familyName = document.getElementById('family-name').value.trim();
+      if (!familyName) return alert('家庭名を入力してください');
+      const members = [];
+      document.querySelectorAll('#members-container .member-entry').forEach(entry => {
+        const id = entry.id.split('-')[2];
+        const name = document.getElementById(`name-${id}`)?.value.trim();
+        const reading = document.getElementById(`reading-${id}`)?.value.trim();
+        const age = parseInt(document.getElementById(`age-${id}`)?.value) || 0;
+        const type = document.getElementById(`type-${id}`)?.value;
+        if (name) {
+          const m = { name, reading, age, type };
+          if (type === 'member') {
+            m.reversiNumber = parseInt(document.getElementById(`reversi-${id}`)?.value) || null;
+            m.jbaLicense = document.getElementById(`jba-${id}`)?.value.trim() || null;
+          }
+          if (type === 'parent') {
+            m.insurance = document.getElementById(`insurance-${id}`)?.value;
+            m.role = document.getElementById(`role-${id}`)?.value;
+          }
+          members.push(m);
+        }
+      });
+      if (members.length === 0) return alert('家族を1人以上追加してください');
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true; saveBtn.textContent = '保存中...';
+      try {
+        const family = { name: familyName, members, createdAt: new Date().toISOString() };
+        const savedFamily = await saveFamilyToFirestore(family);
+        families.push(savedFamily);
+        renderFamiliesList();
+        clearForm();
+        alert('登録しました！');
+      } catch (error) { alert('保存に失敗しました'); }
+      finally { saveBtn.disabled = false; saveBtn.textContent = '登録する'; }
+    }
+
+    function clearForm() {
+      document.getElementById('family-name').value = '';
+      document.getElementById('members-container').innerHTML = '';
+      memberFormCounter = 0;
+      addMemberForm();
+    }
+
+    function renderFamiliesList() {
+      const container = document.getElementById('families-list');
+      if (isLoading) {
+        container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>読み込み中...</div></div>';
+        return;
+      }
+      if (families.length === 0) {
+        container.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">登録された家庭がありません</div></div>';
+        return;
+      }
+      container.innerHTML = families.map(f => `
+        <div class="family-item">
+          <div class="family-head">
+            <span>${f.name}家</span>
+            <div class="family-actions">
+              <button onclick="editFamily('${f.id}')">編集</button>
+              <button onclick="deleteFamily('${f.id}')">削除</button>
+            </div>
+          </div>
+          <div class="family-body">
+            ${f.members.map(m => `
+              <div class="family-member">
+                <span class="type-badge ${m.type}">${m.type==='member'?'部員':m.type==='sibling'?'兄弟':'保護者'}</span>
+                <div class="family-member-info">
+                  <div class="family-member-name">${f.name} ${m.name}</div>
+                  <div class="family-member-sub">${m.age}歳${m.type!=='parent'?' / '+getGradeLabel(getGrade(m.age)):''}${m.role?' / '+getRoleLabel(m.role):''}${m.jbaLicense?' / JBA:'+m.jbaLicense:''}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function deleteFamily(id) {
+      if (confirm('この家庭を削除しますか？')) {
+        try {
+          await deleteFamilyFromFirestore(id);
+          families = families.filter(f => f.id !== id);
+          renderFamiliesList();
+        } catch (error) { alert('削除に失敗しました'); }
+      }
+    }
+
+    function editFamily(id) {
+      editingFamilyId = id;
+      editMemberCounter = 0;
+      const family = families.find(f => f.id === id);
+      if (!family) return;
+      const body = document.getElementById('edit-modal-body');
+      body.innerHTML = `
+        <div class="form-group"><label>家庭名（姓）</label><input type="text" id="edit-family-name" value="${family.name}"></div>
+        <div id="edit-members-container"></div>
+        <button class="btn btn-outline" onclick="addEditMemberForm()">＋ 家族を追加</button>
+      `;
+      family.members.forEach(m => addEditMemberForm(m));
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function addEditMemberForm(data = null) {
+      editMemberCounter++;
+      const id = editMemberCounter;
+      const type = data?.type || 'member';
+      const container = document.getElementById('edit-members-container');
+      const div = document.createElement('div');
+      div.className = 'member-entry';
+      div.id = `edit-member-form-${id}`;
+      div.innerHTML = `
+        <div class="member-entry-head">
+          <span class="type-badge ${type}">${type==='member'?'部員':type==='sibling'?'兄弟':'保護者'}</span>
+          <button class="remove-btn" onclick="removeEditMemberForm(${id})">×</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>名（下の名前）</label><input type="text" id="edit-name-${id}" value="${data?.name||''}"></div>
+          <div class="form-group"><label>読み</label><input type="text" id="edit-reading-${id}" value="${data?.reading||''}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>年齢</label><input type="number" id="edit-age-${id}" value="${data?.age||''}" min="1" max="99"></div>
+          <div class="form-group"><label>種別</label>
+            <select id="edit-type-${id}" onchange="onEditTypeChange(${id})">
+              <option value="member" ${type==='member'?'selected':''}>部員</option>
+              <option value="sibling" ${type==='sibling'?'selected':''}>兄弟</option>
+              <option value="parent" ${type==='parent'?'selected':''}>保護者</option>
+            </select>
+          </div>
+        </div>
+        <div id="edit-member-fields-${id}" style="display:${type==='member'?'block':'none'}">
+          <div class="form-row">
+            <div class="form-group"><label>リバーシ背番号</label><input type="number" id="edit-reversi-${id}" value="${data?.reversiNumber||''}" min="1" max="99"></div>
+            <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="edit-jba-${id}" value="${data?.jbaLicense||''}"></div>
+          </div>
+        </div>
+        <div id="edit-parent-fields-${id}" style="display:${type==='parent'?'block':'none'}">
+          <div class="form-row">
+            <div class="form-group"><label>スポ安保険</label>
+              <select id="edit-insurance-${id}">
+                <option value="none" ${(!data?.insurance||data?.insurance==='none')?'selected':''}>加入無</option>
+                <option value="insured" ${data?.insurance==='insured'?'selected':''}>加入有</option>
+                <option value="referee" ${data?.insurance==='referee'?'selected':''}>審判</option>
+              </select>
+            </div>
+            <div class="form-group"><label>役職</label>
+              <select id="edit-role-${id}">
+                <option value="" ${!data?.role?'selected':''}>なし</option>
+                <option value="coach" ${data?.role==='coach'?'selected':''}>コーチ</option>
+                <option value="president" ${data?.role==='president'?'selected':''}>会長</option>
+                <option value="vice-president" ${data?.role==='vice-president'?'selected':''}>副会長</option>
+                <option value="accountant" ${data?.role==='accountant'?'selected':''}>会計</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeEditMemberForm(id) { document.getElementById(`edit-member-form-${id}`)?.remove(); }
+    function onEditTypeChange(id) {
+      const type = document.getElementById(`edit-type-${id}`).value;
+      document.getElementById(`edit-member-fields-${id}`).style.display = type==='member'?'block':'none';
+      document.getElementById(`edit-parent-fields-${id}`).style.display = type==='parent'?'block':'none';
+    }
+    function closeModal() { document.getElementById('edit-modal').classList.remove('active'); editingFamilyId = null; }
+
+    async function updateFamily() {
+      const familyName = document.getElementById('edit-family-name').value.trim();
+      if (!familyName) return alert('家庭名を入力してください');
+      const members = [];
+      document.querySelectorAll('#edit-members-container .member-entry').forEach(entry => {
+        const id = entry.id.split('-')[3];
+        const name = document.getElementById(`edit-name-${id}`)?.value.trim();
+        const reading = document.getElementById(`edit-reading-${id}`)?.value.trim();
+        const age = parseInt(document.getElementById(`edit-age-${id}`)?.value) || 0;
+        const type = document.getElementById(`edit-type-${id}`)?.value;
+        if (name) {
+          const m = { name, reading, age, type };
+          if (type === 'member') {
+            m.reversiNumber = parseInt(document.getElementById(`edit-reversi-${id}`)?.value) || null;
+            m.jbaLicense = document.getElementById(`edit-jba-${id}`)?.value.trim() || null;
+          }
+          if (type === 'parent') {
+            m.insurance = document.getElementById(`edit-insurance-${id}`)?.value;
+            m.role = document.getElementById(`edit-role-${id}`)?.value;
+          }
+          members.push(m);
+        }
+      });
+      if (members.length === 0) return alert('家族を1人以上追加してください');
+      const updateBtn = document.getElementById('update-btn');
+      updateBtn.disabled = true; updateBtn.textContent = '更新中...';
+      try {
+        const idx = families.findIndex(f => f.id === editingFamilyId);
+        if (idx !== -1) {
+          const updatedFamily = { ...families[idx], name: familyName, members };
+          await saveFamilyToFirestore(updatedFamily);
+          families[idx] = updatedFamily;
+          renderFamiliesList();
+          closeModal();
+          alert('更新しました！');
+        }
+      } catch (error) { alert('更新に失敗しました'); }
+      finally { updateBtn.disabled = false; updateBtn.textContent = '更新'; }
+    }
+
+    // Members Tab
+    function renderMembersTab() {
+      const allMembers = [];
+      const allSiblings = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          const data = { ...m, familyName: f.name, fullName: `${f.name} ${m.name}`, grade: getGrade(m.age) };
+          if (m.type === 'member') allMembers.push(data);
+          else if (m.type === 'sibling') allSiblings.push(data);
+        });
+      });
+
+      document.getElementById('total-members').textContent = allMembers.length;
+      document.getElementById('total-siblings').textContent = allSiblings.length;
+      document.getElementById('total-families').textContent = families.length;
+
+      const container = document.getElementById('members-list');
+      if (allMembers.length === 0 && allSiblings.length === 0) {
+        container.innerHTML = '<div class="empty"><div class="empty-icon">👦</div><div class="empty-text">部員がまだいません</div></div>';
+        return;
+      }
+
+      let html = '';
+
+      // 部員セクション
+      if (allMembers.length > 0) {
+        html += '<div class="section-title">🏀 部員</div>';
+        html += memberGrades.map(g => {
+          const gm = allMembers.filter(m => m.grade === g).sort((a,b) => (a.reading||'').localeCompare(b.reading||'','ja'));
+          if (gm.length === 0) return '';
+          return `
+            <div class="grade-section">
+              <div class="grade-head">
+                <div class="grade-badge" style="background:${getGradeColor(g)}">${getGradeBadgeText(g)}</div>
+                <div><div class="grade-title">${getGradeLabel(g)}</div><div class="grade-count">${gm.length}人</div></div>
+              </div>
+              ${gm.map(m => `
+                <div class="member-row">
+                  <div class="member-num" style="background:${getGradeColor(m.grade)}">${m.reversiNumber || '-'}</div>
+                  <div class="member-main">
+                    <div class="member-name">${m.fullName}</div>
+                    <div class="member-sub">${m.age}歳${m.jbaLicense?' / JBA:'+m.jbaLicense:''}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 兄弟セクション
+      if (allSiblings.length > 0) {
+        html += '<div class="section-title" style="margin-top:20px">👦 兄弟</div>';
+        html += siblingGrades.map(g => {
+          const gm = allSiblings.filter(m => m.grade === g).sort((a,b) => (a.reading||'').localeCompare(b.reading||'','ja'));
+          if (gm.length === 0) return '';
+          return `
+            <div class="grade-section">
+              <div class="grade-head">
+                <div class="grade-badge" style="background:${getGradeColor(g)}">${getGradeBadgeText(g)}</div>
+                <div><div class="grade-title">${getGradeLabel(g)}</div><div class="grade-count">${gm.length}人</div></div>
+              </div>
+              ${gm.map(m => `
+                <div class="member-row">
+                  <div class="member-num no-num" style="background:#9E9E9E">-</div>
+                  <div class="member-main">
+                    <div class="member-name">${m.fullName}</div>
+                    <div class="member-sub">${m.age}歳</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }).join('');
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Parents Tab
+    function renderParentsTab() {
+      const allParents = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          if (m.type === 'parent') {
+            const children = f.members.filter(c => c.type === 'member' || c.type === 'sibling');
+            const maxGrade = children.length > 0 ? Math.max(...children.map(c => getGrade(c.age))) : 0;
+            allParents.push({ ...m, familyName: f.name, fullName: `${f.name} ${m.name}`, childrenGrade: maxGrade, childrenNames: children.map(c => c.name).join('・') });
+          }
+        });
+      });
+      const container = document.getElementById('parents-list');
+      if (allParents.length === 0) {
+        container.innerHTML = '<div class="empty"><div class="empty-icon">👨‍👩‍👧</div><div class="empty-text">保護者がまだいません</div></div>';
+        return;
+      }
+      const roleOrder = {coach:0,president:1,'vice-president':2,accountant:3};
+      const withRole = allParents.filter(p => p.role).sort((a,b) => roleOrder[a.role]-roleOrder[b.role]);
+      const withoutRole = allParents.filter(p => !p.role).sort((a,b) => {
+        if (b.childrenGrade !== a.childrenGrade) return b.childrenGrade - a.childrenGrade;
+        return (a.reading||'').localeCompare(b.reading||'','ja');
+      });
+      let html = '';
+      if (withRole.length > 0) html += `<div class="role-section"><div class="role-label">役職者</div>${withRole.map(renderParentCard).join('')}</div>`;
+      
+      // 学年別（高い順）
+      siblingGrades.forEach(g => {
+        const gp = withoutRole.filter(p => p.childrenGrade === g);
+        if (gp.length > 0) html += `<div class="role-section"><div class="role-label">${getGradeLabel(g)}の保護者</div>${gp.map(renderParentCard).join('')}</div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderParentCard(p) {
+      const roleClass = p.role==='coach'?'coach':p.role==='president'?'president':p.role==='vice-president'?'vice':p.role==='accountant'?'accountant':'';
+      const insClass = p.insurance==='referee'?'referee':p.insurance==='insured'?'insured':'none';
+      return `
+        <div class="parent-row">
+          <div class="parent-head">
+            <span class="parent-name">${p.fullName}</span>
+            <div class="parent-badges">
+              <span class="ins-badge ${insClass}">${getInsLabel(p.insurance)}</span>
+              ${p.role?`<span class="role-tag ${roleClass}">${getRoleLabel(p.role)}</span>`:''}
+            </div>
+          </div>
+          ${p.childrenNames?`<div class="parent-children">👦 ${p.childrenNames}</div>`:''}
+        </div>
+      `;
+    }
+
+    // Jersey Tab
+    function renderJerseyTab() {
+      const allMembers = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          if (m.type === 'member') {
+            allMembers.push({ ...m, familyName: f.name, fullName: `${f.name} ${m.name}`, grade: getGrade(m.age), familyId: f.id });
+          }
+        });
+      });
+      if (allMembers.length > 0 && jerseyOrder.length === 0) {
+        const sorted = [...allMembers].sort((a,b) => { if (b.grade !== a.grade) return b.grade - a.grade; return (a.reading||'').localeCompare(b.reading||'','ja'); });
+        jerseyOrder = sorted.map(m => `${m.familyId}-${m.name}`);
+        saveJerseyOrder();
+      }
+      const validKeys = allMembers.map(m => `${m.familyId}-${m.name}`);
+      jerseyOrder = jerseyOrder.filter(k => validKeys.includes(k));
+      const sortedMembers = [];
+      jerseyOrder.forEach(k => { const m = allMembers.find(x => `${x.familyId}-${x.name}` === k); if (m) sortedMembers.push(m); });
+      allMembers.forEach(m => { const k = `${m.familyId}-${m.name}`; if (!jerseyOrder.includes(k)) { sortedMembers.push(m); jerseyOrder.push(k); } });
+
+      const container = document.getElementById('jersey-list');
+      if (sortedMembers.length === 0) {
+        container.innerHTML = '<div class="empty"><div class="empty-icon">🎽</div><div class="empty-text">部員がまだいません</div></div>';
+        return;
+      }
+      const getJerseyNum = i => i < 15 ? i + 4 : '-';
+      container.innerHTML = sortedMembers.map((m, i) => {
+        const num = getJerseyNum(i);
+        return `
+          <div class="jersey-row" draggable="true" data-index="${i}">
+            <div class="jersey-num-box ${num==='-'?'no-num':''}">${num}</div>
+            <div class="jersey-name">${m.fullName}</div>
+            ${m.jbaLicense?`<div class="jersey-jba">${m.jbaLicense}</div>`:''}
+            <div class="jersey-spacer"></div>
+            <div class="jersey-grade-box" style="background:${getGradeColor(m.grade)}">${getGradeLabel(m.grade)}</div>
+            ${m.reversiNumber?`<div class="reversi-box">R${m.reversiNumber}</div>`:''}
+            <div class="jersey-btns">
+              <button onclick="moveJersey(${i},-1)" ${i===0?'disabled':''}>▲</button>
+              <button onclick="moveJersey(${i},1)" ${i>=sortedMembers.length-1?'disabled':''}>▼</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      setupDragAndDrop();
+    }
+
+    async function moveJersey(i, dir) {
+      const ni = i + dir;
+      if (ni < 0 || ni >= jerseyOrder.length) return;
+      const temp = jerseyOrder[i]; jerseyOrder[i] = jerseyOrder[ni]; jerseyOrder[ni] = temp;
+      await saveJerseyOrder();
+      renderJerseyTab();
+    }
+
+    function setupDragAndDrop() {
+      const rows = document.querySelectorAll('.jersey-row');
+      let draggedIdx = null;
+      rows.forEach(row => {
+        row.addEventListener('dragstart', e => { draggedIdx = parseInt(row.dataset.index); row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+        row.addEventListener('dragend', () => { row.classList.remove('dragging'); document.querySelectorAll('.jersey-row').forEach(r => r.classList.remove('drag-over')); draggedIdx = null; });
+        row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (parseInt(row.dataset.index) !== draggedIdx) row.classList.add('drag-over'); });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop', async e => {
+          e.preventDefault(); row.classList.remove('drag-over');
+          const targetIdx = parseInt(row.dataset.index);
+          if (draggedIdx !== null && targetIdx !== draggedIdx) {
+            const item = jerseyOrder.splice(draggedIdx, 1)[0];
+            jerseyOrder.splice(targetIdx, 0, item);
+            await saveJerseyOrder();
+            renderJerseyTab();
+          }
+        });
+      });
+      let touchStartY = 0, touchedRow = null, touchedIdx = null;
+      rows.forEach(row => {
+        row.addEventListener('touchstart', e => { touchedRow = row; touchedIdx = parseInt(row.dataset.index); touchStartY = e.touches[0].clientY; }, {passive: true});
+        row.addEventListener('touchmove', e => {
+          if (!touchedRow) return;
+          const deltaY = e.touches[0].clientY - touchStartY;
+          if (Math.abs(deltaY) > 40) {
+            const dir = deltaY > 0 ? 1 : -1;
+            const ni = touchedIdx + dir;
+            if (ni >= 0 && ni < jerseyOrder.length) { const temp = jerseyOrder[touchedIdx]; jerseyOrder[touchedIdx] = jerseyOrder[ni]; jerseyOrder[ni] = temp; saveJerseyOrder(); renderJerseyTab(); }
+            touchedRow = null;
+          }
+        }, {passive: true});
+        row.addEventListener('touchend', () => { touchedRow = null; });
+      });
+    }
+
+    // PDF Export
+    function exportPDF() {
+      const allMembers = [];
+      const allSiblings = [];
+      const allParents = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          const data = { ...m, familyName: f.name, fullName: `${f.name} ${m.name}`, grade: getGrade(m.age), familyId: f.id };
+          if (m.type === 'member') allMembers.push(data);
+          else if (m.type === 'sibling') allSiblings.push(data);
+          else if (m.type === 'parent') {
+            const children = f.members.filter(c => c.type === 'member' || c.type === 'sibling');
+            data.childrenNames = children.map(c => c.name).join('・');
+            allParents.push(data);
+          }
+        });
+      });
+
+      allMembers.sort((a,b) => { if (b.grade !== a.grade) return b.grade - a.grade; return (a.reading||'').localeCompare(b.reading||'','ja'); });
+      allSiblings.sort((a,b) => { if (b.grade !== a.grade) return b.grade - a.grade; return (a.reading||'').localeCompare(b.reading||'','ja'); });
+      const roleOrder = {coach:0,president:1,'vice-president':2,accountant:3};
+      allParents.sort((a,b) => {
+        if (a.role && b.role) return roleOrder[a.role] - roleOrder[b.role];
+        if (a.role) return -1;
+        if (b.role) return 1;
+        return (a.reading||'').localeCompare(b.reading||'','ja');
+      });
+
+      const sortedForJersey = [];
+      jerseyOrder.forEach(k => { const m = allMembers.find(x => `${x.familyId}-${x.name}` === k); if (m) sortedForJersey.push(m); });
+      allMembers.forEach(m => { if (!sortedForJersey.includes(m)) sortedForJersey.push(m); });
+
+      const today = new Date().toLocaleDateString('ja-JP');
+
+      const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>南ヶ丘MBC 名簿</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 10px; line-height: 1.4; color: #333; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    h1 { font-size: 16px; text-align: center; margin-bottom: 5px; }
+    .date { text-align: right; font-size: 9px; color: #666; margin-bottom: 10px; }
+    h2 { font-size: 12px; background: #D32F2F; color: white; padding: 4px 8px; margin: 10px 0 5px; }
+    h3 { font-size: 10px; background: #1976D2; color: white; padding: 3px 6px; margin: 8px 0 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    th, td { border: 1px solid #CCC; padding: 3px 5px; text-align: left; }
+    th { background: #F5F5F5; font-weight: 700; }
+    .grade-label { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; color: white; }
+    .role { display: inline-block; background: #6A1B9A; color: white; padding: 1px 5px; border-radius: 3px; font-size: 8px; }
+    .ins { font-size: 8px; color: #666; }
+    .num { text-align: center; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>🏀 南ヶ丘MBC 名簿</h1>
+    <div class="date">${today} 現在</div>
+
+    <h2>部員一覧（${allMembers.length}名）</h2>
+    <table>
+      <tr><th style="width:25%">氏名</th><th style="width:12%">学年</th><th style="width:10%">年齢</th><th style="width:13%">リバーシ</th><th>JBAライセンス</th></tr>
+      ${allMembers.map(m => `<tr>
+        <td>${m.fullName}</td>
+        <td><span class="grade-label" style="background:${getGradeColor(m.grade)}">${getGradeLabel(m.grade)}</span></td>
+        <td>${m.age}歳</td>
+        <td class="num">${m.reversiNumber || '-'}</td>
+        <td>${m.jbaLicense || ''}</td>
+      </tr>`).join('')}
+    </table>
+
+    ${allSiblings.length > 0 ? `
+    <h3>兄弟（${allSiblings.length}名）</h3>
+    <table>
+      <tr><th style="width:40%">氏名</th><th style="width:30%">学年</th><th>年齢</th></tr>
+      ${allSiblings.map(m => `<tr>
+        <td>${m.fullName}</td>
+        <td><span class="grade-label" style="background:${getGradeColor(m.grade)}">${getGradeLabel(m.grade)}</span></td>
+        <td>${m.age}歳</td>
+      </tr>`).join('')}
+    </table>
+    ` : ''}
+
+    <h2>コーチ・保護者一覧（${allParents.length}名）</h2>
+    <table>
+      <tr><th style="width:25%">氏名</th><th style="width:15%">役職</th><th style="width:15%">スポ安</th><th>お子さん</th></tr>
+      ${allParents.map(p => `<tr>
+        <td>${p.fullName}</td>
+        <td>${p.role ? `<span class="role">${getRoleLabel(p.role)}</span>` : ''}</td>
+        <td class="ins">${getInsLabel(p.insurance)}</td>
+        <td>${p.childrenNames || ''}</td>
+      </tr>`).join('')}
+    </table>
+  </div>
+
+  <div class="page">
+    <h1>🎽 背番号表</h1>
+    <div class="date">${today} 現在</div>
+    <table>
+      <tr><th style="width:12%">背番号</th><th style="width:28%">氏名</th><th style="width:15%">学年</th><th style="width:15%">リバーシ</th><th>JBA</th></tr>
+      ${sortedForJersey.map((m, i) => `<tr>
+        <td class="num" style="font-size:14px;font-weight:900">${i < 15 ? i + 4 : '-'}</td>
+        <td>${m.fullName}</td>
+        <td><span class="grade-label" style="background:${getGradeColor(m.grade)}">${getGradeLabel(m.grade)}</span></td>
+        <td class="num">${m.reversiNumber ? 'R' + m.reversiNumber : ''}</td>
+        <td style="font-size:8px">${m.jbaLicense || ''}</td>
+      </tr>`).join('')}
+    </table>
+  </div>
+</body>
+</html>`;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => { setTimeout(() => { printWindow.print(); }, 300); };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { addMemberForm(); loadData(); });
+  </script>
+</body>
+</html>
