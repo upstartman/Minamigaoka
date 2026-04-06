@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ライブ配信 - 南ヶ丘MBC</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+    
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      padding: 25px;
+      color: #333;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: #ff6b35;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    
+    input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #ff6b35;
+    }
+    
+    .btn {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: #fff;
+      width: 100%;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(255,107,53,0.4);
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .btn-share {
+      background: #06c755;
+      color: #fff;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    
+    .btn-share:hover {
+      background: #05b34c;
+    }
+    
+    .btn-start {
+      background: #0066ff;
+      color: #fff;
+      width: 100%;
+    }
+    
+    .btn-start:hover {
+      background: #0055dd;
+    }
+    
+    .generated-section {
+      display: none;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .generated-section.show {
+      display: block;
+    }
+    
+    .url-display {
+      background: #f5f5f5;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      word-break: break-all;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    
+    .url-display strong {
+      color: #333;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .tips {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .tips h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+    }
+    
+    .tips ul {
+      list-style: none;
+      font-size: 0.9rem;
+    }
+    
+    .tips li {
+      padding: 8px 0;
+      padding-left: 25px;
+      position: relative;
+    }
+    
+    .tips li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+    }
+    
+    .divider {
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏀 南ヶ丘MBC ライブ配信</h1>
+      <p>試合や練習をかんたんに配信</p>
+    </div>
+    
+    <div class="card">
+      <h2>📡 配信を作成</h2>
+      
+      <div class="input-group">
+        <label>配信タイトル（部屋名になります）</label>
+        <div class="input-row">
+          <input type="text" id="roomName" placeholder="例: 練習試合vs北ヶ丘" maxlength="30">
+          <button class="btn btn-secondary" onclick="generateRandomName()">🎲</button>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="createRoom()">
+        配信を作成する
+      </button>
+      
+      <div id="generatedSection" class="generated-section">
+        <div class="url-display">
+          <strong>📺 視聴者用リンク</strong>
+          <span id="viewerUrl"></span>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn btn-share" onclick="shareToLINE()">
+            📤 LINEで共有する
+          </button>
+          
+          <button class="btn btn-secondary" onclick="copyViewerLink()">
+            📋 リンクをコピー
+          </button>
+          
+          <div class="divider">準備ができたら</div>
+          
+          <button class="btn btn-start" onclick="startBroadcast()">
+            🎥 配信を開始する
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tips">
+      <h3>💡 使い方</h3>
+      <ul>
+        <li>タイトルを入力して「配信を作成」</li>
+        <li>LINEで保護者に共有</li>
+        <li>「配信を開始」でJitsiが開きます</li>
+        <li>視聴者はリンクを開くだけ（登録不要）</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    let currentRoomId = '';
+    let viewerUrl = '';
+    let broadcasterUrl = '';
+    
+    // ランダムな部屋名を生成
+    function generateRandomName() {
+      const adjectives = ['熱血', '激闘', '白熱', '必勝', '全力'];
+      const nouns = ['練習', '試合', '大会', 'ゲーム', 'マッチ'];
+      const num = Math.floor(Math.random() * 100);
+      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const noun = nouns[Math.floor(Math.random() * nouns.length)];
+      document.getElementById('roomName').value = `${adj}${noun}${num}`;
+    }
+    
+    // 部屋名をURLセーフな形式に変換
+    function sanitizeRoomName(name) {
+      // 日本語を含む場合はそのまま使用（Jitsiは日本語対応）
+      // スペースをハイフンに、特殊文字を除去
+      return name
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF-]/g, '')
+        || 'minamigaoka-' + Date.now();
+    }
+    
+    // ルームを作成
+    function createRoom() {
+      const roomInput = document.getElementById('roomName').value;
+      currentRoomId = sanitizeRoomName(roomInput);
+      
+      // Jitsi MeetのURL生成
+      // 視聴者用：カメラ・マイクをオフで開始
+      const baseUrl = `https://meet.jit.si/minamigaoka-${currentRoomId}`;
+      viewerUrl = `${baseUrl}#config.startWithAudioMuted=true&config.startWithVideoMuted=true&config.prejoinPageEnabled=false`;
+      
+      // 配信者用：通常通り
+      broadcasterUrl = baseUrl;
+      
+      // UI更新
+      document.getElementById('viewerUrl').textContent = baseUrl;
+      document.getElementById('generatedSection').classList.add('show');
+    }
+    
+    // LINEで共有
+    function shareToLINE() {
+      const text = `🏀 南ヶ丘MBC ライブ配信\n\n📺 視聴はこちら（タップするだけ）\n${viewerUrl}\n\n※ カメラ・マイクはオフで参加できます`;
+      const lineUrl = `https://line.me/R/share?text=${encodeURIComponent(text)}`;
+      window.open(lineUrl, '_blank');
+    }
+    
+    // 視聴者リンクをコピー
+    function copyViewerLink() {
+      const text = `🏀 南ヶ丘MBC ライブ配信\n視聴はこちら → ${viewerUrl}`;
+      
+      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
+        navigator.share({
+          title: '南ヶ丘MBC ライブ配信',
+          text: '試合のライブ配信を視聴できます',
+          url: viewerUrl
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(viewerUrl);
+      }
+    }
+    
+    function fallbackCopy(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('コピーしました！');
+      }).catch(() => {
+        prompt('このリンクをコピーしてください:', text);
+      });
+    }
+    
+    // 配信を開始
+    function startBroadcast() {
+      window.open(broadcasterUrl, '_blank');
+    }
+    
+    // 初期化時にランダム名を設定
+    document.addEventListener('DOMContentLoaded', () => {
+      generateRandomName();
+    });
+  </script>
+</body>
+</html>
