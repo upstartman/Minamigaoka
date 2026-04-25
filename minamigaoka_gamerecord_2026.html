@@ -333,15 +333,56 @@
         .modal-btn.upload-image-btn:hover { background: #229954; }
 
         @media (max-width: 600px) {
-            .container { padding: 30px 20px; }
-            h1 { font-size: 24px; }
+            .container { padding: 20px 12px; }
+            h1 { font-size: 20px; }
             .score-group { grid-template-columns: 1fr; }
             .tabs { gap: 5px; }
-            .tab { padding: 10px 16px; font-size: 14px; }
+            .tab { padding: 10px 14px; font-size: 13px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .stat-value { font-size: 16px; }
-            .data-table { font-size: 12px; }
-            .data-table th, .data-table td { padding: 8px; }
+        }
+
+        /* スマホ：テーブル → カード形式 */
+        @media (max-width: 768px) {
+            .preview-container { border: none; background: transparent; box-shadow: none; }
+            .data-table thead { display: none; }
+            .data-table, .data-table tbody { display: block; }
+            .data-table tr {
+                display: block;
+                margin-bottom: 12px;
+                border-radius: 12px;
+                border: 1px solid #e0e0e0;
+                overflow: hidden;
+                background: white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+            }
+            .data-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 14px;
+                border-bottom: 1px solid #f3f3f3;
+                font-size: 14px;
+                text-align: right;
+            }
+            .data-table td:last-child { border-bottom: none; }
+            .data-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #999;
+                font-size: 11px;
+                text-align: left;
+                flex-shrink: 0;
+                margin-right: 10px;
+                min-width: 70px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+            .result-cell { font-size: 16px !important; padding: 12px 14px !important; }
+            .result-win  { border-left: 4px solid #28a745; }
+            .result-lose { border-left: 4px solid #fd7e14; }
+            .action-btns { flex-wrap: wrap; justify-content: flex-end; }
+            .modal-content { padding: 20px; }
         }
     </style>
 </head>
@@ -798,19 +839,19 @@ function displayPreviewData(data, stats) {
 
         html += `
             <tr>
-                <td>${escapeHtml(formatDateForDisplay(row.date))}</td>
-                <td>${escapeHtml(formatTimeForDisplay(row.endTime))}</td>
-                <td>${escapeHtml(row.tournament)}</td>
-                <td>${escapeHtml(row.venue)}</td>
-                <td>${escapeHtml(row.opponent)}</td>
-                <td>${escapeHtml(String(row.scoreMinamiGaoka))}</td>
-                <td>${escapeHtml(String(row.scoreOpponent))}</td>
-                <td class="${resultClass}">${escapeHtml(result)}</td>
-                <td>${row.imageUrl
+                <td data-label="日付">${escapeHtml(formatDateForDisplay(row.date))}</td>
+                <td data-label="終了時間">${escapeHtml(formatTimeForDisplay(row.endTime))}</td>
+                <td data-label="大会名">${escapeHtml(row.tournament)}</td>
+                <td data-label="会場">${escapeHtml(row.venue)}</td>
+                <td data-label="対戦チーム">${escapeHtml(row.opponent)}</td>
+                <td data-label="南ヶ丘">${escapeHtml(String(row.scoreMinamiGaoka))}</td>
+                <td data-label="対戦相手">${escapeHtml(String(row.scoreOpponent))}</td>
+                <td data-label="勝敗" class="${resultClass}">${escapeHtml(result)}</td>
+                <td data-label="画像">${row.imageUrl
                     ? `<button class="image-btn view-image-btn" onclick='viewImage(${rowJson})'>📷 表示</button>`
                     : `<button class="image-btn upload-image-btn" onclick='openImageUploadModal(${rowJson})'>📷 追加</button>`
                 }</td>
-                <td>
+                <td data-label="操作">
                     <div class="action-btns">
                         <button class="edit-btn"   onclick='openEditModal(${rowJson})'>編集</button>
                         <button class="delete-btn" onclick='openDeleteModal(${rowJson})'>削除</button>
