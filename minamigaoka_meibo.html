@@ -510,6 +510,17 @@
           <button class="btn btn-primary" onclick="exportPDF()">📄 名簿PDFを出力</button>
         </div>
       </div>
+      <div class="card">
+        <div class="card-title">🏀 公式スコアシート出力</div>
+        <p class="output-desc">MINIバスケ公式スコアシートに名簿情報（チーム名・選手氏名・ライセンスNo.下3桁・背番号・コーチ）を埋め込んで出力します。</p>
+        <div class="output-section" style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-primary" onclick="exportScoresheet('upper','official')">① 上段(白) × 公式背番号</button>
+          <button class="btn btn-primary" onclick="exportScoresheet('upper','reversi')">② 上段(白) × リバーシ背番号</button>
+          <button class="btn btn-primary" onclick="exportScoresheet('lower','official')">③ 下段(青) × 公式背番号</button>
+          <button class="btn btn-primary" onclick="exportScoresheet('lower','reversi')">④ 下段(青) × リバーシ背番号</button>
+        </div>
+        <p id="scoresheet-status" style="font-size:11px;color:var(--text-sub);margin-top:8px"></p>
+      </div>
     </div>
   </main>
 
@@ -529,6 +540,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -659,7 +672,7 @@
       return '大';
     }
 
-    const getRoleLabel = r => ({coach:'コーチ',president:'会長','vice-president':'副会長',accountant:'会計'}[r] || '');
+    const getRoleLabel = r => ({coach:'コーチ','assistant-coach':'A.コーチ',president:'会長','vice-president':'副会長',accountant:'会計'}[r] || '');
     const getInsLabel = i => ({referee:'審判',insured:'加入有',none:'加入無'}[i] || '加入無');
 
     // 学年リスト（中学・高校以上対応）
@@ -725,6 +738,7 @@
               <select id="role-${id}">
                 <option value="" ${!data?.role?'selected':''}>なし</option>
                 <option value="coach" ${data?.role==='coach'?'selected':''}>コーチ</option>
+                <option value="assistant-coach" ${data?.role==='assistant-coach'?'selected':''}>A.コーチ</option>
                 <option value="president" ${data?.role==='president'?'selected':''}>会長</option>
                 <option value="vice-president" ${data?.role==='vice-president'?'selected':''}>副会長</option>
                 <option value="accountant" ${data?.role==='accountant'?'selected':''}>会計</option>
@@ -896,6 +910,7 @@
               <select id="edit-role-${id}">
                 <option value="" ${!data?.role?'selected':''}>なし</option>
                 <option value="coach" ${data?.role==='coach'?'selected':''}>コーチ</option>
+                <option value="assistant-coach" ${data?.role==='assistant-coach'?'selected':''}>A.コーチ</option>
                 <option value="president" ${data?.role==='president'?'selected':''}>会長</option>
                 <option value="vice-president" ${data?.role==='vice-president'?'selected':''}>副会長</option>
                 <option value="accountant" ${data?.role==='accountant'?'selected':''}>会計</option>
@@ -1296,6 +1311,210 @@
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.onload = () => { setTimeout(() => { printWindow.print(); }, 300); };
+    }
+
+    // ========== MINIスコアシート PDF出力 ==========
+    // PDFサイズ: A4縦 595 x 842 pt 想定。座標は左下原点(pdf-lib仕様)。
+    // 値は MINI_scoresheet_20190401.pdf を実測した近似値。
+    // 実印刷で位置がずれる場合は SCORESHEET_LAYOUT を微調整してください。
+    const SCORESHEET_LAYOUT = {
+      upper: {
+        teamName:  { x: 95,  y: 595 },   // 「チームA:」の右側
+        colorMark: { x: 230, y: 595 },   // (白) の中
+        rows: (() => {
+          // 1行目 y ≈ 540, 行間 ≈ 17.3pt, 15行
+          const baseY = 540;
+          const dy = 17.3;
+          const arr = [];
+          for (let i = 0; i < 15; i++) {
+            const y = baseY - i * dy;
+            arr.push({
+              license: { x: 38,  y },
+              name:    { x: 130, y },
+              no:      { x: 220, y },
+            });
+          }
+          return arr;
+        })(),
+        coach:          { name: { x: 130, y: 280 }, license: { x: 38, y: 280 } },
+        assistantCoach: { name: { x: 130, y: 263 }, license: { x: 38, y: 263 } },
+      },
+      lower: {
+        teamName:  { x: 95,  y: 320 },
+        colorMark: { x: 230, y: 320 },
+        rows: (() => {
+          const baseY = 265;
+          const dy = 17.3;
+          const arr = [];
+          for (let i = 0; i < 15; i++) {
+            const y = baseY - i * dy;
+            arr.push({
+              license: { x: 38,  y },
+              name:    { x: 130, y },
+              no:      { x: 220, y },
+            });
+          }
+          return arr;
+        })(),
+        coach:          { name: { x: 130, y: 9  }, license: { x: 38, y: 9  } },
+        assistantCoach: { name: { x: 130, y: -8 }, license: { x: 38, y: -8 } },
+      },
+    };
+
+    // フォント・原本PDFのキャッシュ
+    let cachedFontBytes = null;
+    let cachedTemplateBytes = null;
+
+    async function loadJapaneseFontBytes() {
+      if (cachedFontBytes) return cachedFontBytes;
+      // Google Fonts CSS から TTF URL を取得 → fetch
+      const cssUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&display=swap';
+      // CSS から直接 woff2 しか得られないため、gstatic 配信の TTF を直接取得する
+      // 代替: 公式 Noto-CJK の小型ttf。ここでは jsdelivr の noto-sans-jp フォールバック
+      const ttfUrl = 'https://cdn.jsdelivr.net/npm/notosansjp@1.0.0/NotoSansJP-Regular.ttf';
+      try {
+        const res = await fetch(ttfUrl);
+        if (!res.ok) throw new Error('font fetch failed');
+        cachedFontBytes = await res.arrayBuffer();
+        return cachedFontBytes;
+      } catch (e) {
+        // フォールバック: Google Fonts の earlyaccess は終了済みのため、別CDNを試す
+        const fallback = 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansJP-Regular.otf';
+        const res = await fetch(fallback);
+        if (!res.ok) throw new Error('font fallback failed');
+        cachedFontBytes = await res.arrayBuffer();
+        return cachedFontBytes;
+      }
+    }
+
+    async function loadTemplatePdfBytes() {
+      if (cachedTemplateBytes) return cachedTemplateBytes;
+      const res = await fetch('MINI_scoresheet_20190401.pdf');
+      if (!res.ok) throw new Error('template pdf fetch failed');
+      cachedTemplateBytes = await res.arrayBuffer();
+      return cachedTemplateBytes;
+    }
+
+    function collectScoresheetEntries(jerseyKind /* 'official'|'reversi' */) {
+      const allMembers = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          if (m.type === 'member') {
+            allMembers.push({ ...m, familyName: f.name, fullName: `${f.name} ${m.name}`, familyId: f.id });
+          }
+        });
+      });
+      const orderedKeys = jerseyOrder.filter(k => allMembers.some(m => `${m.familyId}-${m.name}` === k));
+      const ordered = orderedKeys.map(k => allMembers.find(m => `${m.familyId}-${m.name}` === k));
+      const unordered = allMembers.filter(m => !orderedKeys.includes(`${m.familyId}-${m.name}`));
+      const sorted = [...ordered, ...unordered];
+
+      let entries = [];
+      if (jerseyKind === 'official') {
+        sorted.forEach((m, i) => {
+          if (i < 15) {
+            entries.push({
+              no: i + 4,
+              name: m.fullName,
+              license3: (m.jbaLicense || '').toString().slice(-3),
+            });
+          }
+        });
+      } else {
+        // リバーシ: reversiNumber を持つ部員のみ、番号順
+        const withReversi = sorted.filter(m => m.reversiNumber);
+        withReversi.sort((a, b) => a.reversiNumber - b.reversiNumber);
+        withReversi.slice(0, 15).forEach(m => {
+          entries.push({
+            no: m.reversiNumber,
+            name: m.fullName,
+            license3: (m.jbaLicense || '').toString().slice(-3),
+          });
+        });
+      }
+      return entries;
+    }
+
+    function collectCoaches() {
+      const coaches = [];
+      const assistants = [];
+      families.forEach(f => {
+        f.members.forEach(m => {
+          if (m.type === 'parent' && m.role) {
+            const fullName = `${f.name} ${m.name}`;
+            const license3 = (m.jbaLicense || '').toString().slice(-3);
+            if (m.role === 'coach') coaches.push({ name: fullName, license3 });
+            else if (m.role === 'assistant-coach') assistants.push({ name: fullName, license3 });
+          }
+        });
+      });
+      return {
+        coach: coaches[0] || null,
+        assistantCoach: assistants[0] || coaches[1] || null, // A.コーチ未指定なら2人目のコーチを充てる
+      };
+    }
+
+    async function exportScoresheet(position /* 'upper'|'lower' */, jerseyKind /* 'official'|'reversi' */) {
+      const status = document.getElementById('scoresheet-status');
+      const labelMap = {
+        'upper-official': '① 上段(白) × 公式背番号',
+        'upper-reversi':  '② 上段(白) × リバーシ背番号',
+        'lower-official': '③ 下段(青) × 公式背番号',
+        'lower-reversi':  '④ 下段(青) × リバーシ背番号',
+      };
+      const label = labelMap[`${position}-${jerseyKind}`];
+      try {
+        status.textContent = `生成中... ${label}（フォント取得中）`;
+        const [templateBytes, fontBytes] = await Promise.all([
+          loadTemplatePdfBytes(),
+          loadJapaneseFontBytes(),
+        ]);
+        status.textContent = `生成中... ${label}（PDF構築中）`;
+        const { PDFDocument, rgb } = PDFLib;
+        const pdfDoc = await PDFDocument.load(templateBytes);
+        pdfDoc.registerFontkit(fontkit);
+        const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+        const page = pdfDoc.getPage(0);
+        const layout = SCORESHEET_LAYOUT[position];
+        const draw = (text, pos, size = 9) => {
+          if (text == null || text === '') return;
+          page.drawText(String(text), { x: pos.x, y: pos.y, font, size, color: rgb(0, 0, 0) });
+        };
+
+        // チーム名・色記号
+        draw('南ヶ丘MBC', layout.teamName, 10);
+        if (position === 'lower') draw('青', layout.colorMark, 10);
+
+        // 選手15行
+        const entries = collectScoresheetEntries(jerseyKind);
+        entries.forEach((e, i) => {
+          const row = layout.rows[i];
+          if (!row) return;
+          draw(e.license3, row.license, 8);
+          draw(e.name,     row.name,    9);
+          draw(e.no,       row.no,      9);
+        });
+
+        // コーチ・A.コーチ
+        const { coach, assistantCoach } = collectCoaches();
+        if (coach) {
+          draw(coach.name,     layout.coach.name,    9);
+          draw(coach.license3, layout.coach.license, 8);
+        }
+        if (assistantCoach) {
+          draw(assistantCoach.name,     layout.assistantCoach.name,    9);
+          draw(assistantCoach.license3, layout.assistantCoach.license, 8);
+        }
+
+        const bytes = await pdfDoc.save();
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        status.textContent = `完了: ${label}（新しいタブで開きました）`;
+      } catch (e) {
+        console.error(e);
+        status.textContent = `エラー: ${e.message}（ブラウザでローカルファイルを開いている場合、CORSで失敗することがあります。サーバー経由で開いてください）`;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => { addMemberForm(); loadData(); });
