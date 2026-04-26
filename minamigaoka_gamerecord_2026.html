@@ -259,6 +259,52 @@
 
         .required { color: #e74c3c; }
 
+        /* OCR */
+        .ocr-trigger-btn {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ocr-trigger-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(17,153,142,0.35); }
+        .ocr-trigger-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .ocr-box {
+            background: #f8fff9; border: 1px solid #b2dfdb;
+            border-radius: 10px; padding: 14px; margin-top: 12px;
+        }
+        .ocr-score-display { text-align: center; padding: 10px 0 12px; }
+        .ocr-score-num { font-size: 40px; font-weight: 700; color: #333; }
+        .ocr-score-sep { font-size: 28px; color: #bbb; margin: 0 10px; }
+        .ocr-fields { border-top: 1px solid #e0e0e0; padding-top: 10px; }
+        .ocr-field  {
+            display: flex; justify-content: space-between;
+            padding: 5px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0;
+        }
+        .ocr-field:last-child { border-bottom: none; }
+        .ocr-field-label { color: #888; }
+        .ocr-field-value { font-weight: 600; }
+        .apply-ocr-btn {
+            width: 100%; padding: 10px; background: #28a745;
+            color: white; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
+        .apply-ocr-btn:hover { background: #218838; }
+        .ocr-cand-btn {
+            padding: 6px 12px; background: white; border: 1px solid #11998e;
+            color: #11998e; border-radius: 6px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .ocr-cand-btn:hover { background: #11998e; color: white; }
+        .ocr-raw-toggle { font-size: 11px; color: #999; cursor: pointer; margin-top: 8px; display: block; }
+        .ocr-raw-pre {
+            font-size: 11px; background: #f0f0f0; padding: 8px;
+            border-radius: 6px; overflow: auto; max-height: 140px;
+            white-space: pre-wrap; word-break: break-all; margin-top: 6px;
+        }
+        .ocr-divider { text-align: center; color: #bbb; font-size: 12px; margin: 10px 0; }
+
         /* 編集・削除・画像ボタン */
         .action-btns { display: flex; gap: 5px; justify-content: center; }
         .edit-btn, .delete-btn {
@@ -354,13 +400,11 @@
             .data-table th { padding: 8px 5px; }
             .data-table td { padding: 8px 5px; }
 
-            /* 大会名・対戦チームは省略表示 */
+            /* 大会名・対戦チームは折り返し表示 */
             .data-table td:nth-child(3),
             .data-table td:nth-child(5) {
-                max-width: 70px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                white-space: normal;
+                word-break: break-all;
             }
 
             .edit-btn, .delete-btn { padding: 5px 8px; font-size: 11px; }
@@ -421,15 +465,28 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="scoresheetImage">📷 スコアシート画像 <span style="color:#999;font-weight:normal;">(任意)</span></label>
-                <input type="file" id="scoresheetImage" accept="image/*" style="padding:10px;border:2px dashed #667eea;border-radius:8px;width:100%;" />
+                <label>📷 スコアシート画像 <span style="color:#999;font-weight:normal;">(任意)</span></label>
+                <!-- OCR自動読み取り -->
+                <button type="button" class="ocr-trigger-btn" id="ocrTriggerBtn"
+                        onclick="document.getElementById('ocrFileInput').click()">
+                    🤖 スコアシートを読み取って自動入力
+                </button>
+                <input type="file" id="ocrFileInput" accept="image/*" style="display:none" />
+                <div id="ocrArea" style="display:none;"></div>
+                <!-- 手動添付（OCRなし） -->
+                <div class="ocr-divider">― 画像のみ添付する場合 ―</div>
+                <input type="file" id="scoresheetImage" accept="image/*"
+                       style="padding:10px;border:2px dashed #667eea;border-radius:8px;width:100%;" />
                 <p style="margin-top:8px;font-size:12px;color:#666;">JPG, PNG, JPEG形式（最大10MB）</p>
                 <div id="imagePreviewBox" style="display:none;margin-top:10px;">
                     <p style="font-size:13px;color:#667eea;margin-bottom:5px;">プレビュー:</p>
                     <div style="max-width:100%;max-height:200px;overflow:auto;border:1px solid #ddd;border-radius:8px;padding:10px;background:#f8f9fa;">
                         <img id="imagePreviewMain" style="max-width:100%;height:auto;" />
                     </div>
-                    <button type="button" onclick="clearImageSelection()" style="margin-top:8px;padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;">画像をクリア</button>
+                    <button type="button" onclick="clearImageSelection()"
+                            style="margin-top:8px;padding:6px 12px;background:#e74c3c;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;">
+                        画像をクリア
+                    </button>
                 </div>
             </div>
             <button type="submit" class="btn" id="submitBtn">データを追加</button>
@@ -592,7 +649,7 @@ const firebaseConfig = {
 //  ★ GAS WebアプリのURLをここに貼り付けてください
 //    Apps Script → デプロイ → ウェブアプリのURL
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7X_VUv1fzvFfDn2GjLdjiJtDzKhaq2qXLuoSCpxiFV2CCy9WBYlZDSXl0oG2eBZxBtA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI3P_p8wpr1oZ3bUV8qmpajto6GrWfkxQVMe16WEFjyESPQbKds0COBnvB8MzI8ilv6A/exec';
 // ============================================================
 
 const COLLECTION_NAME  = 'matches';
@@ -881,6 +938,151 @@ function showMessage(message, type) {
 }
 
 // ============================================================
+//  OCR自動読み取り
+// ============================================================
+let _ocrImageFile = null;
+
+document.getElementById('ocrFileInput').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    _ocrImageFile = file;
+
+    const ocrArea = document.getElementById('ocrArea');
+    ocrArea.style.display = 'block';
+
+    // プレビュー + ローディング表示
+    const dataUrl = await fileToDataUrl(file);
+    ocrArea.innerHTML = `
+        <div class="ocr-box">
+            <img src="${dataUrl}" style="max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto 10px;">
+            <div id="ocrStatus">
+                <div class="loading-spinner" style="width:24px;height:24px;border-width:3px;margin:8px auto;"></div>
+                <p style="text-align:center;color:#667eea;font-size:13px;">OCR解析中...</p>
+            </div>
+        </div>`;
+
+    if (!IS_GAS_CONFIGURED) {
+        document.getElementById('ocrStatus').innerHTML =
+            '<p style="color:#e74c3c;font-size:13px;">⚠️ GAS URL未設定（SCRIPT_URLを設定してください）</p>';
+        return;
+    }
+
+    try {
+        const base64   = dataUrl.split(',')[1];
+        const response = await fetch(SCRIPT_URL, {
+            method:   'POST',
+            redirect: 'follow',
+            body:     JSON.stringify({ action: 'ocr_image', imageData: base64 })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            renderOcrResult(result.parsed, result.rawText);
+        } else {
+            document.getElementById('ocrStatus').innerHTML =
+                `<p style="color:#e74c3c;font-size:13px;">⚠️ ${escapeHtml(result.message || 'OCRエラー')}</p>`;
+        }
+    } catch (err) {
+        document.getElementById('ocrStatus').innerHTML =
+            `<p style="color:#e74c3c;font-size:13px;">⚠️ 通信エラー: ${escapeHtml(err.message)}</p>`;
+    }
+});
+
+function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderOcrResult(parsed, rawText) {
+    const { scoreMinamiGaoka, scoreOpponent, date, endTime, venue, tournament, scoreCandidates } = parsed;
+    const hasScore = scoreMinamiGaoka !== null && scoreOpponent !== null;
+    const hasAny   = hasScore || date || endTime || venue || tournament;
+
+    let inner = '';
+
+    if (hasScore) {
+        inner += `<div class="ocr-score-display">
+            <span class="ocr-score-num">${scoreMinamiGaoka}</span>
+            <span class="ocr-score-sep">-</span>
+            <span class="ocr-score-num">${scoreOpponent}</span>
+        </div>`;
+    }
+
+    inner += '<div class="ocr-fields">';
+    if (date)       inner += `<div class="ocr-field"><span class="ocr-field-label">日付</span><span class="ocr-field-value">${escapeHtml(date)}</span></div>`;
+    if (endTime)    inner += `<div class="ocr-field"><span class="ocr-field-label">終了時間</span><span class="ocr-field-value">${escapeHtml(endTime)}</span></div>`;
+    if (tournament) inner += `<div class="ocr-field"><span class="ocr-field-label">大会名</span><span class="ocr-field-value">${escapeHtml(tournament)}</span></div>`;
+    if (venue)      inner += `<div class="ocr-field"><span class="ocr-field-label">会場</span><span class="ocr-field-value">${escapeHtml(venue)}</span></div>`;
+    if (parsed.opponent) inner += `<div class="ocr-field"><span class="ocr-field-label">対戦相手</span><span class="ocr-field-value">${escapeHtml(parsed.opponent)}</span></div>`;
+    if (hasScore) {
+        inner += `<div class="ocr-field"><span class="ocr-field-label">南ヶ丘スコア</span><span class="ocr-field-value">${scoreMinamiGaoka}</span></div>`;
+        inner += `<div class="ocr-field"><span class="ocr-field-label">対戦相手スコア</span><span class="ocr-field-value">${scoreOpponent}</span></div>`;
+    }
+    inner += '</div>';
+
+    if (Array.isArray(scoreCandidates) && scoreCandidates.length > 1) {
+        inner += '<div style="margin-top:10px;font-size:12px;color:#666;">他のスコア候補（クリックで切替）:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">';
+        scoreCandidates.forEach((c, i) => {
+            const ctx = (c.context || '').replace(/'/g, '&#39;');
+            inner += `<button type="button" class="ocr-cand-btn" data-idx="${i}" onclick="pickOcrCandidate(${c.a},${c.b})" title="${escapeHtml(ctx)}">${c.a} - ${c.b}</button>`;
+        });
+        inner += '</div>';
+    }
+
+    if (hasAny) {
+        window._lastOcrParsed = parsed;
+    } else {
+        inner += '<p style="color:#e74c3c;font-size:13px;margin-top:8px;">スコアを自動検出できませんでした。下の抽出テキストを参考に手入力してください。</p>';
+    }
+
+    if (rawText) {
+        inner += `<details style="margin-top:8px;">
+            <summary class="ocr-raw-toggle">抽出テキストを表示</summary>
+            <pre class="ocr-raw-pre">${escapeHtml(rawText)}</pre>
+        </details>`;
+    }
+
+    document.getElementById('ocrStatus').outerHTML = inner;
+
+    // 抽出結果を自動でフォームに反映
+    if (hasAny) applyOcrResult(parsed);
+}
+
+function applyOcrResult(parsed) {
+    if (parsed.date)                      document.getElementById('date').value              = parsed.date;
+    if (parsed.endTime)                   document.getElementById('endTime').value           = parsed.endTime;
+    if (parsed.tournament)                document.getElementById('tournament').value        = parsed.tournament;
+    if (parsed.venue)                     document.getElementById('venue').value             = parsed.venue;
+    if (parsed.opponent)                  document.getElementById('opponent').value          = parsed.opponent;
+    if (parsed.scoreMinamiGaoka !== null) document.getElementById('scoreMinamiGaoka').value  = parsed.scoreMinamiGaoka;
+    if (parsed.scoreOpponent    !== null) document.getElementById('scoreOpponent').value     = parsed.scoreOpponent;
+
+    // 反映したフィールドを一瞬緑色に
+    ['date','endTime','tournament','venue','opponent','scoreMinamiGaoka','scoreOpponent'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value) {
+            el.style.borderColor = '#28a745';
+            setTimeout(() => el.style.borderColor = '', 2000);
+        }
+    });
+    showMessage('OCR結果をフォームに反映しました。内容を確認してください。', 'success');
+}
+
+function pickOcrCandidate(a, b) {
+    document.getElementById('scoreMinamiGaoka').value = a;
+    document.getElementById('scoreOpponent').value    = b;
+    ['scoreMinamiGaoka','scoreOpponent'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.borderColor = '#28a745';
+        setTimeout(() => el.style.borderColor = '', 2000);
+    });
+    showMessage(`スコアを ${a} - ${b} に変更しました`, 'success');
+}
+
+// ============================================================
 //  タブ切り替え
 // ============================================================
 function switchTab(tabName) {
@@ -909,7 +1111,7 @@ document.getElementById('matchForm').addEventListener('submit', async e => {
     if (!IS_CONFIGURED) { showMessage('Firebase設定が未完了です', 'error'); return; }
 
     const submitBtn = document.getElementById('submitBtn');
-    const imageFile = document.getElementById('scoresheetImage').files[0];
+    const imageFile = document.getElementById('scoresheetImage').files[0] || _ocrImageFile;
 
     const formData = {
         date:             document.getElementById('date').value,
@@ -943,6 +1145,10 @@ document.getElementById('matchForm').addEventListener('submit', async e => {
         document.getElementById('scoreMinamiGaoka').value = '';
         document.getElementById('scoreOpponent').value    = '';
         clearImageSelection();
+        _ocrImageFile = null;
+        document.getElementById('ocrFileInput').value = '';
+        document.getElementById('ocrArea').style.display = 'none';
+        document.getElementById('ocrArea').innerHTML = '';
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
         const now = new Date();
         document.getElementById('endTime').value =
@@ -1190,6 +1396,8 @@ window.uploadImageFromModal  = uploadImageFromModal;
 window.viewImage             = viewImage;
 window.closeImageViewModal   = closeImageViewModal;
 window.replaceImage          = replaceImage;
+window.applyOcrResult        = applyOcrResult;
+window.pickOcrCandidate      = pickOcrCandidate;
 </script>
 </body>
 </html>
