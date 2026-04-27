@@ -1346,7 +1346,8 @@
     // ベース座標はテンプレ実測値。出力タブの「座標調整」で微調整可能（localStorage保存）。
     const SCORESHEET_BASE = {
       // 列(X)はupper/lower共通。ユーザー実測でカリブレート済み
-      colX: { license: 38, name: 95, no: 187 },
+      // licenseDigits: 3桁を1桁ずつ別セルに配置するためのX座標3個
+      colX: { licenseDigits: [25, 41, 57], name: 95, no: 210 },
       // 行間（ユーザー実測値）
       dy: 14.2,
       upper: {
@@ -1403,22 +1404,27 @@
         const colX = SCORESHEET_BASE.colX;
         const rows = [];
         const row1Y = base.row1Y + dyOffset;
+        const licDigitsAt = (y) => colX.licenseDigits.map(lx => ({ x: lx + dx, y }));
         for (let i = 0; i < 15; i++) {
           const y = row1Y - i * dy;
           rows.push({
-            license: { x: colX.license + dx, y },
-            name:    { x: colX.name    + dx, y },
-            no:      { x: colX.no      + dx, y },
+            licenseDigits: licDigitsAt(y),
+            name:    { x: colX.name + dx, y },
+            no:      { x: colX.no   + dx, y },
           });
         }
         return {
           teamName:  { x: base.teamNameX  + dx, y: base.teamNameY  + dyOffset },
           colorMark: { x: base.colorMarkX + dx, y: base.colorMarkY + dyOffset },
           rows,
-          coach:          { name: { x: colX.name + dx, y: base.coachY + dyOffset },
-                            license: { x: colX.license + dx, y: base.coachY + dyOffset } },
-          assistantCoach: { name: { x: colX.name + dx, y: base.assistantCoachY + dyOffset },
-                            license: { x: colX.license + dx, y: base.assistantCoachY + dyOffset } },
+          coach: {
+            name: { x: colX.name + dx, y: base.coachY + dyOffset },
+            licenseDigits: licDigitsAt(base.coachY + dyOffset),
+          },
+          assistantCoach: {
+            name: { x: colX.name + dx, y: base.assistantCoachY + dyOffset },
+            licenseDigits: licDigitsAt(base.assistantCoachY + dyOffset),
+          },
         };
       };
       return {
@@ -1468,14 +1474,19 @@
         const markRow = (sec, secLayout) => {
           for (let i = 0; i < 15; i++) {
             const r = secLayout.rows[i];
-            page.drawText(`L${i+1}`, { x: r.license.x, y: r.license.y, font, size: 6, color: rgb(0, 0.6, 0) });
-            page.drawText(`N${i+1}`, { x: r.name.x,    y: r.name.y,    font, size: 6, color: rgb(0, 0.6, 0) });
-            page.drawText(`#${i+1}`, { x: r.no.x,      y: r.no.y,      font, size: 6, color: rgb(0, 0.6, 0) });
+            // ライセンスNo. は3つのサブセル
+            r.licenseDigits.forEach((p, d) => {
+              page.drawText(`L${i+1}.${d+1}`, { x: p.x, y: p.y, font, size: 5, color: rgb(0, 0.6, 0) });
+            });
+            page.drawText(`N${i+1}`, { x: r.name.x, y: r.name.y, font, size: 6, color: rgb(0, 0.6, 0) });
+            page.drawText(`#${i+1}`, { x: r.no.x,   y: r.no.y,   font, size: 6, color: rgb(0, 0.6, 0) });
           }
           page.drawText(`${sec}TEAM`, { x: secLayout.teamName.x, y: secLayout.teamName.y, font, size: 8, color: rgb(0, 0.5, 0) });
           page.drawText(`COLOR`, { x: secLayout.colorMark.x, y: secLayout.colorMark.y, font, size: 8, color: rgb(0, 0.5, 0) });
           page.drawText(`COACH`, { x: secLayout.coach.name.x, y: secLayout.coach.name.y, font, size: 7, color: rgb(0, 0.5, 0) });
+          secLayout.coach.licenseDigits.forEach((p, d) => page.drawText(`C.${d+1}`, { x: p.x, y: p.y, font, size: 5, color: rgb(0, 0.5, 0) }));
           page.drawText(`A.COACH`, { x: secLayout.assistantCoach.name.x, y: secLayout.assistantCoach.name.y, font, size: 7, color: rgb(0, 0.5, 0) });
+          secLayout.assistantCoach.licenseDigits.forEach((p, d) => page.drawText(`A.${d+1}`, { x: p.x, y: p.y, font, size: 5, color: rgb(0, 0.5, 0) }));
         };
         markRow('upper', layout.upper);
         markRow('lower', layout.lower);
@@ -1779,25 +1790,35 @@
         drawMixed('南ヶ丘MBC', layout.teamName, 10);
         if (position === 'lower') drawMixed('青', layout.colorMark, 10);
 
+        // 3桁ライセンスを1桁ずつ別セルに描画（足りない桁は左側を空白で埋める）
+        const drawLicenseDigits = (lic3, positions, size) => {
+          if (lic3 == null) return;
+          const padded = String(lic3).padStart(3, ' ');
+          for (let d = 0; d < 3; d++) {
+            const ch = padded[d];
+            if (ch && ch !== ' ') drawMixed(ch, positions[d], size);
+          }
+        };
+
         // 選手15行（数字はLatinフォントが安定）
         const entries = collectScoresheetEntries(jerseyKind);
         entries.forEach((e, i) => {
           const row = layout.rows[i];
           if (!row) return;
-          drawMixed(e.license3, row.license, 8);
-          drawMixed(e.name,     row.name,    9);
-          drawMixed(e.no,       row.no,      9);
+          drawLicenseDigits(e.license3, row.licenseDigits, 8);
+          drawMixed(e.name, row.name, 9);
+          drawMixed(e.no,   row.no,   9);
         });
 
         // コーチ・A.コーチ
         const { coach, assistantCoach } = collectCoaches();
         if (coach) {
-          drawMixed(coach.name,     layout.coach.name,    9);
-          drawMixed(coach.license3, layout.coach.license, 8);
+          drawMixed(coach.name, layout.coach.name, 9);
+          drawLicenseDigits(coach.license3, layout.coach.licenseDigits, 8);
         }
         if (assistantCoach) {
-          drawMixed(assistantCoach.name,     layout.assistantCoach.name,    9);
-          drawMixed(assistantCoach.license3, layout.assistantCoach.license, 8);
+          drawMixed(assistantCoach.name, layout.assistantCoach.name, 9);
+          drawLicenseDigits(assistantCoach.license3, layout.assistantCoach.licenseDigits, 8);
         }
 
         const bytes = await pdfDoc.save();
