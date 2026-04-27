@@ -1416,14 +1416,11 @@
       const status = document.getElementById('scoresheet-status');
       try {
         status.textContent = '座標グリッドを生成中...';
-        const [templateBytes, fontBytes] = await Promise.all([
-          loadTemplatePdfBytes(),
-          loadJapaneseFontBytes(),
-        ]);
-        const { PDFDocument, rgb } = PDFLib;
+        const templateBytes = await loadTemplatePdfBytes();
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
         const pdfDoc = await PDFDocument.load(templateBytes);
-        pdfDoc.registerFontkit(fontkit);
-        const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+        // グリッドはラテン文字のみなので組み込みHelveticaで十分（日本語フォント不要）
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const page = pdfDoc.getPage(0);
         const { width, height } = page.getSize();
         // 50pt刻みの横線(赤)＋10pt刻みの細線(薄赤)
@@ -1628,40 +1625,57 @@
           loadJapaneseFontBytes(),
         ]);
         status.textContent = `生成中... ${label}（PDF構築中）`;
-        const { PDFDocument, rgb } = PDFLib;
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
         const pdfDoc = await PDFDocument.load(templateBytes);
         pdfDoc.registerFontkit(fontkit);
-        const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+        const jpFont   = await pdfDoc.embedFont(fontBytes, { subset: true });
+        const latinFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const page = pdfDoc.getPage(0);
         const layout = buildLayout()[position];
-        const draw = (text, pos, size = 9) => {
+
+        // 文字単位でフォントを使い分けて描画（字形が無い文字はスキップ、横にカーソル送り）
+        const isAscii = (ch) => ch.charCodeAt(0) < 128;
+        const drawMixed = (text, pos, size) => {
           if (text == null || text === '') return;
-          page.drawText(String(text), { x: pos.x, y: pos.y, font, size, color: rgb(0, 0, 0) });
+          let x = pos.x;
+          for (const ch of String(text)) {
+            const useFont = isAscii(ch) ? latinFont : jpFont;
+            try {
+              page.drawText(ch, { x, y: pos.y, font: useFont, size, color: rgb(0, 0, 0) });
+              x += useFont.widthOfTextAtSize(ch, size);
+            } catch (e) {
+              // 字形が無い場合はスキップ（'?' を出してカーソルだけ進める）
+              try {
+                page.drawText('?', { x, y: pos.y, font: latinFont, size, color: rgb(0.6, 0.6, 0.6) });
+              } catch (_) {}
+              x += size * 0.5;
+            }
+          }
         };
 
         // チーム名・色記号
-        draw('南ヶ丘MBC', layout.teamName, 10);
-        if (position === 'lower') draw('青', layout.colorMark, 10);
+        drawMixed('南ヶ丘MBC', layout.teamName, 10);
+        if (position === 'lower') drawMixed('青', layout.colorMark, 10);
 
-        // 選手15行
+        // 選手15行（数字はLatinフォントが安定）
         const entries = collectScoresheetEntries(jerseyKind);
         entries.forEach((e, i) => {
           const row = layout.rows[i];
           if (!row) return;
-          draw(e.license3, row.license, 8);
-          draw(e.name,     row.name,    9);
-          draw(e.no,       row.no,      9);
+          drawMixed(e.license3, row.license, 8);
+          drawMixed(e.name,     row.name,    9);
+          drawMixed(e.no,       row.no,      9);
         });
 
         // コーチ・A.コーチ
         const { coach, assistantCoach } = collectCoaches();
         if (coach) {
-          draw(coach.name,     layout.coach.name,    9);
-          draw(coach.license3, layout.coach.license, 8);
+          drawMixed(coach.name,     layout.coach.name,    9);
+          drawMixed(coach.license3, layout.coach.license, 8);
         }
         if (assistantCoach) {
-          draw(assistantCoach.name,     layout.assistantCoach.name,    9);
-          draw(assistantCoach.license3, layout.assistantCoach.license, 8);
+          drawMixed(assistantCoach.name,     layout.assistantCoach.name,    9);
+          drawMixed(assistantCoach.license3, layout.assistantCoach.license, 8);
         }
 
         const bytes = await pdfDoc.save();
