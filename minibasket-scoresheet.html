@@ -49,9 +49,20 @@
       appId: "1:94292021462:web:e4f1900d840655eb12b977"
     };
 
+    // 名簿アプリ Firebase設定（参照専用）
+    const MEIBO_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBG5BQ4Ek7cHFrFzcVhr151thB0MzqYFkM",
+      authDomain: "minamigaoka-meibo.firebaseapp.com",
+      projectId: "minamigaoka-meibo",
+      storageBucket: "minamigaoka-meibo.firebasestorage.app",
+      messagingSenderId: "611767162084",
+      appId: "1:611767162084:web:3f9bbf7f3d7bc4c7a448f1"
+    };
+
     // Firebase関連
     let db = null;
     let firebaseInitialized = false;
+    let meiboDb = null;
 
     const initFirebase = () => {
       try {
@@ -61,6 +72,11 @@
         firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.firestore();
         firebaseInitialized = true;
+        // 名簿アプリ用の別インスタンス（参照専用）
+        try {
+          const meiboApp = firebase.apps.find(a => a.name === 'meibo') || firebase.initializeApp(MEIBO_FIREBASE_CONFIG, 'meibo');
+          meiboDb = firebase.firestore(meiboApp);
+        } catch (e) { console.error('Meibo init error:', e); meiboDb = null; }
         console.log('Firebase initialized successfully');
         return true;
       } catch (e) {
@@ -68,6 +84,55 @@
         firebaseInitialized = false;
         return false;
       }
+    };
+
+    // 名簿アプリから自チーム情報を取得して、スコアシート用の team オブジェクトを返す
+    const loadTeamFromMeibo = async (existing) => {
+      if (!meiboDb) throw new Error('名簿アプリに接続できません');
+      const familiesSnap = await meiboDb.collection('families').get();
+      const families = familiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const orderDoc = await meiboDb.collection('settings').doc('jerseyOrder').get();
+      const jerseyOrder = orderDoc.exists ? (orderDoc.data().order || []) : [];
+
+      // 部員(member)のみ収集
+      const allMembers = [];
+      families.forEach(f => (f.members || []).forEach(m => {
+        if (m.type === 'member') {
+          allMembers.push({ ...m, familyId: f.id, familyName: f.name, fullName: `${f.name} ${m.name}` });
+        }
+      }));
+
+      // jerseyOrder の並び順で整列、未登録は末尾
+      const orderedKeys = jerseyOrder.filter(k => allMembers.some(m => `${m.familyId}-${m.name}` === k));
+      const ordered = orderedKeys.map(k => allMembers.find(m => `${m.familyId}-${m.name}` === k));
+      const unordered = allMembers.filter(m => !orderedKeys.includes(`${m.familyId}-${m.name}`));
+      const sorted = [...ordered, ...unordered];
+
+      // コーチ/アシスタントコーチ（最初に見つかった1名）
+      let coach = '', assistantCoach = '';
+      families.forEach(f => (f.members || []).forEach(m => {
+        if (m.type === 'parent' && m.role === 'coach' && !coach) coach = `${f.name} ${m.name}`;
+        if (m.type === 'parent' && m.role === 'assistant-coach' && !assistantCoach) assistantCoach = `${f.name} ${m.name}`;
+      }));
+
+      const players = Array.from({ length: 15 }, (_, i) => createEmptyPlayer(i + 1));
+      sorted.slice(0, 15).forEach((m, i) => {
+        players[i] = {
+          ...players[i],
+          numberOfficial: String(i + 4),
+          numberPractice: m.reversiNumber ? String(m.reversiNumber) : '',
+          licenseNo: (m.jbaLicense || '').toString().slice(-3),
+          name: m.fullName
+        };
+      });
+
+      return {
+        name: (existing && existing.name) || '南ヶ丘MBC',
+        coach, assistantCoach,
+        players,
+        timeouts: { 1: null, 2: null, 3: null, 4: null },
+        teamFouls: [0, 0, 0, 0]
+      };
     };
 
     // Firestore接続テスト（実際に通信して確認）
@@ -552,6 +617,22 @@
 
     function TeamSetupView({ team, onSave, onBack }) {
       const [formData, setFormData] = useState(team || createEmptyTeam());
+      const [importing, setImporting] = useState(false);
+      const handleImportFromMeibo = async () => {
+        if (!confirm('名簿アプリから部員情報を取り込みます。\n（チーム名・選手・コーチが上書きされます）\n続行しますか？')) return;
+        setImporting(true);
+        try {
+          const imported = await loadTeamFromMeibo(formData);
+          setFormData({ ...formData, name: imported.name || formData.name, coach: imported.coach, assistantCoach: imported.assistantCoach, players: imported.players });
+          const filled = imported.players.filter(p => p.name).length;
+          alert(`取り込みました（${filled}名）`);
+        } catch (e) {
+          console.error(e);
+          alert('取り込みに失敗しました: ' + (e.message || e));
+        } finally {
+          setImporting(false);
+        }
+      };
       const updatePlayer = (index, field, value) => {
         const newPlayers = [...formData.players];
         newPlayers[index] = { ...newPlayers[index], [field]: value };
@@ -560,6 +641,10 @@
       return (
         <div className="p-4 max-w-2xl mx-auto pb-20">
           <div className="flex items-center mb-4"><button onClick={onBack} className="text-blue-600 mr-4 text-lg">← 戻る</button><h2 className="text-xl font-bold">自チーム登録</h2></div>
+          <div className="bg-white rounded-lg p-4 mb-4 shadow">
+            <button onClick={handleImportFromMeibo} disabled={importing} className={`w-full p-3 rounded-lg text-white font-semibold ${importing ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 active:bg-purple-700'}`}>{importing ? '取り込み中...' : '📥 名簿アプリから取り込み'}</button>
+            <p className="text-xs text-gray-500 mt-2">名簿アプリの部員・背番号・コーチ情報を自動入力します。背番号順（公式: 4〜18／練習用: リバーシ番号）で登録されます。</p>
+          </div>
           <div className="bg-white rounded-lg p-4 mb-4 shadow">
             <div className="grid grid-cols-1 gap-3">
               <div><label className="block text-sm font-medium mb-1">チーム名 *</label><input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded p-2" placeholder="南ヶ丘MBC" /></div>
