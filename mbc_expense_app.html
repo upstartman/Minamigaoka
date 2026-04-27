@@ -595,11 +595,8 @@
     </header>
 
     <!-- Navigation Tabs -->
+    <!-- v2.0: 部員タブは削除（名簿アプリで管理） -->
     <nav class="nav-tabs">
-        <button class="nav-tab" data-tab="members">
-            <span class="nav-tab-icon">👥</span>
-            部員
-        </button>
         <button class="nav-tab" data-tab="vehicles">
             <span class="nav-tab-icon">🚗</span>
             車両
@@ -620,30 +617,7 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Members Tab -->
-        <div class="tab-content" id="tab-members">
-            <div class="section-header">
-                <h2 class="section-title">👥 部員管理</h2>
-                <button class="btn btn-primary btn-sm" onclick="showMemberModal()">➕ 追加</button>
-            </div>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>名前</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="membersTableBody"></tbody>
-                </table>
-            </div>
-
-            <div class="empty-state" id="membersEmptyState">
-                <div class="empty-state-icon">👥</div>
-                <p>部員が登録されていません</p>
-            </div>
-        </div>
+        <!-- v2.0: 部員管理タブは削除。部員情報は名簿アプリ(minamigaoka-meibo)から取得 -->
 
         <!-- Vehicles Tab -->
         <div class="tab-content" id="tab-vehicles">
@@ -660,6 +634,7 @@
                             <th>燃費</th>
                             <th>燃料</th>
                             <th>紐付け部員</th>
+                            <th>遠征使用</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -854,24 +829,7 @@
         </div>
     </main>
 
-    <!-- Member Modal -->
-    <div class="modal-overlay" id="memberModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="memberModalTitle">部員を追加</h3>
-                <button type="button" class="modal-close" onclick="closeMemberModal()">×</button>
-            </div>
-            <div class="form-group">
-                <label>名前 *</label>
-                <input type="text" id="memberNameInput" placeholder="例：ゆりあ">
-            </div>
-            <input type="hidden" id="editMemberId">
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" onclick="closeMemberModal()">キャンセル</button>
-                <button type="button" class="btn btn-primary" onclick="saveMember()">保存</button>
-            </div>
-        </div>
-    </div>
+    <!-- v2.0: 部員モーダルは削除（名簿アプリで管理） -->
 
     <!-- Vehicle Modal -->
     <div class="modal-overlay" id="vehicleModal">
@@ -880,9 +838,12 @@
                 <h3 class="modal-title" id="vehicleModalTitle">車両を追加</h3>
                 <button type="button" class="modal-close" onclick="closeVehicleModal()">×</button>
             </div>
+            <!-- v2.0: 車両提供者は名簿アプリの保護者から選択。選択時に同家族の部員を自動紐付け -->
             <div class="form-group">
-                <label>車両提供者名 *</label>
-                <input type="text" id="vehicleOwnerInput" placeholder="例：佐藤あ車">
+                <label>車両提供者 *（名簿アプリの保護者から選択）</label>
+                <select id="vehicleOwnerSelect" onchange="onVehicleOwnerChange()">
+                    <option value="">-- 選択してください --</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>燃費 (km/L) *</label>
@@ -896,10 +857,19 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>紐付け部員（この車両提供者の子）</label>
+                <label>紐付け部員（同じ家族の部員から選択）</label>
                 <select id="vehicleMemberInput">
                     <option value="">-- 選択してください --</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-item" style="display:flex; align-items:center; gap:0.5rem;">
+                    <input type="checkbox" id="vehicleUseForExpeditionInput" checked>
+                    遠征車両として使用する
+                </label>
+                <p style="font-size:0.7rem; color:var(--text-light); margin-top:0.2rem;">
+                    OFFにすると遠征入力タブの「使用車両」に表示されません
+                </p>
             </div>
             <input type="hidden" id="editVehicleId">
             <div class="modal-footer">
@@ -910,9 +880,22 @@
     </div>
 
     <script>
+        // ==================== CHANGELOG ====================
+        // v2.0 (2026-04-27): 名簿アプリ(minamigaoka-meibo)連携対応
+        //   - 部員情報を名簿アプリのfamilies/membersから取得（部員管理タブは削除）
+        //   - 車両提供者を名簿アプリの保護者(type='parent')から選択するUIに変更
+        //   - 「遠征車両として使用する」フラグ(useForExpedition)を車両に追加し、遠征入力タブの表示を制御
+        //   - 部員と車両提供者の紐付けを家族単位で自動化（同family内のtype='member'を提示）
+        //   - 旧membersコレクションは履歴の名前解決用にlegacyMembersへフォールバック読込
+        // v1.x: 部員/車両/遠征/清算の基本機能、集金アプリ連携
+
         // ==================== App State ====================
         let db = null;
-        let members = [];
+        let meiboDb = null;          // v2.0: 名簿アプリ(minamigaoka-meibo)用Firestore
+        let families = [];           // v2.0: 名簿アプリのfamiliesコレクション
+        let members = [];            // v2.0: 名簿のmember(type='member')から派生したリスト
+        let rosterParents = [];      // v2.0: 名簿のparent(type='parent')から派生したリスト
+        let legacyMembers = [];      // v2.0: 旧membersコレクション（履歴名前解決用フォールバック）
         let vehicles = [];
         let expeditions = [];
         let currentExpedition = null;
@@ -938,6 +921,16 @@
             appId: "1:160499455872:web:7ac0b1f07770cc6d121365"
         };
 
+        // v2.0: 名簿アプリ(minamigaoka-meibo)用Firebase設定（読み取り専用）
+        const MEIBO_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBG5BQ4Ek7cHFrFzcVhr151thB0MzqYFkM",
+            authDomain: "minamigaoka-meibo.firebaseapp.com",
+            projectId: "minamigaoka-meibo",
+            storageBucket: "minamigaoka-meibo.firebasestorage.app",
+            messagingSenderId: "611767162084",
+            appId: "1:611767162084:web:3f9bbf7f3d7bc4c7a448f1"
+        };
+
         let bentoDb = null; // 弁当注文集計アプリ用のFirestore
 
         // ==================== Firebase Connection ====================
@@ -954,7 +947,14 @@
                     bentoApp = firebase.initializeApp(BENTO_FIREBASE_CONFIG, 'bentoApp');
                 }
                 bentoDb = bentoApp.firestore();
-                
+
+                // v2.0: 名簿アプリ用のFirebaseを初期化（3つ目のアプリとして・読取専用）
+                let meiboApp = firebase.apps.find(app => app.name === 'meiboApp');
+                if (!meiboApp) {
+                    meiboApp = firebase.initializeApp(MEIBO_FIREBASE_CONFIG, 'meiboApp');
+                }
+                meiboDb = meiboApp.firestore();
+
                 document.getElementById('firebaseStatus').classList.add('connected');
                 document.getElementById('firebaseStatusText').textContent = '接続済み';
                 loadAllData();
@@ -968,19 +968,21 @@
         async function loadAllData() {
             if (!db) return;
             try {
-                const membersSnapshot = await db.collection('members').get();
-                members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // sortOrderでソート（未設定の場合は名前順）
-                members.sort((a, b) => {
-                    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
-                        return a.sortOrder - b.sortOrder;
-                    }
-                    return (a.name || '').localeCompare(b.name || '', 'ja');
-                });
-                renderMembers();
+                // v2.0: 名簿アプリからfamiliesを取得し、部員・保護者リストを派生
+                await loadRoster();
 
-                const vehiclesSnapshot = await db.collection('vehicles').orderBy('owner').get();
+                // 旧membersコレクションは履歴の名前解決用にフォールバック保持
+                try {
+                    const legacySnap = await db.collection('members').get();
+                    legacyMembers = legacySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (e) {
+                    legacyMembers = [];
+                }
+
+                const vehiclesSnapshot = await db.collection('vehicles').get();
                 vehicles = vehiclesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // v2.2: 車両一覧は車両提供者(rosterParents)の並び順(学年降順)に揃える
+                sortVehiclesByParentOrder();
                 renderVehicles();
 
                 const expeditionsSnapshot = await db.collection('expeditions').orderBy('date', 'desc').get();
@@ -991,120 +993,137 @@
                 renderMemberCheckboxes();
                 renderVehicleCheckboxes();
                 updateVehicleMemberSelect();
+                updateVehicleOwnerSelect();
             } catch (error) {
                 console.error('Data loading error:', error);
             }
         }
 
+        // v2.1: 4/1時点の年齢から学年番号を算出（小1=1, 小6=6, 中1=7, 高3=12, 大学以上=99, 未就学=0, 不明=999）
+        function getGrade(age) {
+            if (age == null || age === '' || isNaN(age)) return 999;
+            const a = Number(age);
+            if (a >= 18) return 99;
+            if (a >= 17) return 12;
+            if (a >= 16) return 11;
+            if (a >= 15) return 10;
+            if (a >= 14) return 9;
+            if (a >= 13) return 8;
+            if (a >= 12) return 7;
+            if (a >= 11) return 6;
+            if (a >= 10) return 5;
+            if (a >= 9)  return 4;
+            if (a >= 8)  return 3;
+            if (a >= 7)  return 2;
+            if (a >= 6)  return 1;
+            return 0;
+        }
+
+        // v2.1: 部員表示名は「名前（ふりがな）」
+        function memberDisplayName(m) {
+            if (!m) return '';
+            return m.reading ? `${m.name}（${m.reading}）` : (m.name || '');
+        }
+
+        // v2.0: 名簿アプリからfamiliesを取得し、部員・保護者リストを派生
+        async function loadRoster() {
+            if (!meiboDb) return;
+            try {
+                const snap = await meiboDb.collection('families').get();
+                families = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // 部員(type='member')派生：ID = "roster_{familyId}_{idx}"
+                members = [];
+                rosterParents = [];
+                families.forEach(f => {
+                    (f.members || []).forEach((m, idx) => {
+                        const stableId = `roster_${f.id}_${idx}`;
+                        const displayName = m.name || '';
+                        if (m.type === 'member') {
+                            members.push({
+                                id: stableId,
+                                name: displayName,
+                                reading: m.reading || '',
+                                age: m.age,
+                                grade: getGrade(m.age),
+                                familyId: f.id,
+                                familyName: f.name || '',
+                                memberIdx: idx,
+                                _source: 'roster'
+                            });
+                        } else if (m.type === 'parent') {
+                            rosterParents.push({
+                                id: stableId,
+                                name: displayName,
+                                reading: m.reading || '',
+                                familyId: f.id,
+                                familyName: f.name || '',
+                                memberIdx: idx,
+                                _source: 'roster'
+                            });
+                        }
+                    });
+                });
+
+                // v2.2: 部員は学年降順（高学年が上）、同学年内は名前(読み)順
+                //       未登録(grade=999)は末尾になるよう、999は最下位として扱う
+                const gradeKey = g => (g === 999 ? -1 : g); // 未登録を最下位に
+                members.sort((a, b) => {
+                    const ga = gradeKey(a.grade), gb = gradeKey(b.grade);
+                    if (ga !== gb) return gb - ga; // 降順
+                    return (a.reading || a.name).localeCompare(b.reading || b.name, 'ja');
+                });
+
+                // v2.2: 保護者は同family内の代表学年(最年長部員)で降順→同学年内は名前順
+                //       (家族に部員がいなければ末尾)
+                const familyGradeMap = new Map();
+                members.forEach(m => {
+                    const cur = familyGradeMap.get(m.familyId);
+                    // 代表学年は「最年長(grade最大)」を採用（降順の先頭に出すため）
+                    if (cur == null || (m.grade !== 999 && m.grade > cur)) familyGradeMap.set(m.familyId, m.grade);
+                });
+                rosterParents.forEach(p => {
+                    p._sortGrade = familyGradeMap.has(p.familyId) ? familyGradeMap.get(p.familyId) : 999;
+                });
+                rosterParents.sort((a, b) => {
+                    const ga = gradeKey(a._sortGrade), gb = gradeKey(b._sortGrade);
+                    if (ga !== gb) return gb - ga; // 降順
+                    const rc = (a.reading || a.name).localeCompare(b.reading || b.name, 'ja');
+                    if (rc !== 0) return rc;
+                    return (a.familyName || '').localeCompare(b.familyName || '', 'ja');
+                });
+            } catch (e) {
+                console.error('Roster load error:', e);
+                families = []; members = []; rosterParents = [];
+            }
+        }
+
+        // v2.2: 車両配列を rosterParents の並び順(学年降順)で並べ替え
+        function sortVehiclesByParentOrder() {
+            const orderMap = new Map();
+            rosterParents.forEach((p, idx) => orderMap.set(p.id, idx));
+            vehicles.sort((a, b) => {
+                const ai = orderMap.has(a.ownerParentId) ? orderMap.get(a.ownerParentId) : Number.MAX_SAFE_INTEGER;
+                const bi = orderMap.has(b.ownerParentId) ? orderMap.get(b.ownerParentId) : Number.MAX_SAFE_INTEGER;
+                if (ai !== bi) return ai - bi;
+                // ownerParentId未設定の旧データはownerName順で末尾に並べる
+                return (a.owner || '').localeCompare(b.owner || '', 'ja');
+            });
+        }
+
+        // v2.0/2.1: ID → 表示名の解決（現行 + 旧membersフォールバック）。部員は「名前（ふりがな）」
+        function getMemberName(id) {
+            if (!id) return '';
+            const r = members.find(m => m.id === id);
+            if (r) return memberDisplayName(r);
+            const l = legacyMembers.find(m => m.id === id);
+            if (l) return l.name;
+            return '(不明)';
+        }
+
         // ==================== Members ====================
-        function renderMembers() {
-            const tbody = document.getElementById('membersTableBody');
-            const emptyState = document.getElementById('membersEmptyState');
-            
-            if (members.length === 0) {
-                tbody.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            emptyState.style.display = 'none';
-            tbody.innerHTML = members.map((member, index) => `
-                <tr>
-                    <td>
-                        <span class="order-buttons">
-                            <button class="btn btn-sm btn-outline" onclick="moveMember('${member.id}', -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
-                            <button class="btn btn-sm btn-outline" onclick="moveMember('${member.id}', 1)" ${index === members.length - 1 ? 'disabled' : ''}>↓</button>
-                        </span>
-                        ${member.name}
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline" onclick="editMember('${member.id}')">編集</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">削除</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function showMemberModal(memberId = null) {
-            document.getElementById('memberModal').classList.add('active');
-            document.getElementById('memberNameInput').value = '';
-            document.getElementById('editMemberId').value = '';
-            
-            if (memberId) {
-                const member = members.find(m => m.id === memberId);
-                if (member) {
-                    document.getElementById('memberModalTitle').textContent = '部員を編集';
-                    document.getElementById('memberNameInput').value = member.name;
-                    document.getElementById('editMemberId').value = memberId;
-                }
-            } else {
-                document.getElementById('memberModalTitle').textContent = '部員を追加';
-            }
-        }
-
-        function closeMemberModal() {
-            document.getElementById('memberModal').classList.remove('active');
-        }
-
-        async function saveMember() {
-            if (!db) { alert('Firebaseに接続してください'); return; }
-
-            const name = document.getElementById('memberNameInput').value.trim();
-            const editId = document.getElementById('editMemberId').value;
-
-            if (!name) { alert('名前を入力してください'); return; }
-
-            try {
-                if (editId) {
-                    await db.collection('members').doc(editId).update({ name });
-                } else {
-                    // 新規追加時は最後のsortOrderを取得して+1
-                    const maxSortOrder = members.length > 0 ? Math.max(...members.map(m => m.sortOrder || 0)) : -1;
-                    await db.collection('members').add({ name, sortOrder: maxSortOrder + 1 });
-                }
-                closeMemberModal();
-                loadAllData();
-            } catch (error) {
-                console.error('Save member error:', error);
-                alert('保存に失敗しました: ' + error.message);
-            }
-        }
-
-        function editMember(id) { showMemberModal(id); }
-
-        async function deleteMember(id) {
-            if (!confirm('この部員を削除しますか？')) return;
-            try {
-                await db.collection('members').doc(id).delete();
-                loadAllData();
-            } catch (error) {
-                alert('削除に失敗しました: ' + error.message);
-            }
-        }
-
-        async function moveMember(id, direction) {
-            if (!db) return;
-            
-            const currentIndex = members.findIndex(m => m.id === id);
-            const newIndex = currentIndex + direction;
-            
-            if (newIndex < 0 || newIndex >= members.length) return;
-            
-            // 入れ替える2つの部員
-            const member1 = members[currentIndex];
-            const member2 = members[newIndex];
-            
-            try {
-                // sortOrderを入れ替え
-                const batch = db.batch();
-                batch.update(db.collection('members').doc(member1.id), { sortOrder: newIndex });
-                batch.update(db.collection('members').doc(member2.id), { sortOrder: currentIndex });
-                await batch.commit();
-                loadAllData();
-            } catch (error) {
-                alert('並び替えに失敗しました: ' + error.message);
-            }
-        }
+        // v2.0: 部員のCRUDは名簿アプリ(minamigaoka-meibo)で管理。本アプリは読み取りのみ。
+        // 旧API（renderMembers/showMemberModal/saveMember/editMember/deleteMember/moveMember）は削除。
 
         // ==================== Vehicles ====================
         function renderVehicles() {
@@ -1118,14 +1137,17 @@
             }
 
             emptyState.style.display = 'none';
+            // v2.0: linkedMemberIdは新名簿ID/旧IDの双方を解決、useForExpeditionを表示
             tbody.innerHTML = vehicles.map(vehicle => {
-                const linkedMember = members.find(m => m.id === vehicle.linkedMemberId);
+                const linkedName = getMemberName(vehicle.linkedMemberId);
+                const useFlag = vehicle.useForExpedition !== false; // 既存データはデフォルトtrue扱い
                 return `
                     <tr>
-                        <td>${vehicle.owner}</td>
+                        <td>${vehicle.owner || ''}</td>
                         <td>${vehicle.fuelEfficiency}km/L</td>
                         <td>${vehicle.fuelType === 'diesel' ? '軽油' : 'レギュラー'}</td>
-                        <td>${linkedMember ? linkedMember.name : '-'}</td>
+                        <td>${linkedName || '-'}</td>
+                        <td>${useFlag ? '✅' : '—'}</td>
                         <td>
                             <button class="btn btn-sm btn-outline" onclick="editVehicle('${vehicle.id}')">編集</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteVehicle('${vehicle.id}')">削除</button>
@@ -1135,30 +1157,71 @@
             }).join('');
         }
 
-        function updateVehicleMemberSelect() {
-            const select = document.getElementById('vehicleMemberInput');
+        // v2.0: 車両提供者の選択肢（名簿アプリの保護者）
+        function updateVehicleOwnerSelect() {
+            const select = document.getElementById('vehicleOwnerSelect');
+            if (!select) return;
             select.innerHTML = '<option value="">-- 選択してください --</option>' +
-                members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                rosterParents.map(p => {
+                    const label = `${p.familyName} ${p.name}`.trim();
+                    return `<option value="${p.id}" data-family="${p.familyId}" data-name="${label}">${label}</option>`;
+                }).join('');
+        }
+
+        // v2.0: 紐付け部員選択肢（指定familyIdに属する部員のみ。未指定時は全員）
+        // v2.1: 表示は「名前（ふりがな）」
+        function updateVehicleMemberSelect(familyId) {
+            const select = document.getElementById('vehicleMemberInput');
+            const list = familyId ? members.filter(m => m.familyId === familyId) : members;
+            select.innerHTML = '<option value="">-- 選択してください --</option>' +
+                list.map(m => `<option value="${m.id}">${memberDisplayName(m)}</option>`).join('');
+        }
+
+        // v2.0: 車両提供者選択時、同family内の部員を自動絞り込み・自動選択
+        function onVehicleOwnerChange() {
+            const sel = document.getElementById('vehicleOwnerSelect');
+            const opt = sel.options[sel.selectedIndex];
+            const familyId = opt ? opt.getAttribute('data-family') : '';
+            updateVehicleMemberSelect(familyId);
+            // 同familyに部員が1人だけなら自動選択
+            const family = members.filter(m => m.familyId === familyId);
+            if (family.length === 1) {
+                document.getElementById('vehicleMemberInput').value = family[0].id;
+            }
         }
 
         function showVehicleModal(vehicleId = null) {
             document.getElementById('vehicleModal').classList.add('active');
-            document.getElementById('vehicleOwnerInput').value = '';
             document.getElementById('vehicleFuelEfficiencyInput').value = '';
             document.getElementById('vehicleFuelTypeInput').value = 'regular';
-            document.getElementById('vehicleMemberInput').value = '';
+            document.getElementById('vehicleUseForExpeditionInput').checked = true;
             document.getElementById('editVehicleId').value = '';
-            
+
+            updateVehicleOwnerSelect();
             updateVehicleMemberSelect();
-            
+            document.getElementById('vehicleOwnerSelect').value = '';
+            document.getElementById('vehicleMemberInput').value = '';
+
             if (vehicleId) {
                 const vehicle = vehicles.find(v => v.id === vehicleId);
                 if (vehicle) {
                     document.getElementById('vehicleModalTitle').textContent = '車両を編集';
-                    document.getElementById('vehicleOwnerInput').value = vehicle.owner;
+                    // ownerParentId（v2.0で新規追加）優先、後方互換でowner名から推測
+                    let ownerVal = vehicle.ownerParentId || '';
+                    if (!ownerVal && vehicle.owner) {
+                        const guess = rosterParents.find(p => `${p.familyName} ${p.name}`.trim() === vehicle.owner || p.name === vehicle.owner);
+                        if (guess) ownerVal = guess.id;
+                    }
+                    document.getElementById('vehicleOwnerSelect').value = ownerVal;
+                    // ownerに応じて部員リストを絞る
+                    const ownerOpt = document.getElementById('vehicleOwnerSelect').selectedOptions[0];
+                    const fid = ownerOpt ? ownerOpt.getAttribute('data-family') : '';
+                    updateVehicleMemberSelect(fid);
+
                     document.getElementById('vehicleFuelEfficiencyInput').value = vehicle.fuelEfficiency;
                     document.getElementById('vehicleFuelTypeInput').value = vehicle.fuelType;
                     document.getElementById('vehicleMemberInput').value = vehicle.linkedMemberId || '';
+                    document.getElementById('vehicleUseForExpeditionInput').checked = vehicle.useForExpedition !== false;
                     document.getElementById('editVehicleId').value = vehicleId;
                 }
             } else {
@@ -1173,16 +1236,21 @@
         async function saveVehicle() {
             if (!db) { alert('Firebaseに接続してください'); return; }
 
-            const owner = document.getElementById('vehicleOwnerInput').value.trim();
+            const ownerSel = document.getElementById('vehicleOwnerSelect');
+            const ownerParentId = ownerSel.value;
+            const ownerOpt = ownerSel.selectedOptions[0];
+            const ownerName = ownerOpt ? (ownerOpt.getAttribute('data-name') || ownerOpt.text) : '';
             const fuelEfficiency = parseFloat(document.getElementById('vehicleFuelEfficiencyInput').value);
             const fuelType = document.getElementById('vehicleFuelTypeInput').value;
             const linkedMemberId = document.getElementById('vehicleMemberInput').value || null;
+            const useForExpedition = document.getElementById('vehicleUseForExpeditionInput').checked;
             const editId = document.getElementById('editVehicleId').value;
 
-            if (!owner || !fuelEfficiency) { alert('必須項目を入力してください'); return; }
+            if (!ownerParentId || !fuelEfficiency) { alert('必須項目を入力してください'); return; }
 
             try {
-                const data = { owner, fuelEfficiency, fuelType, linkedMemberId };
+                // v2.0: ownerParentIdとownerName(表示用キャッシュ)を保存。useForExpeditionも保存。
+                const data = { owner: ownerName, ownerParentId, fuelEfficiency, fuelType, linkedMemberId, useForExpedition };
                 if (editId) {
                     await db.collection('vehicles').doc(editId).update(data);
                 } else {
@@ -1214,24 +1282,27 @@
                 container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">部員を先に登録してください</p>';
                 return;
             }
+            // v2.1: 名前（ふりがな）表示・学年順
             container.innerHTML = members.map(member => `
                 <label class="checkbox-item">
                     <input type="checkbox" value="${member.id}">
-                    ${member.name}
+                    ${memberDisplayName(member)}
                 </label>
             `).join('');
         }
 
         function renderVehicleCheckboxes() {
             const container = document.getElementById('vehicleCheckboxes');
-            if (vehicles.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">車両を先に登録してください</p>';
+            // v2.0: useForExpedition=trueのみ表示。falseは遠征入力に出さない（既存データはtrue扱い）
+            const list = vehicles.filter(v => v.useForExpedition !== false);
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.75rem;">遠征に使用する車両がありません（車両タブで「遠征車両として使用する」を有効化してください）</p>';
                 return;
             }
-            container.innerHTML = vehicles.map(vehicle => `
+            container.innerHTML = list.map(vehicle => `
                 <label class="checkbox-item">
                     <input type="checkbox" value="${vehicle.id}">
-                    ${vehicle.owner}
+                    ${vehicle.owner || ''}
                 </label>
             `).join('');
         }
@@ -1595,6 +1666,7 @@
             const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
             const settlementData = {};
 
+            // v2.0: 現役名簿の部員を初期化
             members.forEach(member => {
                 settlementData[member.id] = {
                     name: member.name,
@@ -1605,18 +1677,27 @@
                     balance: 0
                 };
             });
+            // v2.0: 旧IDを参照する遠征向けに、legacyMembersも遅延追加
+            const ensureEntry = (id) => {
+                if (settlementData[id]) return;
+                settlementData[id] = {
+                    name: getMemberName(id) || '(旧)',
+                    costs: {}, vehicleIncome: {},
+                    totalCost: 0, totalIncome: 0, balance: 0
+                };
+            };
 
             selectedExpeditions.forEach(exp => {
                 exp.selectedMemberIds?.forEach(memberId => {
-                    if (settlementData[memberId]) {
-                        settlementData[memberId].costs[exp.id] = exp.perPerson;
-                        settlementData[memberId].totalCost += exp.perPerson;
-                    }
+                    ensureEntry(memberId);
+                    settlementData[memberId].costs[exp.id] = exp.perPerson;
+                    settlementData[memberId].totalCost += exp.perPerson;
                 });
 
                 exp.vehicleDetails?.forEach(vehicle => {
-                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
-                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] = 
+                    if (vehicle.linkedMemberId) {
+                        ensureEntry(vehicle.linkedMemberId);
+                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] =
                             (settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] || 0) + vehicle.total;
                         settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
                     }
@@ -1719,8 +1800,9 @@
             if (!currentExpedition) { alert('データがありません'); return; }
             const exp = currentExpedition;
 
-            const participantNames = exp.selectedMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean) || [];
-            const absentNames = exp.absentMemberIds?.map(mid => members.find(m => m.id === mid)?.name).filter(Boolean) || [];
+            // v2.0: getMemberNameで新名簿/旧members両対応
+            const participantNames = exp.selectedMemberIds?.map(mid => getMemberName(mid)).filter(n => n && n !== '(不明)') || [];
+            const absentNames = exp.absentMemberIds?.map(mid => getMemberName(mid)).filter(n => n && n !== '(不明)') || [];
 
             let tollHtml = '';
             if (exp.tollItems && exp.tollItems.length > 0) {
@@ -1836,27 +1918,33 @@
             // 元の残金の合計
             const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
 
+            // v2.0: 現役+legacy両対応
             members.forEach(member => {
                 settlementData[member.id] = {
                     name: member.name,
-                    costs: {},
-                    vehicleIncome: {},
-                    totalCost: 0,
-                    totalIncome: 0,
-                    balance: 0
+                    costs: {}, vehicleIncome: {},
+                    totalCost: 0, totalIncome: 0, balance: 0
                 };
             });
+            const ensureEntry = (id) => {
+                if (settlementData[id]) return;
+                settlementData[id] = {
+                    name: getMemberName(id) || '(旧)',
+                    costs: {}, vehicleIncome: {},
+                    totalCost: 0, totalIncome: 0, balance: 0
+                };
+            };
 
             selectedExpeditions.forEach(exp => {
                 exp.selectedMemberIds?.forEach(memberId => {
-                    if (settlementData[memberId]) {
-                        settlementData[memberId].costs[exp.id] = exp.perPerson;
-                        settlementData[memberId].totalCost += exp.perPerson;
-                    }
+                    ensureEntry(memberId);
+                    settlementData[memberId].costs[exp.id] = exp.perPerson;
+                    settlementData[memberId].totalCost += exp.perPerson;
                 });
                 exp.vehicleDetails?.forEach(vehicle => {
-                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
-                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] = 
+                    if (vehicle.linkedMemberId) {
+                        ensureEntry(vehicle.linkedMemberId);
+                        settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] =
                             (settlementData[vehicle.linkedMemberId].vehicleIncome[exp.id] || 0) + vehicle.total;
                         settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
                     }
@@ -1999,6 +2087,7 @@
             const settlementData = {};
             const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
 
+            // v2.0: 現役+legacy両対応
             members.forEach(member => {
                 settlementData[member.id] = {
                     name: member.name,
@@ -2006,15 +2095,19 @@
                     totalIncome: 0
                 };
             });
+            const ensureEntry = (id) => {
+                if (settlementData[id]) return;
+                settlementData[id] = { name: getMemberName(id) || '(旧)', totalCost: 0, totalIncome: 0 };
+            };
 
             selectedExpeditions.forEach(exp => {
                 exp.selectedMemberIds?.forEach(memberId => {
-                    if (settlementData[memberId]) {
-                        settlementData[memberId].totalCost += exp.perPerson;
-                    }
+                    ensureEntry(memberId);
+                    settlementData[memberId].totalCost += exp.perPerson;
                 });
                 exp.vehicleDetails?.forEach(vehicle => {
-                    if (vehicle.linkedMemberId && settlementData[vehicle.linkedMemberId]) {
+                    if (vehicle.linkedMemberId) {
+                        ensureEntry(vehicle.linkedMemberId);
                         settlementData[vehicle.linkedMemberId].totalIncome += vehicle.total;
                     }
                 });
