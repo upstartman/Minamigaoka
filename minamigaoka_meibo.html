@@ -525,6 +525,19 @@
           <input type="file" accept=".otf,.ttf" onchange="handleFontUpload(this)" style="font-size:11px">
           <p style="font-size:10px;color:var(--text-sub);margin-top:4px">NotoSansJP-Regular.otf 等を選択するとブラウザに保存され、以降のPDF生成で使用されます。</p>
         </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:700">🔧 座標調整（印刷ズレを補正）</div>
+          <button class="btn btn-outline" onclick="exportCalibrationGrid()" style="margin-bottom:8px">🔍 座標確認グリッドを出力</button>
+          <p style="font-size:10px;color:var(--text-sub);margin-bottom:8px">グリッドPDFを開き、緑のラベル(L1〜L15, N1〜N15, #1〜#15)が各行・各列のセル中央に来るよう、下のオフセット値を調整してください。単位は pt（1pt≈0.353mm）。</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+            <label>上段 X補正<input type="number" id="calib-upperDx" step="1" value="0" style="width:100%"></label>
+            <label>上段 Y補正<input type="number" id="calib-upperDy" step="1" value="0" style="width:100%"></label>
+            <label>下段 X補正<input type="number" id="calib-lowerDx" step="1" value="0" style="width:100%"></label>
+            <label>下段 Y補正<input type="number" id="calib-lowerDy" step="1" value="0" style="width:100%"></label>
+            <label>行間補正<input type="number" id="calib-dyAdj" step="0.1" value="0" style="width:100%"></label>
+          </div>
+          <button class="btn btn-primary" onclick="applyCalibFromInputs()" style="margin-top:8px">座標調整値を保存</button>
+        </div>
       </div>
     </div>
   </main>
@@ -1320,51 +1333,148 @@
 
     // ========== MINIスコアシート PDF出力 ==========
     // PDFサイズ: A4縦 595 x 842 pt 想定。座標は左下原点(pdf-lib仕様)。
-    // 値は MINI_scoresheet_20190401.pdf を実測した近似値。
-    // 実印刷で位置がずれる場合は SCORESHEET_LAYOUT を微調整してください。
-    const SCORESHEET_LAYOUT = {
+    // ベース座標はテンプレ実測値。出力タブの「座標調整」で微調整可能（localStorage保存）。
+    const SCORESHEET_BASE = {
+      // 列(X)はupper/lower共通
+      colX: { license: 38, name: 130, no: 220 },
+      // 行間
+      dy: 16.5,
       upper: {
-        teamName:  { x: 95,  y: 595 },   // 「チームA:」の右側
-        colorMark: { x: 230, y: 595 },   // (白) の中
-        rows: (() => {
-          // 1行目 y ≈ 540, 行間 ≈ 17.3pt, 15行
-          const baseY = 540;
-          const dy = 17.3;
-          const arr = [];
-          for (let i = 0; i < 15; i++) {
-            const y = baseY - i * dy;
-            arr.push({
-              license: { x: 38,  y },
-              name:    { x: 130, y },
-              no:      { x: 220, y },
-            });
-          }
-          return arr;
-        })(),
-        coach:          { name: { x: 130, y: 280 }, license: { x: 38, y: 280 } },
-        assistantCoach: { name: { x: 130, y: 263 }, license: { x: 38, y: 263 } },
+        teamNameX: 95,  teamNameY: 632,
+        colorMarkX: 232, colorMarkY: 632,
+        row1Y: 580,                      // 1行目(=jersey #4)のy
+        coachY: 322, assistantCoachY: 305,
       },
       lower: {
-        teamName:  { x: 95,  y: 320 },
-        colorMark: { x: 230, y: 320 },
-        rows: (() => {
-          const baseY = 265;
-          const dy = 17.3;
-          const arr = [];
-          for (let i = 0; i < 15; i++) {
-            const y = baseY - i * dy;
-            arr.push({
-              license: { x: 38,  y },
-              name:    { x: 130, y },
-              no:      { x: 220, y },
-            });
-          }
-          return arr;
-        })(),
-        coach:          { name: { x: 130, y: 9  }, license: { x: 38, y: 9  } },
-        assistantCoach: { name: { x: 130, y: -8 }, license: { x: 38, y: -8 } },
+        teamNameX: 95,  teamNameY: 322,
+        colorMarkX: 232, colorMarkY: 322,
+        row1Y: 270,
+        coachY: 12,  assistantCoachY: -5,
       },
     };
+
+    function getCalibration() {
+      try {
+        const raw = localStorage.getItem('meibo_scoresheet_calib');
+        if (!raw) return { upperDx:0, upperDy:0, lowerDx:0, lowerDy:0, dyAdj:0 };
+        return JSON.parse(raw);
+      } catch (e) { return { upperDx:0, upperDy:0, lowerDx:0, lowerDy:0, dyAdj:0 }; }
+    }
+    function saveCalibration(c) {
+      localStorage.setItem('meibo_scoresheet_calib', JSON.stringify(c));
+    }
+    function loadCalibInputs() {
+      const c = getCalibration();
+      ['upperDx','upperDy','lowerDx','lowerDy','dyAdj'].forEach(k => {
+        const el = document.getElementById('calib-' + k);
+        if (el) el.value = c[k] || 0;
+      });
+    }
+    function applyCalibFromInputs() {
+      const c = {};
+      ['upperDx','upperDy','lowerDx','lowerDy','dyAdj'].forEach(k => {
+        c[k] = parseFloat(document.getElementById('calib-' + k).value) || 0;
+      });
+      saveCalibration(c);
+      document.getElementById('scoresheet-status').textContent = '座標調整値を保存しました';
+    }
+
+    function buildLayout() {
+      const c = getCalibration();
+      const dy = SCORESHEET_BASE.dy + (c.dyAdj || 0);
+      const make = (sec, dx, dyOffset) => {
+        const base = SCORESHEET_BASE[sec];
+        const colX = SCORESHEET_BASE.colX;
+        const rows = [];
+        const row1Y = base.row1Y + dyOffset;
+        for (let i = 0; i < 15; i++) {
+          const y = row1Y - i * dy;
+          rows.push({
+            license: { x: colX.license + dx, y },
+            name:    { x: colX.name    + dx, y },
+            no:      { x: colX.no      + dx, y },
+          });
+        }
+        return {
+          teamName:  { x: base.teamNameX  + dx, y: base.teamNameY  + dyOffset },
+          colorMark: { x: base.colorMarkX + dx, y: base.colorMarkY + dyOffset },
+          rows,
+          coach:          { name: { x: colX.name + dx, y: base.coachY + dyOffset },
+                            license: { x: colX.license + dx, y: base.coachY + dyOffset } },
+          assistantCoach: { name: { x: colX.name + dx, y: base.assistantCoachY + dyOffset },
+                            license: { x: colX.license + dx, y: base.assistantCoachY + dyOffset } },
+        };
+      };
+      return {
+        upper: make('upper', c.upperDx || 0, c.upperDy || 0),
+        lower: make('lower', c.lowerDx || 0, c.lowerDy || 0),
+      };
+    }
+
+    // 座標調整用グリッドPDF（50pt刻みの線とラベルを引いて位置を可視化）
+    async function exportCalibrationGrid() {
+      const status = document.getElementById('scoresheet-status');
+      try {
+        status.textContent = '座標グリッドを生成中...';
+        const [templateBytes, fontBytes] = await Promise.all([
+          loadTemplatePdfBytes(),
+          loadJapaneseFontBytes(),
+        ]);
+        const { PDFDocument, rgb } = PDFLib;
+        const pdfDoc = await PDFDocument.load(templateBytes);
+        pdfDoc.registerFontkit(fontkit);
+        const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+        const page = pdfDoc.getPage(0);
+        const { width, height } = page.getSize();
+        // 50pt刻みの横線(赤)＋10pt刻みの細線(薄赤)
+        for (let y = 0; y <= height; y += 10) {
+          const isMajor = y % 50 === 0;
+          page.drawLine({
+            start: { x: 0, y }, end: { x: width, y },
+            thickness: isMajor ? 0.4 : 0.15,
+            color: isMajor ? rgb(0.9, 0, 0) : rgb(1, 0.7, 0.7),
+          });
+          if (isMajor) {
+            page.drawText(`y=${y}`, { x: 2, y: y + 1, font, size: 6, color: rgb(0.7, 0, 0) });
+            page.drawText(`y=${y}`, { x: width - 30, y: y + 1, font, size: 6, color: rgb(0.7, 0, 0) });
+          }
+        }
+        for (let x = 0; x <= width; x += 10) {
+          const isMajor = x % 50 === 0;
+          page.drawLine({
+            start: { x, y: 0 }, end: { x, y: height },
+            thickness: isMajor ? 0.4 : 0.15,
+            color: isMajor ? rgb(0, 0, 0.9) : rgb(0.7, 0.7, 1),
+          });
+          if (isMajor) {
+            page.drawText(`x=${x}`, { x: x + 1, y: 2, font, size: 6, color: rgb(0, 0, 0.7) });
+          }
+        }
+        // 現行レイアウト位置に「●」を打ってサンプル
+        const layout = buildLayout();
+        const markRow = (sec, secLayout) => {
+          for (let i = 0; i < 15; i++) {
+            const r = secLayout.rows[i];
+            page.drawText(`L${i+1}`, { x: r.license.x, y: r.license.y, font, size: 6, color: rgb(0, 0.6, 0) });
+            page.drawText(`N${i+1}`, { x: r.name.x,    y: r.name.y,    font, size: 6, color: rgb(0, 0.6, 0) });
+            page.drawText(`#${i+1}`, { x: r.no.x,      y: r.no.y,      font, size: 6, color: rgb(0, 0.6, 0) });
+          }
+          page.drawText(`${sec}TEAM`, { x: secLayout.teamName.x, y: secLayout.teamName.y, font, size: 8, color: rgb(0, 0.5, 0) });
+          page.drawText(`COLOR`, { x: secLayout.colorMark.x, y: secLayout.colorMark.y, font, size: 8, color: rgb(0, 0.5, 0) });
+          page.drawText(`COACH`, { x: secLayout.coach.name.x, y: secLayout.coach.name.y, font, size: 7, color: rgb(0, 0.5, 0) });
+          page.drawText(`A.COACH`, { x: secLayout.assistantCoach.name.x, y: secLayout.assistantCoach.name.y, font, size: 7, color: rgb(0, 0.5, 0) });
+        };
+        markRow('upper', layout.upper);
+        markRow('lower', layout.lower);
+        const bytes = await pdfDoc.save();
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        window.open(URL.createObjectURL(blob), '_blank');
+        status.textContent = '座標グリッドを新規タブで開きました（赤=Y、青=X、緑=現在の印字位置）';
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'エラー: ' + e.message;
+      }
+    }
 
     // フォント・原本PDFのキャッシュ
     let cachedFontBytes = null;
@@ -1523,7 +1633,7 @@
         pdfDoc.registerFontkit(fontkit);
         const font = await pdfDoc.embedFont(fontBytes, { subset: true });
         const page = pdfDoc.getPage(0);
-        const layout = SCORESHEET_LAYOUT[position];
+        const layout = buildLayout()[position];
         const draw = (text, pos, size = 9) => {
           if (text == null || text === '') return;
           page.drawText(String(text), { x: pos.x, y: pos.y, font, size, color: rgb(0, 0, 0) });
@@ -1565,7 +1675,7 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => { addMemberForm(); loadData(); });
+    document.addEventListener('DOMContentLoaded', () => { addMemberForm(); loadData(); loadCalibInputs(); });
   </script>
 </body>
 </html>
