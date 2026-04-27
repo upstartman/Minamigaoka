@@ -688,6 +688,12 @@
       return '大';
     }
 
+    function parseReversiNumber(v) {
+      const s = (v ?? '').toString().trim();
+      if (!s) return null;
+      return /^(00|0|[1-9][0-9]?)$/.test(s) ? s : null;
+    }
+
     const getRoleLabel = r => ({coach:'コーチ','assistant-coach':'A.コーチ',president:'会長','vice-president':'副会長',accountant:'会計'}[r] || '');
     const getInsLabel = i => ({referee:'審判',insured:'加入有',none:'加入無'}[i] || '加入無');
 
@@ -737,7 +743,7 @@
         </div>
         <div id="member-fields-${id}" style="display:${type==='member'?'block':'none'}">
           <div class="form-row">
-            <div class="form-group"><label>リバーシ背番号</label><input type="number" id="reversi-${id}" value="${data?.reversiNumber||''}" min="1" max="99"></div>
+            <div class="form-group"><label>リバーシ背番号</label><input type="text" inputmode="numeric" maxlength="2" id="reversi-${id}" value="${data?.reversiNumber||''}" placeholder="0,00,1〜99"></div>
             <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="jba-${id}" value="${data?.jbaLicense||''}" placeholder=""></div>
           </div>
         </div>
@@ -793,7 +799,7 @@
         if (name) {
           const m = { name, reading, age, type };
           if (type === 'member') {
-            m.reversiNumber = parseInt(document.getElementById(`reversi-${id}`)?.value) || null;
+            m.reversiNumber = parseReversiNumber(document.getElementById(`reversi-${id}`)?.value);
             m.jbaLicense = document.getElementById(`jba-${id}`)?.value.trim() || null;
           }
           if (type === 'parent') {
@@ -913,7 +919,7 @@
         </div>
         <div id="edit-member-fields-${id}" style="display:${type==='member'?'block':'none'}">
           <div class="form-row">
-            <div class="form-group"><label>リバーシ背番号</label><input type="number" id="edit-reversi-${id}" value="${data?.reversiNumber||''}" min="1" max="99"></div>
+            <div class="form-group"><label>リバーシ背番号</label><input type="text" inputmode="numeric" maxlength="2" id="edit-reversi-${id}" value="${data?.reversiNumber||''}" placeholder="0,00,1〜99"></div>
             <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="edit-jba-${id}" value="${data?.jbaLicense||''}"></div>
           </div>
         </div>
@@ -966,7 +972,7 @@
         if (name) {
           const m = { name, reading, age, type };
           if (type === 'member') {
-            m.reversiNumber = parseInt(document.getElementById(`edit-reversi-${id}`)?.value) || null;
+            m.reversiNumber = parseReversiNumber(document.getElementById(`edit-reversi-${id}`)?.value);
             m.jbaLicense = document.getElementById(`edit-jba-${id}`)?.value.trim() || null;
           }
           if (type === 'parent') {
