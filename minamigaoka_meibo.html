@@ -21,10 +21,23 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Noto Sans JP', sans-serif;
-      background: var(--bg);
+      background: #E0E0E0;
       color: var(--text);
       font-size: 14px;
       -webkit-tap-highlight-color: transparent;
+    }
+    /* スマホ前提のレイアウトをデスクトップでも狭幅で表示 */
+    .app-shell {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--bg);
+      box-shadow: 0 0 16px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    @media (max-width: 480px) {
+      body { background: var(--bg); }
+      .app-shell { max-width: none; box-shadow: none; }
     }
 
     .header {
@@ -451,6 +464,7 @@
   </style>
 </head>
 <body>
+<div class="app-shell">
   <header class="header">
     🏀 南ヶ丘MBC 名簿
     <span class="sync-status" id="sync-status"></span>
@@ -521,34 +535,6 @@
           <button class="btn btn-primary" onclick="exportScoresheet('lower','reversi')">④ 下段(青) × リバーシ背番号</button>
         </div>
         <p id="scoresheet-status" style="font-size:11px;color:var(--text-sub);margin-top:8px"></p>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:700">📥 日本語フォント設定</div>
-          <p style="font-size:11px;color:var(--text-sub);margin-bottom:6px">CDN取得フォントは字形不足のことがあります。以下の手順で完全な Noto Sans JP をアップロードしてください。</p>
-          <ol style="font-size:11px;color:var(--text-sub);padding-left:18px;margin-bottom:8px">
-            <li><a href="https://fonts.google.com/noto/specimen/Noto+Sans+JP" target="_blank" style="color:var(--secondary)">Google Fontsの Noto Sans JPページ</a>を開く</li>
-            <li>右上「Get font」→「Download all」でZIPをダウンロード</li>
-            <li>ZIPを展開し <code>static/NotoSansJP-Regular.ttf</code> を取り出す</li>
-            <li>下のファイル選択でアップロード</li>
-          </ol>
-          <input type="file" accept=".otf,.ttf" onchange="handleFontUpload(this)" style="font-size:11px">
-          <p style="font-size:10px;color:var(--text-sub);margin-top:4px">アップロードしたフォントはブラウザに保存され、以降のPDF生成で使用されます。</p>
-          <div id="font-info" style="font-size:11px;color:var(--text-sub);margin-top:8px;padding:6px;background:#f7f7f7;border-radius:4px"></div>
-          <button class="btn btn-outline" onclick="checkActiveFont()" style="margin-top:6px;font-size:11px">現在のフォントを確認</button>
-        </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:700">🔧 座標調整（印刷ズレを補正）</div>
-          <button class="btn btn-outline" onclick="exportCalibrationGrid()" style="margin-bottom:8px">🔍 座標確認グリッドを出力</button>
-          <p style="font-size:10px;color:var(--text-sub);margin-bottom:8px">グリッドPDFを開き、緑のラベル(L1〜L15, N1〜N15, #1〜#15)が各行・各列のセル中央に来るよう、下のオフセット値を調整してください。単位は pt（1pt≈0.353mm）。</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
-            <label>上段 X補正<input type="number" id="calib-upperDx" step="1" value="0" style="width:100%"></label>
-            <label>上段 Y補正<input type="number" id="calib-upperDy" step="1" value="0" style="width:100%"></label>
-            <label>下段 X補正<input type="number" id="calib-lowerDx" step="1" value="0" style="width:100%"></label>
-            <label>下段 Y補正<input type="number" id="calib-lowerDy" step="1" value="0" style="width:100%"></label>
-            <label>行間補正<input type="number" id="calib-dyAdj" step="0.1" value="0" style="width:100%"></label>
-          </div>
-          <button class="btn btn-primary" onclick="applyCalibFromInputs()" style="margin-top:8px">座標調整値を保存</button>
-          <button class="btn btn-outline" onclick="resetCalib()" style="margin-top:8px;margin-left:6px">調整値をリセット</button>
-        </div>
       </div>
     </div>
   </main>
@@ -566,6 +552,7 @@
       </div>
     </div>
   </div>
+</div><!-- /.app-shell -->
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -1270,18 +1257,18 @@
   <meta charset="UTF-8">
   <title>南ヶ丘MBC 名簿</title>
   <style>
-    @page { size: A4 portrait; margin: 20mm 30mm; }
+    @page { size: A4 portrait; margin: 22mm 38mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 9.5px; line-height: 1.35; color: #2a2a2a; }
+    body { font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 9.5px; line-height: 1.5; color: #2a2a2a; }
     .page { page-break-after: always; }
     .page:last-child { page-break-after: auto; }
-    h1 { font-size: 15px; text-align: center; margin-bottom: 4px; font-weight: 700; letter-spacing: 0.04em; }
-    .date { text-align: right; font-size: 8.5px; color: #888; margin-bottom: 14px; }
-    h2 { font-size: 10.5px; color: #D32F2F; padding: 0 0 3px; margin: 14px 0 6px; border-bottom: 1.5px solid #D32F2F; font-weight: 700; }
-    h3 { font-size: 9.5px; color: #1976D2; padding: 0 0 2px; margin: 10px 0 5px; border-bottom: 1px solid #1976D2; font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-    th, td { border-bottom: 0.5px solid #DDD; padding: 4px 6px; text-align: left; vertical-align: middle; }
-    th { background: transparent; font-weight: 600; color: #666; font-size: 8.5px; border-bottom: 1px solid #999; letter-spacing: 0.02em; }
+    h1 { font-size: 15px; text-align: center; margin-bottom: 4px; font-weight: 700; letter-spacing: 0.06em; }
+    .date { text-align: right; font-size: 8.5px; color: #888; margin-bottom: 18px; }
+    h2 { font-size: 10.5px; color: #D32F2F; padding: 0 0 3px; margin: 16px 0 7px; border-bottom: 1.5px solid #D32F2F; font-weight: 700; letter-spacing: 0.04em; }
+    h3 { font-size: 9.5px; color: #1976D2; padding: 0 0 2px; margin: 12px 0 5px; border-bottom: 1px solid #1976D2; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 0.5px solid #BBB; }
+    th, td { border: 0.5px solid #DDD; padding: 5px 7px; text-align: left; vertical-align: middle; }
+    th { background: #F5F5F5; font-weight: 600; color: #555; font-size: 8.5px; border-bottom: 1px solid #999; letter-spacing: 0.02em; }
     tr:nth-child(even) td { background: #FAFAFA; }
     .grade-label { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 8.5px; color: white; font-weight: 600; }
     .role { display: inline-block; background: #6A1B9A; color: white; padding: 1px 6px; border-radius: 8px; font-size: 8px; }
