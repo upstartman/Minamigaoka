@@ -498,6 +498,188 @@
       100% { transform: rotate(360deg); }
     }
 
+    /* メンバー選択ピッカーモーダル */
+    .picker-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9998;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+    }
+    .picker-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 2px solid #eee;
+    }
+    .picker-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    .picker-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: #666;
+    }
+    .picker-search {
+      padding: 10px 16px;
+      border-bottom: 1px solid #eee;
+    }
+    .picker-search input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    .picker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px;
+    }
+    .picker-group {
+      margin-bottom: 12px;
+    }
+    .picker-group-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #667eea;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 6px;
+    }
+    .picker-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 6px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .picker-item:hover {
+      background: #f5f5f5;
+    }
+    .picker-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+    .picker-item .picker-meta {
+      color: #888;
+      font-size: 0.8rem;
+      margin-left: auto;
+    }
+    .picker-buttons {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 2px solid #eee;
+      justify-content: flex-end;
+    }
+    .picker-empty {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+
+    /* メンバー選択ボタン（車・部屋） */
+    .members-picker-btn {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px dashed #adb5bd;
+      border-radius: 6px;
+      background: #f8f9fa;
+      color: #495057;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      min-height: 36px;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .members-picker-btn.has-value {
+      border-style: solid;
+      background: #fff;
+      color: #333;
+    }
+    .members-picker-btn .placeholder {
+      color: #999;
+    }
+
+    .driver-select {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    /* メンバータブ - 名簿チェックリスト */
+    .meibo-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .meibo-check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .meibo-check-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+    .meibo-check-item .meta {
+      color: #888;
+      font-size: 0.8rem;
+      margin-left: auto;
+    }
+    .meibo-empty {
+      color: #999;
+      font-size: 0.85rem;
+      padding: 8px;
+      font-style: italic;
+    }
+    .meibo-loading {
+      color: #667eea;
+      padding: 8px;
+      font-size: 0.85rem;
+    }
+    .section-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .section-toolbar button {
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
     /* PDF出力用スタイル（横向きA4: 1123px x 794px at 96dpi） */
     .pdf-page {
       position: absolute;
@@ -836,46 +1018,48 @@
     <!-- メンバー -->
     <div id="members" class="tab-content">
       <div class="card">
-        <h2>👥 メンバー</h2>
-        
+        <h2>👥 メンバー（参加者にチェック）</h2>
+        <p style="color: #666; margin-bottom: 12px; font-size: 0.85rem;">
+          名簿アプリから自動取得。参加するメンバーにチェックを付けてください。
+        </p>
+
+        <div class="section-toolbar">
+          <button onclick="meiboCheckAll(true)">全て選択</button>
+          <button onclick="meiboCheckAll(false)">全て解除</button>
+        </div>
+
         <div class="member-section">
           <h3>コーチ</h3>
-          <div id="coachContainer"></div>
-          <button class="add-btn" onclick="addMember('coach')">+ コーチ追加</button>
+          <div id="coachContainer" class="meibo-checklist"></div>
         </div>
 
         <div class="member-section">
           <h3>保護者</h3>
-          <div id="parentContainer"></div>
-          <button class="add-btn" onclick="addMember('parent')">+ 保護者追加</button>
+          <div id="parentContainer" class="meibo-checklist"></div>
         </div>
 
         <div class="member-section">
           <h3>6年生</h3>
-          <div id="grade6Container"></div>
-          <button class="add-btn" onclick="addMember('grade6')">+ 6年生追加</button>
+          <div id="grade6Container" class="meibo-checklist"></div>
         </div>
 
         <div class="member-section">
           <h3>5年生</h3>
-          <div id="grade5Container"></div>
-          <button class="add-btn" onclick="addMember('grade5')">+ 5年生追加</button>
+          <div id="grade5Container" class="meibo-checklist"></div>
         </div>
 
         <div class="member-section">
           <h3>4年生</h3>
-          <div id="grade4Container"></div>
-          <button class="add-btn" onclick="addMember('grade4')">+ 4年生追加</button>
+          <div id="grade4Container" class="meibo-checklist"></div>
         </div>
 
         <div class="member-section">
-          <h3>その他（兄弟児など）</h3>
-          <div id="otherContainer"></div>
-          <button class="add-btn" onclick="addMember('other')">+ その他追加</button>
+          <h3>その他（兄弟児・対象外学年など）</h3>
+          <div id="otherContainer" class="meibo-checklist"></div>
         </div>
 
         <div style="margin-top: 20px; padding: 15px; background: #e8f4fd; border-radius: 8px; font-size: 1.1rem;">
-          <strong>📊 合計人数</strong>
+          <strong>📊 合計人数（チェック済）</strong>
           <div id="totalMembersDisplay" style="margin-top: 8px;">子ども 0名 / 大人 0名 / 合計 0名</div>
           <input type="hidden" id="totalMembers">
         </div>
@@ -913,6 +1097,24 @@
     </div>
   </div>
 
+  <!-- メンバー選択ピッカー -->
+  <div id="memberPickerModal" class="picker-modal" style="display:none;">
+    <div class="picker-content">
+      <div class="picker-header">
+        <h3 id="pickerTitle">メンバー選択</h3>
+        <button class="picker-close" onclick="closePicker()">✕</button>
+      </div>
+      <div class="picker-search">
+        <input type="text" id="pickerSearch" placeholder="🔍 検索..." oninput="renderPickerList(this.value)">
+      </div>
+      <div id="pickerList" class="picker-list"></div>
+      <div class="picker-buttons">
+        <button class="btn btn-secondary" onclick="closePicker()">キャンセル</button>
+        <button class="btn btn-primary" onclick="confirmPicker()">確定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ローディング -->
   <div id="loadingOverlay" class="loading-overlay" style="display: none;">
     <div class="loading-content">
@@ -935,9 +1137,22 @@
       appId: "1:9753870123:web:4b0273b81d463b49730f6e"
     };
 
+    // 名簿アプリ Firebase設定
+    const MEIBO_CONFIG = {
+      apiKey: "AIzaSyBG5BQ4Ek7cHFrFzcVhr151thB0MzqYFkM",
+      authDomain: "minamigaoka-meibo.firebaseapp.com",
+      projectId: "minamigaoka-meibo",
+      storageBucket: "minamigaoka-meibo.firebasestorage.app",
+      messagingSenderId: "611767162084",
+      appId: "1:611767162084:web:3f9bbf7f3d7bc4c7a448f1"
+    };
+
     // Firebase初期化
     let db = null;
+    let meiboDb = null;
     let isFirebaseConnected = false;
+    let meiboMembers = []; // 名簿アプリから取得した全メンバーをフラット化
+    let isMeiboLoaded = false;
 
     function initFirebase() {
       try {
@@ -954,6 +1169,128 @@
         isFirebaseConnected = false;
         updateConnectionStatus(false);
       }
+      // 名簿アプリ用の第2インスタンスを初期化
+      initMeiboFirebase();
+    }
+
+    function initMeiboFirebase() {
+      try {
+        let meiboApp;
+        const existing = firebase.apps.find(a => a.name === 'meibo');
+        if (existing) {
+          meiboApp = existing;
+        } else {
+          meiboApp = firebase.initializeApp(MEIBO_CONFIG, 'meibo');
+        }
+        meiboDb = meiboApp.firestore();
+        loadMeiboData();
+      } catch (error) {
+        console.error('名簿Firebase接続エラー:', error);
+      }
+    }
+
+    // 年齢から学年を計算（名簿アプリと同ロジック）
+    function ageToGrade(age) {
+      if (age >= 18) return 99;
+      if (age >= 17) return 12;
+      if (age >= 16) return 11;
+      if (age >= 15) return 10;
+      if (age >= 14) return 9;
+      if (age >= 13) return 8;
+      if (age >= 12) return 7;
+      if (age >= 11) return 6;
+      if (age >= 10) return 5;
+      if (age >= 9) return 4;
+      if (age >= 8) return 3;
+      if (age >= 7) return 2;
+      if (age >= 6) return 1;
+      return 0;
+    }
+
+    function gradeLabel(g) {
+      if (g === 0) return '未就学';
+      if (g <= 6) return `小${g}`;
+      if (g <= 9) return `中${g - 6}`;
+      if (g <= 12) return `高${g - 9}`;
+      return '大学以上';
+    }
+
+    function roleLabel(r) {
+      return ({coach:'コーチ','assistant-coach':'A.コーチ',president:'会長','vice-president':'副会長',accountant:'会計'})[r] || '';
+    }
+
+    // 名簿アプリから全メンバーを取得
+    async function loadMeiboData() {
+      if (!meiboDb) return;
+      try {
+        const snapshot = await meiboDb.collection('families').get();
+        meiboMembers = [];
+        snapshot.docs.forEach(doc => {
+          const f = doc.data();
+          (f.members || []).forEach(m => {
+            const grade = (m.type === 'parent') ? null : ageToGrade(m.age || 0);
+            const reading = m.reading || '';
+            const fullName = `${f.name || ''} ${m.name || ''}`.trim();
+            // 表示名: 保護者はフルネーム、子ども(部員/兄弟)は「名前(ふりがな)」
+            const displayName = (m.type === 'parent')
+              ? fullName
+              : (reading ? `${m.name}(${reading})` : (m.name || ''));
+            meiboMembers.push({
+              familyName: f.name || '',
+              name: m.name || '',
+              reading: reading,
+              fullName: fullName,
+              displayName: displayName,
+              type: m.type,
+              age: m.age,
+              grade: grade,
+              role: m.role || ''
+            });
+          });
+        });
+        isMeiboLoaded = true;
+        console.log(`名簿読込完了: ${meiboMembers.length}名`);
+        // 既存のフォームを再描画して名簿データを反映
+        refreshMeiboPickers();
+      } catch (error) {
+        console.error('名簿読込エラー:', error);
+      }
+    }
+
+    // 名簿カテゴリ判定
+    function categorizeMember(m) {
+      if (m.type === 'parent') {
+        if (m.role === 'coach' || m.role === 'assistant-coach') return 'coach';
+        return 'parent';
+      }
+      if (m.type === 'member') {
+        if (m.grade === 6) return 'grade6';
+        if (m.grade === 5) return 'grade5';
+        if (m.grade === 4) return 'grade4';
+        return 'other';
+      }
+      return 'other'; // sibling
+    }
+
+    // 名簿の保護者一覧（コーチ含む全parent）
+    function getMeiboParents() {
+      return meiboMembers.filter(m => m.type === 'parent');
+    }
+
+    // 名簿の参加対象（全員）
+    function getMeiboAll() {
+      return meiboMembers;
+    }
+
+    // 名簿読込完了後にUI再描画
+    function refreshMeiboPickers() {
+      // 運転者ドロップダウンを更新
+      document.querySelectorAll('.driver-select').forEach(sel => {
+        const cur = sel.dataset.value || '';
+        sel.innerHTML = buildDriverOptions(cur);
+      });
+      // メンバータブを再描画
+      renderMembersTab();
     }
 
     function updateConnectionStatus(connected) {
@@ -1012,6 +1349,13 @@
       carNote: '給油,ETCカードか支払う手段を忘れずに★\n駐車場では他の車に気を付けて！',
       roomNote: '部屋番号は当日わかります'
     };
+
+    // HTMLエスケープ（XSS対策）
+    function escapeHTML(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
 
     // 画像データ保持用
     let coverImageData = null;
@@ -1134,7 +1478,7 @@
               <span>未定</span>
             </label>
           </div>
-          <input type="text" placeholder="内容" value="${content}">
+          <input type="text" placeholder="内容" value="${escapeHTML(content)}">
         </div>
         <div class="schedule-buttons">
           <button class="schedule-btn insert" onclick="insertScheduleAbove(this)" title="上に挿入">⊕</button>
@@ -1219,7 +1563,7 @@
       div.innerHTML = `
         <div class="item-row-main">
           <input type="checkbox">
-          <input type="text" placeholder="持ち物" value="${text}">
+          <input type="text" placeholder="持ち物" value="${escapeHTML(text)}">
         </div>
         <div class="item-buttons">
           <button class="item-btn insert" onclick="insertItemAbove(this)" title="上に挿入">⊕</button>
@@ -1271,6 +1615,22 @@
       saveToLocalStorage();
     }
 
+    // 運転者ドロップダウンのオプション生成
+    function buildDriverOptions(currentValue = '') {
+      const parents = getMeiboParents();
+      let options = `<option value="">-- 選択してください --</option>`;
+      parents.forEach(p => {
+        const label = p.role ? `${p.fullName} (${roleLabel(p.role)})` : p.fullName;
+        const sel = p.fullName === currentValue ? ' selected' : '';
+        options += `<option value="${escapeHTML(p.fullName)}"${sel}>${escapeHTML(label)}</option>`;
+      });
+      // 名簿に存在しない過去データはフォールバックで表示
+      if (currentValue && !parents.some(p => p.fullName === currentValue)) {
+        options += `<option value="${escapeHTML(currentValue)}" selected>${escapeHTML(currentValue)} (履歴)</option>`;
+      }
+      return options;
+    }
+
     // 車追加
     function addCar(driver = '', members = '') {
       const container = document.getElementById('carContainer');
@@ -1280,15 +1640,54 @@
       div.innerHTML = `
         <div class="car-item-header">
           <span>${count}</span>
-          <input type="text" placeholder="運転者" value="${driver}">
+          <select class="driver-select" data-value="${escapeHTML(driver)}" onchange="this.dataset.value=this.value; saveToLocalStorage();">
+            ${buildDriverOptions(driver)}
+          </select>
         </div>
-        <input type="text" class="members-input" placeholder="メンバー" value="${members}">
+        <button type="button" class="members-picker-btn ${members ? 'has-value' : ''}" data-value="${escapeHTML(members)}" onclick="openCarMembersPicker(this)">
+          ${members ? escapeHTML(members) : '<span class="placeholder">👥 メンバーを選択</span>'}
+        </button>
         <div class="car-item-buttons">
           <button class="remove-btn" onclick="this.closest('.car-item').remove(); renumberCars();">削除</button>
         </div>
       `;
       container.appendChild(div);
     }
+
+    // 車のメンバーピッカーを開く
+    function openCarMembersPicker(btn) {
+      const current = (btn.dataset.value || '').split(',').map(s => s.trim()).filter(Boolean);
+      const options = buildMemberPickerOptions();
+      openPicker({
+        title: '車のメンバーを選択',
+        options: options,
+        selected: current,
+        onConfirm: (selected) => {
+          const value = selected.join(', ');
+          btn.dataset.value = value;
+          btn.classList.toggle('has-value', !!value);
+          btn.innerHTML = value ? escapeHTML(value) : '<span class="placeholder">👥 メンバーを選択</span>';
+          saveToLocalStorage();
+        }
+      });
+    }
+
+    // 車・部屋共通：メンバーピッカーのオプション
+    function buildMemberPickerOptions() {
+      return meiboMembers.map(m => ({
+        value: m.displayName,
+        label: m.displayName,
+        meta: m.type === 'parent' ? (m.role ? roleLabel(m.role) : '保護者') : (m.grade ? gradeLabel(m.grade) : ''),
+        group: m.type === 'parent' ? '保護者' : (m.grade ? gradeLabel(m.grade) : 'その他'),
+        // ソート用
+        _type: m.type,
+        _grade: m.grade || 0,
+        _reading: m.reading || ''
+      }));
+    }
+
+    // ピッカーのグループ表示順
+    const PICKER_GROUP_ORDER = ['保護者', '小6', '小5', '小4', '小3', '小2', '小1', '未就学', '中3', '中2', '中1', '高3', '高2', '高1', '大学以上', 'その他'];
 
     function renumberCars() {
       const container = document.getElementById('carContainer');
@@ -1307,10 +1706,98 @@
       div.className = 'member-item room-item';
       div.innerHTML = `
         <span style="min-width: 30px; font-weight: bold; color: #155724;">${count}</span>
-        <input type="text" placeholder="部屋メンバー" value="${members}">
+        <button type="button" class="members-picker-btn ${members ? 'has-value' : ''}" data-value="${escapeHTML(members)}" onclick="openRoomMembersPicker(this)" style="flex:1;">
+          ${members ? escapeHTML(members) : '<span class="placeholder">👥 部屋メンバーを選択</span>'}
+        </button>
         <button class="remove-btn" onclick="this.closest('.room-item').remove(); renumberRooms();">削除</button>
       `;
       container.appendChild(div);
+    }
+
+    // 部屋のメンバーピッカー（保護者+部員+兄弟児 全員）
+    function openRoomMembersPicker(btn) {
+      const current = (btn.dataset.value || '').split(',').map(s => s.trim()).filter(Boolean);
+      const options = buildMemberPickerOptions();
+      openPicker({
+        title: '部屋メンバーを選択',
+        options: options,
+        selected: current,
+        onConfirm: (selected) => {
+          const value = selected.join(', ');
+          btn.dataset.value = value;
+          btn.classList.toggle('has-value', !!value);
+          btn.innerHTML = value ? escapeHTML(value) : '<span class="placeholder">👥 部屋メンバーを選択</span>';
+          saveToLocalStorage();
+        }
+      });
+    }
+
+    // ====== 共通ピッカー ======
+    let pickerOptions = [];
+    let pickerSelected = new Set();
+    let pickerCallback = null;
+
+    function openPicker({title, options, selected, onConfirm}) {
+      pickerOptions = options;
+      pickerSelected = new Set(selected || []);
+      pickerCallback = onConfirm;
+      document.getElementById('pickerTitle').textContent = title;
+      document.getElementById('pickerSearch').value = '';
+      renderPickerList('');
+      document.getElementById('memberPickerModal').style.display = 'flex';
+    }
+
+    function renderPickerList(filter = '') {
+      const list = document.getElementById('pickerList');
+      const f = (filter || '').toLowerCase();
+      const filtered = pickerOptions.filter(o => !f || o.label.toLowerCase().includes(f));
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="picker-empty">${isMeiboLoaded ? '該当者がいません' : '名簿読込中...'}</div>`;
+        return;
+      }
+      const groups = {};
+      filtered.forEach(o => {
+        const g = o.group || '';
+        if (!groups[g]) groups[g] = [];
+        groups[g].push(o);
+      });
+      // グループを所定順序でソート、未定義グループは末尾
+      const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+        const ai = PICKER_GROUP_ORDER.indexOf(a);
+        const bi = PICKER_GROUP_ORDER.indexOf(b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+      // グループ内: 読み(ふりがな)昇順、なければラベル
+      sortedGroupNames.forEach(g => {
+        groups[g].sort((a, b) => (a._reading || a.label).localeCompare(b._reading || b.label, 'ja'));
+      });
+      list.innerHTML = sortedGroupNames.map(g => `
+        <div class="picker-group">
+          ${g ? `<div class="picker-group-title">${escapeHTML(g)}</div>` : ''}
+          ${groups[g].map(o => `
+            <label class="picker-item">
+              <input type="checkbox" value="${escapeHTML(o.value)}" ${pickerSelected.has(o.value) ? 'checked' : ''} onchange="togglePickerItem(this)">
+              <span>${escapeHTML(o.label)}</span>
+              ${o.meta ? `<span class="picker-meta">${escapeHTML(o.meta)}</span>` : ''}
+            </label>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    function togglePickerItem(cb) {
+      if (cb.checked) pickerSelected.add(cb.value);
+      else pickerSelected.delete(cb.value);
+    }
+
+    function confirmPicker() {
+      if (pickerCallback) pickerCallback(Array.from(pickerSelected));
+      closePicker();
+    }
+
+    function closePicker() {
+      document.getElementById('memberPickerModal').style.display = 'none';
+      pickerCallback = null;
     }
 
     function renumberRooms() {
@@ -1322,35 +1809,124 @@
       saveToLocalStorage();
     }
 
-    // メンバー追加
-    function addMember(type, name = '') {
-      const container = document.getElementById(`${type}Container`);
-      const div = document.createElement('div');
-      div.className = 'member-item';
-      div.innerHTML = `
-        <input type="text" placeholder="名前" value="${name}" oninput="saveToLocalStorage()">
-        <button class="remove-btn" onclick="this.parentElement.remove(); updateTotalMembers(); saveToLocalStorage();">削除</button>
-      `;
-      container.appendChild(div);
+    // 現在のチェック状態を保存しておく（再描画前後で維持）
+    let memberSelections = {
+      coach: [], parent: [], grade6: [], grade5: [], grade4: [], other: []
+    };
+
+    // メンバータブの全カテゴリを名簿から再描画
+    function renderMembersTab() {
+      const categories = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
+      const grouped = { coach: [], parent: [], grade6: [], grade5: [], grade4: [], other: [] };
+
+      meiboMembers.forEach(m => {
+        const cat = categorizeMember(m);
+        grouped[cat].push(m);
+      });
+
+      // ソート: コーチは役職優先、保護者は子の学年降順、学年は年齢降順、その他は学年降順
+      const roleOrder = {coach:0,'assistant-coach':1,president:2,'vice-president':3,accountant:4};
+      grouped.coach.sort((a,b) => (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99));
+      grouped.parent.sort((a,b) => (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99) || a.fullName.localeCompare(b.fullName, 'ja'));
+      ['grade6','grade5','grade4'].forEach(k => grouped[k].sort((a,b) => a.fullName.localeCompare(b.fullName, 'ja')));
+      grouped.other.sort((a,b) => (b.grade||0) - (a.grade||0));
+
+      categories.forEach(cat => {
+        const container = document.getElementById(`${cat}Container`);
+        if (!container) return;
+        if (!isMeiboLoaded) {
+          container.innerHTML = '<div class="meibo-loading">名簿を読み込み中...</div>';
+          return;
+        }
+        if (grouped[cat].length === 0) {
+          container.innerHTML = '<div class="meibo-empty">該当者なし</div>';
+          return;
+        }
+        const selected = new Set(memberSelections[cat] || []);
+        container.innerHTML = grouped[cat].map(m => {
+          const meta = m.type === 'parent'
+            ? (m.role ? roleLabel(m.role) : '保護者')
+            : (m.grade ? gradeLabel(m.grade) : '');
+          const checked = selected.has(m.fullName) ? 'checked' : '';
+          return `
+            <label class="meibo-check-item">
+              <input type="checkbox" data-cat="${cat}" data-name="${escapeHTML(m.fullName)}" ${checked} onchange="onMemberCheck()">
+              <span>${escapeHTML(m.fullName)}</span>
+              ${meta ? `<span class="meta">${escapeHTML(meta)}</span>` : ''}
+            </label>
+          `;
+        }).join('');
+      });
+
+      // 名簿に存在しない過去データ（履歴復元時）はその他に追加表示
+      addLegacyMembersIfAny();
       updateTotalMembers();
     }
 
-    // 合計人数を自動計算
+    // 過去データのうち名簿に存在しない名前を「履歴」として表示
+    function addLegacyMembersIfAny() {
+      if (!isMeiboLoaded) return;
+      const allMeiboNames = new Set(meiboMembers.map(m => m.fullName));
+      const categories = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
+      categories.forEach(cat => {
+        const container = document.getElementById(`${cat}Container`);
+        if (!container) return;
+        const legacy = (memberSelections[cat] || []).filter(n => !allMeiboNames.has(n));
+        if (legacy.length === 0) return;
+        const html = legacy.map(n => `
+          <label class="meibo-check-item" style="background:#fffbe6;">
+            <input type="checkbox" data-cat="${cat}" data-name="${escapeHTML(n)}" checked onchange="onMemberCheck()">
+            <span>${escapeHTML(n)}</span>
+            <span class="meta">履歴</span>
+          </label>
+        `).join('');
+        // 既存の中身に追加
+        if (container.querySelector('.meibo-empty')) {
+          container.innerHTML = html;
+        } else {
+          container.insertAdjacentHTML('beforeend', html);
+        }
+      });
+    }
+
+    function onMemberCheck() {
+      // 全チェックボックスから現在の選択を集計
+      const categories = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
+      categories.forEach(cat => {
+        memberSelections[cat] = Array.from(
+          document.querySelectorAll(`#${cat}Container input[type="checkbox"]:checked`)
+        ).map(cb => cb.dataset.name);
+      });
+      updateTotalMembers();
+      saveToLocalStorage();
+    }
+
+    function meiboCheckAll(checked) {
+      document.querySelectorAll('.meibo-checklist input[type="checkbox"]').forEach(cb => {
+        cb.checked = checked;
+      });
+      onMemberCheck();
+    }
+
+    // 合計人数を自動計算（チェック済のみ）
     function updateTotalMembers() {
-      const coaches = document.querySelectorAll('#coachContainer .member-item input').length;
-      const parents = document.querySelectorAll('#parentContainer .member-item input').length;
-      const grade6 = document.querySelectorAll('#grade6Container .member-item input').length;
-      const grade5 = document.querySelectorAll('#grade5Container .member-item input').length;
-      const grade4 = document.querySelectorAll('#grade4Container .member-item input').length;
-      const other = document.querySelectorAll('#otherContainer .member-item input').length;
-      
+      const count = cat => document.querySelectorAll(`#${cat}Container input[type="checkbox"]:checked`).length;
+      const coaches = count('coach');
+      const parents = count('parent');
+      const grade6 = count('grade6');
+      const grade5 = count('grade5');
+      const grade4 = count('grade4');
+      const other = count('other');
+
       const children = grade6 + grade5 + grade4 + other;
       const adults = coaches + parents;
       const total = children + adults;
-      
+
       const displayText = `子ども ${children}名 / 大人 ${adults}名 / 合計 ${total}名`;
-      document.getElementById('totalMembersDisplay').textContent = displayText;
-      document.getElementById('totalMembers').value = displayText;
+      const dispEl = document.getElementById('totalMembersDisplay');
+      const totalEl = document.getElementById('totalMembers');
+      if (dispEl) dispEl.textContent = displayText;
+      if (totalEl) totalEl.value = displayText;
     }
 
     // データ収集
@@ -1431,24 +2007,27 @@
 
       // 車割り収集
       document.querySelectorAll('#carContainer .car-item').forEach(item => {
-        const inputs = item.querySelectorAll('input');
-        data.cars.push({ driver: inputs[0].value, members: inputs[1].value });
+        const driverSel = item.querySelector('.driver-select');
+        const membersBtn = item.querySelector('.members-picker-btn');
+        data.cars.push({
+          driver: driverSel ? driverSel.value : '',
+          members: membersBtn ? (membersBtn.dataset.value || '') : ''
+        });
       });
 
       // 部屋割り収集
       document.querySelectorAll('#roomContainer .room-item').forEach(item => {
-        const input = item.querySelector('input');
-        data.rooms.push(input.value);
+        const btn = item.querySelector('.members-picker-btn');
+        data.rooms.push(btn ? (btn.dataset.value || '') : '');
       });
 
-      // メンバー収集
+      // メンバー収集（チェック済のみ）
       const memberTypes = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
       const memberKeys = ['coaches', 'parents', 'grade6', 'grade5', 'grade4', 'other'];
       memberTypes.forEach((type, idx) => {
-        document.querySelectorAll(`#${type}Container .member-item`).forEach(item => {
-          const input = item.querySelector('input');
-          if (input.value) data[memberKeys[idx]].push(input.value);
-        });
+        data[memberKeys[idx]] = Array.from(
+          document.querySelectorAll(`#${type}Container input[type="checkbox"]:checked`)
+        ).map(cb => cb.dataset.name);
       });
 
       return data;
@@ -1497,16 +2076,13 @@
       document.getElementById('roomContainer').innerHTML = '';
       (data.rooms || []).forEach(r => addRoom(r));
 
-      // メンバー復元
+      // メンバー復元（チェック状態として復元）
       const memberTypes = ['coach', 'parent', 'grade6', 'grade5', 'grade4', 'other'];
       const memberKeys = ['coaches', 'parents', 'grade6', 'grade5', 'grade4', 'other'];
       memberTypes.forEach((type, idx) => {
-        document.getElementById(`${type}Container`).innerHTML = '';
-        (data[memberKeys[idx]] || []).forEach(name => addMember(type, name));
+        memberSelections[type] = (data[memberKeys[idx]] || []).slice();
       });
-      
-      // 合計人数を更新
-      updateTotalMembers();
+      renderMembersTab();
     }
 
     // LocalStorage保存/読込
@@ -1525,13 +2101,19 @@
         for (let i = 1; i <= 4; i++) {
           defaultItems[`items${i}`].forEach(item => addItem(i, item));
         }
-        for (let i = 0; i < 5; i++) addCar();
-        for (let i = 0; i < 8; i++) addRoom();
+        renderMembersTab();
       }
     }
 
-    // 自動保存
+    // 自動保存（300msデバウンス）
+    let saveTimer = null;
     document.addEventListener('input', function() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveToLocalStorage, 300);
+    });
+    // タブ閉じる前に確実に保存
+    window.addEventListener('beforeunload', function() {
+      clearTimeout(saveTimer);
       saveToLocalStorage();
     });
 
@@ -1544,7 +2126,7 @@
         // オフライン時はLocalStorageに保存
         const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
         history.unshift({
-          id: Date.now(),
+          id: String(Date.now()),
           name: name,
           date: new Date().toLocaleString('ja-JP'),
           data: data
@@ -1575,7 +2157,7 @@
       if (!isFirebaseConnected || !db) {
         // オフライン時はLocalStorageから読み込み
         const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-        const item = history.find(h => h.id === id);
+        const item = history.find(h => String(h.id) === String(id));
         if (item) {
           restoreData(item.data);
           alert('読み込みました！');
@@ -1601,7 +2183,7 @@
       if (!isFirebaseConnected || !db) {
         // オフライン時はLocalStorageから削除
         let history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-        history = history.filter(h => h.id !== id);
+        history = history.filter(h => String(h.id) !== String(id));
         localStorage.setItem('shiori_history', JSON.stringify(history));
         renderHistoryList();
         return;
@@ -1612,31 +2194,6 @@
         renderHistoryList();
       } catch (error) {
         console.error('Delete error:', error);
-        alert('削除に失敗しました: ' + error.message);
-      }
-    }
-
-    async function clearAllHistory() {
-      if (!confirm('全ての履歴を削除しますか？')) return;
-      
-      if (!isFirebaseConnected || !db) {
-        // オフライン時はLocalStorageをクリア
-        localStorage.removeItem('shiori_history');
-        renderHistoryList();
-        return;
-      }
-
-      try {
-        const snapshot = await db.collection('shiori_history').get();
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-        renderHistoryList();
-        alert('全履歴を削除しました');
-      } catch (error) {
-        console.error('Clear all error:', error);
         alert('削除に失敗しました: ' + error.message);
       }
     }
@@ -1655,12 +2212,12 @@
         container.innerHTML = history.map(item => `
           <div class="history-item">
             <div class="history-item-info">
-              <div class="history-item-name">${item.name}</div>
-              <div class="history-item-date">${item.date}</div>
+              <div class="history-item-name">${escapeHTML(item.name)}</div>
+              <div class="history-item-date">${escapeHTML(item.date)}</div>
             </div>
             <div class="history-item-buttons">
-              <button class="btn btn-primary btn-small" onclick="loadFromHistory(${item.id})">読込</button>
-              <button class="btn btn-danger btn-small" onclick="deleteFromHistory(${item.id})">削除</button>
+              <button class="btn btn-primary btn-small" onclick="loadFromHistory('${item.id}')">読込</button>
+              <button class="btn btn-danger btn-small" onclick="deleteFromHistory('${item.id}')">削除</button>
             </div>
           </div>
         `).join('');
@@ -1721,34 +2278,34 @@
       const page1 = `
         <div class="pdf-page" id="pdfPage1">
           <div class="pdf-half" style="padding-top: 100px;">
-            <div class="pdf-title">${data.eventName || '遠征しおり'}</div>
-            <div class="pdf-subtitle">${dateRange}</div>
+            <div class="pdf-title">${escapeHTML(data.eventName || '遠征しおり')}</div>
+            <div class="pdf-subtitle">${escapeHTML(dateRange)}</div>
             ${coverImageHTML}
             <div style="text-align: center; margin: 30px 0;">
-              <div style="font-size: 28px;">${data.teamName || ''} <span class="pdf-input-line" style="width: 25px;"></span>年</div>
+              <div style="font-size: 28px;">${escapeHTML(data.teamName || '')} <span class="pdf-input-line" style="width: 25px;"></span>年</div>
               <div style="font-size: 28px; margin-top: 18px;">名前 <span class="pdf-input-line" style="width: 220px;"></span></div>
             </div>
           </div>
           <div class="pdf-half">
             <div class="pdf-section-title">📍 場所</div>
             <div class="pdf-text">
-              <div><strong>会場/1日目:</strong> ${data.venue1 || '未定'}</div>
-              <div><strong>会場/2日目:</strong> ${data.venue2 || '未定'}</div>
+              <div><strong>会場/1日目:</strong> ${escapeHTML(data.venue1 || '未定')}</div>
+              <div><strong>会場/2日目:</strong> ${escapeHTML(data.venue2 || '未定')}</div>
             </div>
             <div class="pdf-section-title">🏨 宿泊先</div>
             <div class="pdf-text">
-              <div><strong>${data.hotelName || ''}</strong></div>
-              <div>${data.hotelZip ? '〒' + data.hotelZip : ''}</div>
-              <div>${data.hotelAddress || ''}</div>
-              <div>Tel: ${data.hotelTel || ''}</div>
+              <div><strong>${escapeHTML(data.hotelName || '')}</strong></div>
+              <div>${data.hotelZip ? '〒' + escapeHTML(data.hotelZip) : ''}</div>
+              <div>${escapeHTML(data.hotelAddress || '')}</div>
+              <div>Tel: ${escapeHTML(data.hotelTel || '')}</div>
             </div>
             ${data.dinner ? `
               <div class="pdf-section-title">🍽️ 夕食</div>
-              <div class="pdf-text">${data.dinner}</div>
+              <div class="pdf-text">${escapeHTML(data.dinner)}</div>
             ` : ''}
             ${data.onsen ? `
               <div class="pdf-section-title">♨️ 温泉</div>
-              <div class="pdf-text">${data.onsen}</div>
+              <div class="pdf-text">${escapeHTML(data.onsen)}</div>
             ` : ''}
           </div>
         </div>
@@ -1762,8 +2319,8 @@
             <div class="pdf-text">
               ${(data.schedule1 || []).map(s => `
                 <div class="pdf-schedule-item">
-                  <div class="pdf-schedule-time">${s.time || ''}</div>
-                  <div>${s.content || ''}</div>
+                  <div class="pdf-schedule-time">${escapeHTML(s.time || '')}</div>
+                  <div>${escapeHTML(s.content || '')}</div>
                 </div>
               `).join('')}
             </div>
@@ -1773,8 +2330,8 @@
             <div class="pdf-text">
               ${(data.schedule2 || []).map(s => `
                 <div class="pdf-schedule-item">
-                  <div class="pdf-schedule-time">${s.time || ''}</div>
-                  <div>${s.content || ''}</div>
+                  <div class="pdf-schedule-time">${escapeHTML(s.time || '')}</div>
+                  <div>${escapeHTML(s.content || '')}</div>
                 </div>
               `).join('')}
             </div>
@@ -1791,13 +2348,13 @@
               <div style="font-weight: bold; margin-bottom: 10px; font-size: 22px;">① バスケ試合用リュック</div>
               <div style="padding-left: 25px;">
                 ${(data.items1 || []).map(item => `
-                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${escapeHTML(item)}</div></div>
                 `).join('')}
               </div>
               <div style="font-weight: bold; margin: 20px 0 10px; font-size: 22px;">② 車内に持ち込む物</div>
               <div style="padding-left: 25px;">
                 ${(data.items2 || []).map(item => `
-                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${escapeHTML(item)}</div></div>
                 `).join('')}
               </div>
             </div>
@@ -1808,16 +2365,16 @@
               <div style="font-weight: bold; margin-bottom: 10px; font-size: 22px;">③ 2日目試合用</div>
               <div style="padding-left: 25px;">
                 ${(data.items3 || []).map(item => `
-                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${escapeHTML(item)}</div></div>
                 `).join('')}
               </div>
               <div style="font-weight: bold; margin: 20px 0 10px; font-size: 22px;">④ 宿泊用セット</div>
               <div style="padding-left: 25px;">
                 ${(data.items4 || []).map(item => `
-                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${item}</div></div>
+                  <div class="pdf-item-row"><div class="pdf-checkbox"></div><div>${escapeHTML(item)}</div></div>
                 `).join('')}
               </div>
-              ${data.itemsNote ? `<div class="pdf-note">${data.itemsNote.replace(/\n/g, '<br>')}</div>` : ''}
+              ${data.itemsNote ? `<div class="pdf-note">${escapeHTML(data.itemsNote).replace(/\n/g, '<br>')}</div>` : ''}
             </div>
           </div>
         </div>
@@ -1829,39 +2386,39 @@
           <div class="pdf-half">
             <div class="pdf-section-title">🚗 車割り</div>
             <div class="pdf-text">
-              <table style="width: 100%; font-size: 20px; border-collapse: collapse;">
+              <table style="width: 100%; font-size: 20px; border-collapse: collapse; line-height: 1.3;">
                 <tr style="background: #f0f0f0;">
-                  <th style="padding: 10px; border: 1px solid #ccc; width: 40px;">No</th>
-                  <th style="padding: 10px; border: 1px solid #ccc;">運転者</th>
-                  <th style="padding: 10px; border: 1px solid #ccc;">メンバー</th>
+                  <th style="padding: 6px 8px; border: 1px solid #ccc; width: 40px;">No</th>
+                  <th style="padding: 6px 8px; border: 1px solid #ccc; white-space: nowrap;">運転者</th>
+                  <th style="padding: 6px 8px; border: 1px solid #ccc;">メンバー</th>
                 </tr>
                 ${(data.cars || []).map((car, idx) => `
                   <tr>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${car.driver || ''}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${car.members || ''}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #ccc; white-space: nowrap;">${escapeHTML(car.driver || '')}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #ccc;">${escapeHTML(car.members || '')}</td>
                   </tr>
                 `).join('')}
               </table>
-              ${data.carNote ? `<div class="pdf-note">${data.carNote.replace(/\n/g, '<br>')}</div>` : ''}
+              ${data.carNote ? `<div class="pdf-note">${escapeHTML(data.carNote).replace(/\n/g, '<br>')}</div>` : ''}
             </div>
           </div>
           <div class="pdf-half">
             <div class="pdf-section-title">🛏️ 部屋割り</div>
             <div class="pdf-text">
-              <table style="width: 100%; font-size: 20px; border-collapse: collapse;">
+              <table style="width: 100%; font-size: 20px; border-collapse: collapse; line-height: 1.3;">
                 <tr style="background: #f0f0f0;">
-                  <th style="padding: 10px; border: 1px solid #ccc; width: 70px; white-space: nowrap;">部屋</th>
-                  <th style="padding: 10px; border: 1px solid #ccc;">メンバー</th>
+                  <th style="padding: 6px 8px; border: 1px solid #ccc; width: 70px; white-space: nowrap;">部屋</th>
+                  <th style="padding: 6px 8px; border: 1px solid #ccc;">メンバー</th>
                 </tr>
                 ${(data.rooms || []).map((room, idx) => `
                   <tr>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${room || ''}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #ccc; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #ccc;">${escapeHTML(room || '')}</td>
                   </tr>
                 `).join('')}
               </table>
-              ${data.roomNote ? `<div class="pdf-note">${data.roomNote.replace(/\n/g, '<br>')}</div>` : ''}
+              ${data.roomNote ? `<div class="pdf-note">${escapeHTML(data.roomNote).replace(/\n/g, '<br>')}</div>` : ''}
             </div>
           </div>
         </div>
@@ -1878,25 +2435,25 @@
                 ${data.grade6 && data.grade6.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">6年</div>
-                    <div class="pdf-member-list">${data.grade6.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.grade6.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
                 ${data.grade5 && data.grade5.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">5年</div>
-                    <div class="pdf-member-list">${data.grade5.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.grade5.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
                 ${data.grade4 && data.grade4.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">4年</div>
-                    <div class="pdf-member-list">${data.grade4.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.grade4.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
                 ${data.other && data.other.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">その他</div>
-                    <div class="pdf-member-list">${data.other.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.other.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
               </div>
@@ -1905,23 +2462,28 @@
                 ${data.coaches && data.coaches.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">コーチ</div>
-                    <div class="pdf-member-list">${data.coaches.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.coaches.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
                 ${data.parents && data.parents.length > 0 ? `
                   <div class="pdf-member-section">
                     <div class="pdf-member-title">保護者</div>
-                    <div class="pdf-member-list">${data.parents.map(n => `<div>${n}</div>`).join('')}</div>
+                    <div class="pdf-member-list">${data.parents.map(n => `<div>${escapeHTML(n)}</div>`).join('')}</div>
                   </div>
                 ` : ''}
                 ${data.totalMembers ? `
-                  <div style="margin-top: 20px; font-weight: bold; font-size: 18px;">${data.totalMembers}</div>
+                  <div style="margin-top: 20px; font-weight: bold; font-size: 18px;">${escapeHTML(data.totalMembers)}</div>
                 ` : ''}
               </div>
             </div>
           </div>
           <div class="pdf-half">
             <div class="pdf-section-title">📝 メモ</div>
+            <div style="margin-top: 20px;">
+              ${Array.from({ length: 18 }, () => `
+                <div style="border-bottom: 1px solid #999; height: 32px;"></div>
+              `).join('')}
+            </div>
           </div>
         </div>
       `;
