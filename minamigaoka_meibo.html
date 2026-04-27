@@ -1547,7 +1547,24 @@
 
     async function loadJapaneseFontBytes() {
       if (cachedFontBytes) return cachedFontBytes;
-      // 1. IndexedDB（アップロード済みフォント）
+      // 0. 同一オリジン（HTMLと同じフォルダの NotoSansJP-Regular.ttf）を最優先
+      try {
+        const res = await fetch('./NotoSansJP-Regular.ttf');
+        if (res.ok) {
+          const buf = await res.arrayBuffer();
+          if (buf.byteLength >= 100000) {
+            const v = validateFontGlyphs(buf);
+            console.log('[font] same-origin validation:', v);
+            if (v.ok) {
+              cachedFontBytes = buf;
+              // 取得済みフォントをIndexedDBにキャッシュして次回以降を高速化
+              idbPutFont(buf).catch(() => {});
+              return cachedFontBytes;
+            }
+          }
+        }
+      } catch (e) { console.log('[font] same-origin fetch failed:', e.message); }
+      // 1. IndexedDB（前回取得 or アップロード済みフォント）
       const idbBuf = await idbGetFont();
       if (idbBuf) {
         const v = validateFontGlyphs(idbBuf);
