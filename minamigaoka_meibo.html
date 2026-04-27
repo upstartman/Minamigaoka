@@ -546,6 +546,7 @@
             <label>行間補正<input type="number" id="calib-dyAdj" step="0.1" value="0" style="width:100%"></label>
           </div>
           <button class="btn btn-primary" onclick="applyCalibFromInputs()" style="margin-top:8px">座標調整値を保存</button>
+          <button class="btn btn-outline" onclick="resetCalib()" style="margin-top:8px;margin-left:6px">調整値をリセット</button>
         </div>
       </div>
     </div>
@@ -1344,21 +1345,21 @@
     // PDFサイズ: A4縦 595 x 842 pt 想定。座標は左下原点(pdf-lib仕様)。
     // ベース座標はテンプレ実測値。出力タブの「座標調整」で微調整可能（localStorage保存）。
     const SCORESHEET_BASE = {
-      // 列(X)はupper/lower共通
-      colX: { license: 38, name: 130, no: 222 },
-      // 行間
-      dy: 17.1,
+      // 列(X)はupper/lower共通。ユーザー実測でカリブレート済み
+      colX: { license: 38, name: 95, no: 187 },
+      // 行間（ユーザー実測値）
+      dy: 14.2,
       upper: {
         teamNameX: 95,  teamNameY: 648,
         colorMarkX: 305, colorMarkY: 648,
-        row1Y: 588,                      // 1行目(=jersey #4)のy
-        coachY: 333, assistantCoachY: 316,
+        row1Y: 586,                      // 1行目(=jersey #4)のy
+        coachY: 372, assistantCoachY: 358,
       },
       lower: {
         teamNameX: 95,  teamNameY: 313,
         colorMarkX: 305, colorMarkY: 313,
         row1Y: 262,
-        coachY: 38,  assistantCoachY: 22,
+        coachY: 50,  assistantCoachY: 36,
       },
     };
 
@@ -1386,6 +1387,12 @@
       });
       saveCalibration(c);
       document.getElementById('scoresheet-status').textContent = '座標調整値を保存しました';
+    }
+
+    function resetCalib() {
+      saveCalibration({ upperDx:0, upperDy:0, lowerDx:0, lowerDy:0, dyAdj:0 });
+      loadCalibInputs();
+      document.getElementById('scoresheet-status').textContent = '座標調整値をリセットしました（全て0）';
     }
 
     function buildLayout() {
