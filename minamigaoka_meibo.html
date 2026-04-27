@@ -531,6 +531,8 @@
           </ol>
           <input type="file" accept=".otf,.ttf" onchange="handleFontUpload(this)" style="font-size:11px">
           <p style="font-size:10px;color:var(--text-sub);margin-top:4px">アップロードしたフォントはブラウザに保存され、以降のPDF生成で使用されます。</p>
+          <div id="font-info" style="font-size:11px;color:var(--text-sub);margin-top:8px;padding:6px;background:#f7f7f7;border-radius:4px"></div>
+          <button class="btn btn-outline" onclick="checkActiveFont()" style="margin-top:6px;font-size:11px">現在のフォントを確認</button>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
           <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;font-weight:700">🔧 座標調整（印刷ズレを補正）</div>
@@ -1596,6 +1598,31 @@
       throw new Error(`日本語フォントの取得に失敗しました。出力タブの「フォントファイルを選択」からNotoSansJP-Regular.ttf 等をアップロードしてください。詳細: ${lastErr?.message || 'unknown'}`);
     }
 
+    async function checkActiveFont() {
+      const info = document.getElementById('font-info');
+      info.textContent = '確認中...';
+      // 各ソースを順番に確認
+      const sources = [];
+      if (cachedFontBytes) {
+        const v = validateFontGlyphs(cachedFontBytes);
+        sources.push(`メモリキャッシュ: ${cachedFontBytes.byteLength.toLocaleString()}B / glyphs:${v.numGlyphs||'?'} / OK:${v.ok}${v.missing?.length?' / 不足:'+v.missing.join(''):''}`);
+      } else {
+        sources.push('メモリキャッシュ: なし');
+      }
+      const idbBuf = await idbGetFont();
+      if (idbBuf) {
+        const v = validateFontGlyphs(idbBuf);
+        sources.push(`IndexedDB: ${idbBuf.byteLength.toLocaleString()}B / glyphs:${v.numGlyphs||'?'} / OK:${v.ok}${v.missing?.length?' / 不足:'+v.missing.join(''):''}`);
+      } else {
+        sources.push('IndexedDB: なし');
+      }
+      try {
+        const b64 = localStorage.getItem('meibo_font_b64');
+        sources.push(`localStorage: ${b64 ? `${b64.length.toLocaleString()}B (b64)` : 'なし'}`);
+      } catch(e) { sources.push('localStorage: 読取エラー'); }
+      info.innerHTML = sources.map(s => '・'+s).join('<br>');
+    }
+
     async function handleFontUpload(input) {
       const file = input.files && input.files[0];
       if (!file) return;
@@ -1714,7 +1741,9 @@
         if (!fv.ok) {
           status.innerHTML = `⚠️ 警告: 日本語フォントに常用漢字が不足${fv.missing?'（' + fv.missing.join('') + 'が無い）':''}。出力タブ最下部から完全な <a href="https://fonts.google.com/noto/specimen/Noto+Sans+JP" target="_blank">Noto Sans JP</a> の <code>static/NotoSansJP-Regular.ttf</code> をアップロードしてください。glyphs:${fv.numGlyphs||'?'}`;
         }
-        const jpFont   = await pdfDoc.embedFont(fontBytes, { subset: true });
+        // ⚠️ subset:true はpdf-libのバグで CFF/CID系OTFや一部TTFで全字が□になることがある
+        // → subset:false で完全埋め込み（PDFサイズ増だが確実）
+        const jpFont   = await pdfDoc.embedFont(fontBytes, { subset: false });
         const latinFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const page = pdfDoc.getPage(0);
         const layout = buildLayout()[position];
