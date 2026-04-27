@@ -773,6 +773,9 @@
               </select>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="pjba-${id}" value="${data?.jbaLicense||''}" placeholder="5桁"></div>
+          </div>
         </div>
       `;
       container.appendChild(div);
@@ -808,6 +811,7 @@
           if (type === 'parent') {
             m.insurance = document.getElementById(`insurance-${id}`)?.value;
             m.role = document.getElementById(`role-${id}`)?.value;
+            m.jbaLicense = document.getElementById(`pjba-${id}`)?.value.trim() || null;
           }
           members.push(m);
         }
@@ -945,6 +949,9 @@
               </select>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group"><label>JBAライセンスNo.</label><input type="text" id="edit-pjba-${id}" value="${data?.jbaLicense||''}" placeholder="5桁"></div>
+          </div>
         </div>
       `;
       container.appendChild(div);
@@ -977,6 +984,7 @@
           if (type === 'parent') {
             m.insurance = document.getElementById(`edit-insurance-${id}`)?.value;
             m.role = document.getElementById(`edit-role-${id}`)?.value;
+            m.jbaLicense = document.getElementById(`edit-pjba-${id}`)?.value.trim() || null;
           }
           members.push(m);
         }
@@ -1350,23 +1358,23 @@
       colX: {
         licenseDigits: [33, 47, 61],   // 選手行 ライセンスNo.（3桁、14pt間隔）
         name: 95,                       // 選手氏名
-        no: 173,                        // 背番号
-        coachName: 130,                 // コーチ・A.コーチ 氏名
-        coachLicenseDigits: [75, 89, 103], // コーチ・A.コーチ ライセンスNo.（3桁、14pt間隔）
+        no: 167,                        // 背番号
+        coachName: 135,                 // コーチ・A.コーチ 氏名
+        coachLicenseDigits: [72, 86, 100], // コーチ・A.コーチ ライセンスNo.（3桁、14pt間隔）
       },
       // 行間（ユーザー実測値）
       dy: 14.2,
       upper: {
-        teamNameX: 95,  teamNameY: 648,
-        colorMarkX: 305, colorMarkY: 648,
+        teamNameX: 95,  teamNameY: 645,
+        colorMarkX: 305, colorMarkY: 645,
         row1Y: 586,                      // 1行目(=jersey #4)のy
         coachY: 372, assistantCoachY: 358,
       },
       lower: {
-        teamNameX: 95,  teamNameY: 313,
-        colorMarkX: 305, colorMarkY: 313,
+        teamNameX: 95,  teamNameY: 320,
+        colorMarkX: 305, colorMarkY: 320,
         row1Y: 262,
-        coachY: 50,  assistantCoachY: 36,
+        coachY: 48,  assistantCoachY: 34,
       },
     };
 
@@ -1698,28 +1706,17 @@
       const sorted = [...ordered, ...unordered];
 
       let entries = [];
-      if (jerseyKind === 'official') {
-        sorted.forEach((m, i) => {
-          if (i < 15) {
-            entries.push({
-              no: i + 4,
-              name: m.fullName,
-              license3: (m.jbaLicense || '').toString().slice(-3),
-            });
-          }
-        });
-      } else {
-        // リバーシ: reversiNumber を持つ部員のみ、番号順
-        const withReversi = sorted.filter(m => m.reversiNumber);
-        withReversi.sort((a, b) => a.reversiNumber - b.reversiNumber);
-        withReversi.slice(0, 15).forEach(m => {
+      // 公式・リバーシ共に jerseyOrder の並び順を使う。番号だけ切り替え
+      sorted.forEach((m, i) => {
+        if (i < 15) {
+          const no = jerseyKind === 'official' ? (i + 4) : (m.reversiNumber || '');
           entries.push({
-            no: m.reversiNumber,
+            no,
             name: m.fullName,
             license3: (m.jbaLicense || '').toString().slice(-3),
           });
-        });
-      }
+        }
+      });
       return entries;
     }
 
@@ -1794,8 +1791,8 @@
         };
 
         // チーム名・色記号
-        drawMixed('南ヶ丘MBC', layout.teamName, 10);
-        if (position === 'lower') drawMixed('青', layout.colorMark, 10);
+        drawMixed('南ヶ丘MBC', layout.teamName, 14);
+        if (position === 'lower') drawMixed('青', layout.colorMark, 14);
 
         // 3桁ライセンスを1桁ずつ別セルに描画（足りない桁は左側を空白で埋める）
         const drawLicenseDigits = (lic3, positions, size) => {
