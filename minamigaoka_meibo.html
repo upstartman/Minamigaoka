@@ -322,6 +322,7 @@
     .ins-badge.none { background: #FFEBEE; color: #C62828; }
     .role-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; color: white; }
     .role-tag.coach { background: var(--primary); }
+    .role-tag.assistant-coach { background: #E64A19; }
     .role-tag.president { background: #6A1B9A; }
     .role-tag.vice { background: #8E24AA; }
     .role-tag.accountant { background: #00695C; }
@@ -1020,7 +1021,9 @@
 
       document.getElementById('total-members').textContent = allMembers.length;
       document.getElementById('total-siblings').textContent = allSiblings.length;
-      document.getElementById('total-families').textContent = families.length;
+      // 家庭数は「部員(type==='member')を1人以上含む家庭」のみカウント。コーチだけの家庭は除外
+      const memberFamilyCount = families.filter(f => f.members.some(m => m.type === 'member')).length;
+      document.getElementById('total-families').textContent = memberFamilyCount;
 
       const container = document.getElementById('members-list');
       if (allMembers.length === 0 && allSiblings.length === 0) {
@@ -1102,7 +1105,7 @@
         container.innerHTML = '<div class="empty"><div class="empty-icon">👨‍👩‍👧</div><div class="empty-text">保護者がまだいません</div></div>';
         return;
       }
-      const roleOrder = {coach:0,president:1,'vice-president':2,accountant:3};
+      const roleOrder = {coach:0,'assistant-coach':1,president:2,'vice-president':3,accountant:4};
       const withRole = allParents.filter(p => p.role).sort((a,b) => roleOrder[a.role]-roleOrder[b.role]);
       const withoutRole = allParents.filter(p => !p.role).sort((a,b) => {
         if (b.childrenGrade !== a.childrenGrade) return b.childrenGrade - a.childrenGrade;
@@ -1120,7 +1123,7 @@
     }
 
     function renderParentCard(p) {
-      const roleClass = p.role==='coach'?'coach':p.role==='president'?'president':p.role==='vice-president'?'vice':p.role==='accountant'?'accountant':'';
+      const roleClass = p.role==='coach'?'coach':p.role==='assistant-coach'?'assistant-coach':p.role==='president'?'president':p.role==='vice-president'?'vice':p.role==='accountant'?'accountant':'';
       const insClass = p.insurance==='referee'?'referee':p.insurance==='insured'?'insured':'none';
       return `
         <div class="parent-row">
@@ -1247,7 +1250,7 @@
 
       allMembers.sort((a,b) => { if (b.grade !== a.grade) return b.grade - a.grade; return (a.reading||'').localeCompare(b.reading||'','ja'); });
       allSiblings.sort((a,b) => { if (b.grade !== a.grade) return b.grade - a.grade; return (a.reading||'').localeCompare(b.reading||'','ja'); });
-      const roleOrder = {coach:0,president:1,'vice-president':2,accountant:3};
+      const roleOrder = {coach:0,'assistant-coach':1,president:2,'vice-president':3,accountant:4};
       allParents.sort((a,b) => {
         if (a.role && b.role) return roleOrder[a.role] - roleOrder[b.role];
         if (a.role) return -1;
@@ -1267,7 +1270,7 @@
   <meta charset="UTF-8">
   <title>南ヶ丘MBC 名簿</title>
   <style>
-    @page { size: A4; margin: 20mm 18mm; }
+    @page { size: A4 portrait; margin: 20mm 30mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 9.5px; line-height: 1.35; color: #2a2a2a; }
     .page { page-break-after: always; }
@@ -1345,7 +1348,7 @@
       colX: {
         licenseDigits: [33, 47, 61],   // 選手行 ライセンスNo.（3桁、14pt間隔）
         name: 95,                       // 選手氏名
-        no: 167,                        // 背番号
+        no: 172,                        // 背番号（中央揃えのセル中心X）
         coachName: 135,                 // コーチ・A.コーチ 氏名
         coachLicenseDigits: [72, 86, 100], // コーチ・A.コーチ ライセンスNo.（3桁、14pt間隔）
       },
@@ -1353,13 +1356,13 @@
       dy: 14.2,
       upper: {
         teamNameX: 95,  teamNameY: 640,
-        colorMarkX: 215, colorMarkY: 640,
+        colorMarkX: 205, colorMarkY: 640,
         row1Y: 586,                      // 1行目(=jersey #4)のy
         coachY: 372, assistantCoachY: 358,
       },
       lower: {
         teamNameX: 95,  teamNameY: 315,
-        colorMarkX: 215, colorMarkY: 315,
+        colorMarkX: 205, colorMarkY: 315,
         row1Y: 262,
         coachY: 48,  assistantCoachY: 34,
       },
