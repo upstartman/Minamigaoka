@@ -1347,7 +1347,13 @@
     const SCORESHEET_BASE = {
       // 列(X)はupper/lower共通。ユーザー実測でカリブレート済み
       // licenseDigits: 3桁を1桁ずつ別セルに配置するためのX座標3個
-      colX: { licenseDigits: [33, 49, 65], name: 95, no: 197 },
+      colX: {
+        licenseDigits: [33, 47, 61],   // 選手行 ライセンスNo.（3桁、14pt間隔）
+        name: 95,                       // 選手氏名
+        no: 173,                        // 背番号
+        coachName: 130,                 // コーチ・A.コーチ 氏名
+        coachLicenseDigits: [75, 89, 103], // コーチ・A.コーチ ライセンスNo.（3桁、14pt間隔）
+      },
       // 行間（ユーザー実測値）
       dy: 14.2,
       upper: {
@@ -1405,6 +1411,7 @@
         const rows = [];
         const row1Y = base.row1Y + dyOffset;
         const licDigitsAt = (y) => colX.licenseDigits.map(lx => ({ x: lx + dx, y }));
+        const coachLicDigitsAt = (y) => colX.coachLicenseDigits.map(lx => ({ x: lx + dx, y }));
         for (let i = 0; i < 15; i++) {
           const y = row1Y - i * dy;
           rows.push({
@@ -1418,12 +1425,12 @@
           colorMark: { x: base.colorMarkX + dx, y: base.colorMarkY + dyOffset },
           rows,
           coach: {
-            name: { x: colX.name + dx, y: base.coachY + dyOffset },
-            licenseDigits: licDigitsAt(base.coachY + dyOffset),
+            name: { x: colX.coachName + dx, y: base.coachY + dyOffset },
+            licenseDigits: coachLicDigitsAt(base.coachY + dyOffset),
           },
           assistantCoach: {
-            name: { x: colX.name + dx, y: base.assistantCoachY + dyOffset },
-            licenseDigits: licDigitsAt(base.assistantCoachY + dyOffset),
+            name: { x: colX.coachName + dx, y: base.assistantCoachY + dyOffset },
+            licenseDigits: coachLicDigitsAt(base.assistantCoachY + dyOffset),
           },
         };
       };
