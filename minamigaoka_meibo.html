@@ -1347,7 +1347,7 @@
     const SCORESHEET_BASE = {
       // 列(X)はupper/lower共通。ユーザー実測でカリブレート済み
       // licenseDigits: 3桁を1桁ずつ別セルに配置するためのX座標3個
-      colX: { licenseDigits: [25, 41, 57], name: 95, no: 210 },
+      colX: { licenseDigits: [33, 49, 65], name: 95, no: 197 },
       // 行間（ユーザー実測値）
       dy: 14.2,
       upper: {
@@ -1805,7 +1805,7 @@
         entries.forEach((e, i) => {
           const row = layout.rows[i];
           if (!row) return;
-          drawLicenseDigits(e.license3, row.licenseDigits, 8);
+          drawLicenseDigits(e.license3, row.licenseDigits, 10);
           drawMixed(e.name, row.name, 9);
           drawMixed(e.no,   row.no,   9);
         });
@@ -1814,11 +1814,11 @@
         const { coach, assistantCoach } = collectCoaches();
         if (coach) {
           drawMixed(coach.name, layout.coach.name, 9);
-          drawLicenseDigits(coach.license3, layout.coach.licenseDigits, 8);
+          drawLicenseDigits(coach.license3, layout.coach.licenseDigits, 10);
         }
         if (assistantCoach) {
           drawMixed(assistantCoach.name, layout.assistantCoach.name, 9);
-          drawLicenseDigits(assistantCoach.license3, layout.assistantCoach.licenseDigits, 8);
+          drawLicenseDigits(assistantCoach.license3, layout.assistantCoach.licenseDigits, 10);
         }
 
         const bytes = await pdfDoc.save();
