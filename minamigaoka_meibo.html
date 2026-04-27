@@ -1200,21 +1200,6 @@
           }
         });
       });
-      let touchStartY = 0, touchedRow = null, touchedIdx = null;
-      rows.forEach(row => {
-        row.addEventListener('touchstart', e => { touchedRow = row; touchedIdx = parseInt(row.dataset.index); touchStartY = e.touches[0].clientY; }, {passive: true});
-        row.addEventListener('touchmove', e => {
-          if (!touchedRow) return;
-          const deltaY = e.touches[0].clientY - touchStartY;
-          if (Math.abs(deltaY) > 40) {
-            const dir = deltaY > 0 ? 1 : -1;
-            const ni = touchedIdx + dir;
-            if (ni >= 0 && ni < jerseyOrder.length) { const temp = jerseyOrder[touchedIdx]; jerseyOrder[touchedIdx] = jerseyOrder[ni]; jerseyOrder[ni] = temp; saveJerseyOrder(); renderJerseyTab(); }
-            touchedRow = null;
-          }
-        }, {passive: true});
-        row.addEventListener('touchend', () => { touchedRow = null; });
-      });
     }
 
     // PDF Export
