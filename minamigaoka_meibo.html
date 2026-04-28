@@ -1338,14 +1338,14 @@
         row1Y: 586,                      // 1行目(=jersey #4)のy
         coachY: 372, assistantCoachY: 358,
         // 4面付け用のクロップ範囲（チーム名・色欄・選手15行・コーチ・A.コーチ・外周罫線まで含む上段全体）
-        bbox: { left: 15, bottom: 345, right: 320, top: 685 },
+        bbox: { left: 15, bottom: 345, right: 310, top: 675 },
       },
       lower: {
         teamNameX: 95,  teamNameY: 315,
         colorMarkX: 205, colorMarkY: 315,
         row1Y: 260,
         coachY: 48,  assistantCoachY: 34,
-        bbox: { left: 15, bottom: 22, right: 320, top: 360 },
+        bbox: { left: 15, bottom: 27, right: 310, top: 355 },
       },
     };
 
@@ -1823,22 +1823,18 @@
         const bh = bbox.top - bbox.bottom;
         const A4W = 595, A4H = 842;
         const cols = 2, rows = 2;
-        const PAGE_MARGIN = 12, INNER_GAP = 6;
-        // A4 に収まるアスペクト比保持の最大スケール
-        const fitW = (A4W - 2 * PAGE_MARGIN - (cols - 1) * INNER_GAP) / (cols * bw);
-        const fitH = (A4H - 2 * PAGE_MARGIN - (rows - 1) * INNER_GAP) / (rows * bh);
-        const scale = Math.min(1, fitW, fitH);
-        const cellW = bw * scale;
-        const cellH = bh * scale;
-        const totalW = cols * cellW + (cols - 1) * INNER_GAP;
-        const totalH = rows * cellH + (rows - 1) * INNER_GAP;
-        const offsetX = (A4W - totalW) / 2;
-        const offsetY = (A4H - totalH) / 2;
+        // 1:1 でセンタリング配置（マージン・コピー間ギャップは余りを均等に分配）
+        const cellW = bw;
+        const cellH = bh;
+        const offsetX = Math.max(0, (A4W - cols * cellW) / 2);
+        const offsetY = Math.max(0, (A4H - rows * cellH) / 2);
+        const innerGapX = 0;
+        const innerGapY = 0;
         const sheet2 = pdfDoc.addPage([A4W, A4H]);
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
-            const x = offsetX + c * (cellW + INNER_GAP);
-            const y = offsetY + r * (cellH + INNER_GAP);
+            const x = offsetX + c * (cellW + innerGapX);
+            const y = offsetY + r * (cellH + innerGapY);
             sheet2.drawPage(embedded, { x, y, width: cellW, height: cellH });
           }
         }
