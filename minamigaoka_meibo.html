@@ -1337,12 +1337,15 @@
         colorMarkX: 205, colorMarkY: 640,
         row1Y: 586,                      // 1行目(=jersey #4)のy
         coachY: 372, assistantCoachY: 358,
+        // 4面付け用のクロップ範囲（チーム名・色欄・選手15行を含む上段全体）
+        bbox: { left: 18, bottom: 380, right: 230, top: 660 },
       },
       lower: {
         teamNameX: 95,  teamNameY: 315,
         colorMarkX: 205, colorMarkY: 315,
         row1Y: 260,
         coachY: 48,  assistantCoachY: 34,
+        bbox: { left: 18, bottom: 55, right: 230, top: 335 },
       },
     };
 
@@ -1811,6 +1814,24 @@
         if (assistantCoach) {
           drawMixed(assistantCoach.name, layout.assistantCoach.name, 9);
           drawLicenseDigits(assistantCoach.license3, layout.assistantCoach.licenseDigits, 10);
+        }
+
+        // 2ページ目: 上段 or 下段の選手表を 2x2 で4面付け（相手チーム配布用）
+        const bbox = SCORESHEET_BASE[position].bbox;
+        const embedded = await pdfDoc.embedPage(page, bbox);
+        const bw = bbox.right - bbox.left;
+        const bh = bbox.top - bbox.bottom;
+        const A4W = 595, A4H = 842;
+        const cols = 2, rows = 2;
+        const gapX = (A4W - cols * bw) / (cols + 1);
+        const gapY = (A4H - rows * bh) / (rows + 1);
+        const sheet2 = pdfDoc.addPage([A4W, A4H]);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const x = gapX + c * (bw + gapX);
+            const y = gapY + r * (bh + gapY);
+            sheet2.drawPage(embedded, { x, y, width: bw, height: bh });
+          }
         }
 
         const bytes = await pdfDoc.save();
