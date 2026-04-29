@@ -34,19 +34,46 @@
             box-sizing: border-box;
         }
 
+        /* v2.3: スマホ向けスリム化（余白・フォントを縮小） */
+        /* v2.4: PCで開いた際もスマホ幅(最大480px)に固定して中央寄せ */
         body {
             font-family: 'Noto Sans JP', sans-serif;
-            font-size: 13px;
-            background: var(--bg-cream);
+            font-size: 12px;
+            background: #d8d4cc;            /* シェル外の背景（PCで両脇に見える色） */
             min-height: 100vh;
             color: var(--text-dark);
+        }
+
+        /* シェル：ヘッダ・ナビ・メインを共通幅で中央寄せ */
+        body > .header,
+        body > .nav-tabs,
+        body > .main-content {
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: var(--bg-cream); /* シェル内側の地色 */
+        }
+
+        body > .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.04);
+        }
+
+        body > .main-content {
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+            min-height: calc(100vh - 80px); /* シェル感を出すため縦に伸ばす */
+        }
+
+        @media (max-width: 480px) {
+            body { background: var(--bg-cream); }
+            body > .main-content { box-shadow: none; min-height: 0; }
         }
 
         /* Header */
         .header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 0.8rem 1rem;
+            padding: 0.45rem 0.7rem;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -61,29 +88,29 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.35rem;
         }
 
         .logo-icon {
-            font-size: 1.3rem;
+            font-size: 1.05rem;
         }
 
         .logo h1 {
-            font-size: 1rem;
+            font-size: 0.85rem;
             font-weight: 700;
         }
 
         .firebase-status {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
-            font-size: 0.7rem;
+            gap: 0.25rem;
+            font-size: 0.65rem;
             opacity: 0.9;
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: var(--danger);
         }
@@ -103,19 +130,19 @@
 
         .nav-tab {
             flex: 1;
-            min-width: 60px;
-            padding: 0.6rem 0.3rem;
+            min-width: 50px;
+            padding: 0.4rem 0.25rem;
             background: none;
             border: none;
             border-bottom: 2px solid transparent;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-light);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.2rem;
+            gap: 0.1rem;
         }
 
         .nav-tab.active {
@@ -124,12 +151,12 @@
         }
 
         .nav-tab-icon {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
         }
 
         /* Main Content */
         .main-content {
-            padding: 0.8rem;
+            padding: 0.5rem;
         }
 
         .tab-content {
@@ -145,35 +172,35 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.5rem;
         }
 
         .section-title {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--primary);
         }
 
         /* Form Styles */
         .form-group {
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.5rem;
         }
 
         .form-group label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 500;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.15rem;
             color: var(--text-dark);
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 0.6rem;
+            padding: 0.4rem 0.5rem;
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
+            border-radius: 0.35rem;
             font-family: inherit;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             background: white;
         }
 
@@ -186,28 +213,28 @@
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         .form-row-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
 
         /* Buttons */
         .btn {
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.75rem;
             border: none;
-            border-radius: 0.5rem;
+            border-radius: 0.35rem;
             font-family: inherit;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.3rem;
+            gap: 0.25rem;
         }
 
         .btn-primary {
@@ -232,8 +259,8 @@
         }
 
         .btn-sm {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.7rem;
+            padding: 0.22rem 0.45rem;
+            font-size: 0.65rem;
         }
 
         .btn-block {
@@ -242,14 +269,14 @@
 
         .order-buttons {
             display: inline-flex;
-            gap: 0.2rem;
-            margin-right: 0.5rem;
+            gap: 0.15rem;
+            margin-right: 0.35rem;
         }
 
         .order-buttons .btn {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.65rem;
-            min-width: 24px;
+            padding: 0.15rem 0.3rem;
+            font-size: 0.6rem;
+            min-width: 20px;
         }
 
         .order-buttons .btn:disabled {
@@ -260,17 +287,17 @@
         /* Cards */
         .card {
             background: white;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.7rem;
+            margin-bottom: 0.5rem;
             box-shadow: var(--shadow);
         }
 
         .card-title {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 600;
             color: var(--primary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
         }
 
         /* Tables */
@@ -282,11 +309,11 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         th, td {
-            padding: 0.5rem;
+            padding: 0.3rem 0.4rem;
             text-align: left;
             border-bottom: 1px solid var(--border);
         }
@@ -296,24 +323,26 @@
             color: white;
             font-weight: 500;
             white-space: nowrap;
+            font-size: 0.68rem;
         }
 
-        /* Checkbox Grid */
+        /* Checkbox Grid (スマホは2列) */
         .checkbox-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.4rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.25rem;
         }
 
         .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
-            padding: 0.4rem;
+            gap: 0.25rem;
+            padding: 0.3rem 0.4rem;
             background: #f5f5f5;
-            border-radius: 0.3rem;
-            font-size: 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
             cursor: pointer;
+            line-height: 1.2;
         }
 
         .checkbox-item.selected {
@@ -321,41 +350,42 @@
         }
 
         .checkbox-item input {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
             accent-color: var(--primary);
+            flex-shrink: 0;
         }
 
         /* Toll Section */
         .toll-item {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.3rem;
-            margin-bottom: 0.5rem;
+            gap: 0.2rem;
+            margin-bottom: 0.3rem;
             align-items: center;
         }
 
         .toll-item input,
         .toll-item select {
-            padding: 0.4rem;
+            padding: 0.3rem;
             border: 1px solid var(--border);
-            border-radius: 0.3rem;
-            font-size: 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
             min-width: 0;
         }
 
         .toll-item .toll-from,
         .toll-item .toll-to {
             flex: 1;
-            min-width: 60px;
+            min-width: 50px;
         }
 
         .toll-item .toll-direction {
-            width: 55px;
+            width: 50px;
         }
 
         .toll-item .toll-price {
-            width: 60px;
+            width: 56px;
         }
 
         .toll-item .btn {
@@ -366,15 +396,15 @@
         .calc-result {
             background: var(--primary);
             color: white;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin: 1rem 0;
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.7rem;
+            margin: 0.6rem 0;
         }
 
         .calc-result-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.8rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
         }
 
         .calc-item {
@@ -382,12 +412,12 @@
         }
 
         .calc-item-label {
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             opacity: 0.9;
         }
 
         .calc-item-value {
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             font-weight: 700;
         }
 
@@ -412,11 +442,11 @@
 
         .modal {
             background: white;
-            border-radius: 0.75rem;
-            padding: 1rem;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
             width: 100%;
-            max-width: 400px;
-            max-height: 90vh;
+            max-width: 380px;
+            max-height: 92vh;
             overflow-y: auto;
         }
 
@@ -424,11 +454,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1rem;
+            margin-bottom: 0.6rem;
         }
 
         .modal-title {
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--primary);
         }
@@ -436,17 +466,18 @@
         .modal-close {
             background: none;
             border: none;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             cursor: pointer;
             color: var(--text-light);
+            padding: 0.1rem 0.3rem;
         }
 
         .modal-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            padding-top: 0.8rem;
+            gap: 0.4rem;
+            margin-top: 0.6rem;
+            padding-top: 0.5rem;
             border-top: 1px solid var(--border);
         }
 
@@ -454,9 +485,9 @@
         .history-item {
             background: white;
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 0.8rem;
-            margin-bottom: 0.5rem;
+            border-radius: 0.4rem;
+            padding: 0.5rem 0.6rem;
+            margin-bottom: 0.35rem;
         }
 
         .history-item.settled {
@@ -468,51 +499,54 @@
             display: inline-block;
             background: var(--success);
             color: white;
-            font-size: 0.65rem;
-            padding: 0.15rem 0.4rem;
-            border-radius: 0.25rem;
-            margin-left: 0.3rem;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.2rem;
+            margin-left: 0.25rem;
             vertical-align: middle;
         }
 
         .history-item-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.15rem;
         }
 
         .history-date {
             font-weight: 600;
             color: var(--primary);
+            font-size: 0.78rem;
         }
 
         .history-total {
             font-weight: 600;
             color: var(--secondary);
+            font-size: 0.78rem;
         }
 
         .history-destination {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: var(--text-light);
         }
 
         .history-actions {
             display: flex;
-            gap: 0.3rem;
-            margin-top: 0.5rem;
+            gap: 0.25rem;
+            margin-top: 0.35rem;
             flex-wrap: wrap;
         }
 
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 1.2rem 0.5rem;
             color: var(--text-light);
+            font-size: 0.75rem;
         }
 
         .empty-state-icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
         }
 
         /* Settlement */
@@ -525,6 +559,326 @@
             color: var(--danger);
             font-weight: 600;
         }
+
+        /* ============================================================
+           v2.5: 履歴・清算タブの強化スタイル
+           ============================================================ */
+
+        /* 共通：統計ピル＆ツールバー */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+        }
+        .stat-pill {
+            background: linear-gradient(135deg, #ffffff 0%, #f7f4ee 100%);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.45rem 0.4rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .stat-pill .label {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            margin-bottom: 0.1rem;
+        }
+        .stat-pill .value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.1;
+        }
+        .stat-pill .sub {
+            font-size: 0.6rem;
+            color: var(--text-light);
+        }
+        .stat-pill.warn .value { color: var(--secondary); }
+        .stat-pill.danger .value { color: var(--danger); }
+        .stat-pill.success .value { color: var(--success); }
+
+        /* フィルタバー */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        .filter-bar .search-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.35rem;
+            font-size: 0.75rem;
+            font-family: inherit;
+        }
+        .chip-group {
+            display: inline-flex;
+            background: #ece8e0;
+            border-radius: 999px;
+            padding: 2px;
+            gap: 2px;
+        }
+        .chip {
+            padding: 0.25rem 0.55rem;
+            border: none;
+            background: transparent;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-family: inherit;
+            color: var(--text-dark);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .chip.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .chip-count {
+            display: inline-block;
+            background: rgba(255,255,255,0.25);
+            border-radius: 999px;
+            padding: 0 0.35rem;
+            margin-left: 0.25rem;
+            font-size: 0.6rem;
+        }
+        .chip:not(.active) .chip-count {
+            background: rgba(0,0,0,0.08);
+        }
+
+        /* 月ヘッダー */
+        .month-header {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin: 0.6rem 0 0.3rem;
+            padding: 0.15rem 0.4rem;
+            border-left: 3px solid var(--primary-light);
+            background: rgba(45,138,110,0.06);
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+
+        /* v2.5 履歴カード */
+        .h-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.6rem 0.4rem 0.7rem;
+            margin-bottom: 0.4rem;
+            border-left: 3px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+            transition: transform 0.1s;
+        }
+        .h-card.settled { border-left-color: var(--success); background: #f7faf8; }
+        .h-card.settled .h-amount { color: var(--text-light); }
+
+        .h-row1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.4rem;
+        }
+        .h-date {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.78rem;
+            letter-spacing: 0.02em;
+        }
+        .h-amount {
+            font-weight: 700;
+            color: var(--secondary);
+            font-size: 0.95rem;
+        }
+        .h-dest {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0.15rem 0 0.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .h-meta {
+            display: flex;
+            gap: 0.6rem;
+            font-size: 0.65rem;
+            color: var(--text-light);
+            margin-bottom: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .h-meta .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            vertical-align: middle;
+            line-height: 1.4;
+        }
+        .badge-success { background: var(--success); color: white; }
+        .badge-warn { background: var(--secondary); color: #4a3500; }
+        .badge-muted { background: #ddd; color: var(--text-dark); }
+
+        .h-actions {
+            display: flex;
+            gap: 0.25rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            border-top: 1px dashed var(--border);
+            padding-top: 0.3rem;
+            margin-top: 0.3rem;
+        }
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 0.3rem;
+            padding: 0.2rem 0.45rem;
+            font-size: 0.62rem;
+            font-family: inherit;
+            cursor: pointer;
+            color: var(--text-dark);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.15rem;
+        }
+        .icon-btn:hover { background: #f7f4ee; }
+        .icon-btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .icon-btn.danger { background: white; color: var(--danger); border-color: rgba(231,76,60,0.4); }
+        .icon-btn.warn { background: var(--secondary); color: #4a3500; border-color: var(--secondary); }
+
+        /* v2.5 清算タブ：選択ツールバー */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+            gap: 0.3rem;
+        }
+        .toolbar .toolbar-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        /* 清算結果：部員別カード */
+        .result-mode-switch {
+            display: inline-flex;
+            background: #ece8e0;
+            border-radius: 999px;
+            padding: 2px;
+            gap: 2px;
+        }
+        .member-result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.35rem;
+        }
+        .m-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-left-width: 3px;
+            border-radius: 0.4rem;
+            padding: 0.4rem 0.5rem;
+            font-size: 0.72rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .m-card.collect { border-left-color: var(--danger); }
+        .m-card.refund { border-left-color: var(--success); }
+        .m-card.zero { border-left-color: #bbb; }
+
+        .m-name {
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 0.78rem;
+            line-height: 1.2;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .m-amount {
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1;
+            margin: 0.1rem 0;
+        }
+        .m-amount.collect { color: var(--danger); }
+        .m-amount.refund { color: var(--success); }
+        .m-amount.zero { color: var(--text-light); }
+        .m-detail {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.15rem;
+        }
+        .m-tag {
+            display: inline-block;
+            font-size: 0.55rem;
+            padding: 0.05rem 0.3rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .m-tag.collect { background: rgba(231,76,60,0.12); color: var(--danger); }
+        .m-tag.refund { background: rgba(39,174,96,0.12); color: var(--success); }
+        .m-tag.zero { background: #eee; color: var(--text-light); }
+
+        .summary-cluster {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.35rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 0.6rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+        .summary-cluster .label { font-size: 0.6rem; opacity: 0.85; }
+        .summary-cluster .value { font-size: 1rem; font-weight: 800; line-height: 1.1; }
+        .summary-cluster .item { text-align: center; }
+        .summary-cluster .item + .item { border-left: 1px solid rgba(255,255,255,0.2); }
+
+        .legend-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 0.4rem;
+            padding: 0.4rem 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.68rem;
+            line-height: 1.5;
+        }
+        .legend-card .legend-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.2rem;
+            font-size: 0.7rem;
+        }
+        .legend-card .legend-item {
+            display: flex;
+            gap: 0.3rem;
+            color: var(--text-dark);
+        }
+        .legend-card .legend-circle {
+            display: inline-block;
+            min-width: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* 表モード切替時の余白 */
+        #settlementTableWrap { display: none; }
+        #settlementTableWrap.active { display: block; }
+        #settlementCardWrap { display: block; }
+        #settlementCardWrap.hidden { display: none; }
 
         /* Print Window Styles */
         .print-content {
@@ -777,10 +1131,21 @@
             </form>
         </div>
 
-        <!-- History Tab -->
+        <!-- History Tab (v2.5: 統計・フィルタ・検索付き) -->
         <div class="tab-content" id="tab-history">
             <div class="section-header">
                 <h2 class="section-title">📋 遠征履歴</h2>
+            </div>
+
+            <div class="stat-row" id="historyStatRow"></div>
+
+            <div class="filter-bar">
+                <input type="search" class="search-input" id="historySearchInput" placeholder="🔎 行き先で検索...">
+                <div class="chip-group" id="historyFilterChips">
+                    <button type="button" class="chip active" data-filter="all">全て<span class="chip-count" id="cnt-all">0</span></button>
+                    <button type="button" class="chip" data-filter="unsettled">未精算<span class="chip-count" id="cnt-unsettled">0</span></button>
+                    <button type="button" class="chip" data-filter="settled">精算済<span class="chip-count" id="cnt-settled">0</span></button>
+                </div>
             </div>
 
             <div id="historyList"></div>
@@ -791,38 +1156,71 @@
             </div>
         </div>
 
-        <!-- Settlement Tab -->
+        <!-- Settlement Tab (v2.5: ツールバー・サマリ・カード/表切替) -->
         <div class="tab-content" id="tab-settlement">
             <div class="section-header">
                 <h2 class="section-title">💰 清算</h2>
             </div>
 
             <div class="card">
-                <div class="card-title">清算する遠征を選択</div>
+                <div class="toolbar">
+                    <div class="card-title" style="margin: 0;">清算する遠征を選択</div>
+                    <div class="toolbar-actions">
+                        <button type="button" class="icon-btn" onclick="settlementSelectAll(true)">☑ 全選</button>
+                        <button type="button" class="icon-btn" onclick="settlementSelectAll(false)">☐ 解除</button>
+                    </div>
+                </div>
                 <div class="checkbox-grid" id="settlementExpeditions"></div>
+                <div id="settlementSelectionStat" style="margin-top:0.4rem; font-size:0.68rem; color:var(--text-light); text-align:right;"></div>
             </div>
 
             <button class="btn btn-primary btn-block" onclick="calculateSettlement()">🧮 清算計算</button>
 
             <div id="settlementResults" style="display: none;">
-                <div class="card" style="margin-top: 1rem;">
-                    <div class="card-title">📊 清算結果</div>
-                    <div id="settlementLegend" style="background: #f9f9f9; border: 1px solid #ddd; padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.3rem; font-size: 0.75rem; line-height: 1.6;"></div>
-                    <div class="table-container">
-                        <table id="settlementTable">
-                            <thead>
-                                <tr id="settlementHeader"></tr>
-                            </thead>
-                            <tbody id="settlementBody"></tbody>
-                        </table>
+                <div class="summary-cluster" id="settlementSummary"></div>
+
+                <div class="legend-card" id="settlementLegend"></div>
+
+                <div class="toolbar">
+                    <div class="card-title" style="margin: 0;">📊 清算結果</div>
+                    <div class="result-mode-switch">
+                        <button type="button" class="chip active" data-mode="cards" onclick="switchSettlementView('cards')">カード</button>
+                        <button type="button" class="chip" data-mode="table" onclick="switchSettlementView('table')">表</button>
                     </div>
                 </div>
 
-                <button class="btn btn-secondary btn-block" onclick="openSettlementPrintView()">
+                <div class="filter-bar">
+                    <div class="chip-group" id="settlementResultFilter">
+                        <button type="button" class="chip active" data-rfilter="all">全員<span class="chip-count" id="rcnt-all">0</span></button>
+                        <button type="button" class="chip" data-rfilter="collect">集金<span class="chip-count" id="rcnt-collect">0</span></button>
+                        <button type="button" class="chip" data-rfilter="refund">返金<span class="chip-count" id="rcnt-refund">0</span></button>
+                        <button type="button" class="chip" data-rfilter="zero">±0<span class="chip-count" id="rcnt-zero">0</span></button>
+                    </div>
+                </div>
+
+                <div id="settlementCardWrap">
+                    <div class="member-result-grid" id="settlementCardGrid"></div>
+                    <div id="settlementRemainder" style="margin-top:0.5rem; padding:0.5rem 0.6rem; background:#fff9e6; border:1px solid #f0e2a6; border-radius:0.4rem; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center;"></div>
+                </div>
+
+                <div id="settlementTableWrap">
+                    <div class="card">
+                        <div class="table-container">
+                            <table id="settlementTable">
+                                <thead>
+                                    <tr id="settlementHeader"></tr>
+                                </thead>
+                                <tbody id="settlementBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-block" style="margin-top:0.5rem;" onclick="openSettlementPrintView()">
                     🖨️ 清算表を印刷用表示
                 </button>
-                
-                <button class="btn btn-primary btn-block" onclick="sendToCollectionApp()" style="margin-top: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+
+                <button class="btn btn-primary btn-block" onclick="sendToCollectionApp()" style="margin-top: 0.4rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                     📤 集金アプリに送信
                 </button>
             </div>
@@ -1496,40 +1894,159 @@
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
         }
 
-        // ==================== History ====================
+        // ==================== History (v2.5: 検索・フィルタ・統計・月グルーピング) ====================
+        let historyFilter = 'all';        // all | unsettled | settled
+        let historySearchTerm = '';
+
         function renderHistory() {
             const container = document.getElementById('historyList');
             const emptyState = document.getElementById('historyEmptyState');
-            
-            if (expeditions.length === 0) {
+            const statRow = document.getElementById('historyStatRow');
+
+            // 統計
+            const total = expeditions.length;
+            const unsettledList = expeditions.filter(e => !e.settled);
+            const settledList = expeditions.filter(e => e.settled);
+            const unsettledCount = unsettledList.length;
+            const settledCount = settledList.length;
+            const unsettledSum = unsettledList.reduce((s, e) => s + (e.totalExpense || 0), 0);
+            const totalSum = expeditions.reduce((s, e) => s + (e.totalExpense || 0), 0);
+
+            statRow.innerHTML = `
+                <div class="stat-pill">
+                    <div class="label">遠征件数</div>
+                    <div class="value">${total}</div>
+                    <div class="sub">合計 ¥${totalSum.toLocaleString()}</div>
+                </div>
+                <div class="stat-pill ${unsettledCount > 0 ? 'warn' : 'success'}">
+                    <div class="label">未精算</div>
+                    <div class="value">${unsettledCount}</div>
+                    <div class="sub">¥${unsettledSum.toLocaleString()}</div>
+                </div>
+                <div class="stat-pill success">
+                    <div class="label">精算済</div>
+                    <div class="value">${settledCount}</div>
+                    <div class="sub">${total ? Math.round(settledCount / total * 100) : 0}%</div>
+                </div>
+            `;
+
+            // フィルタチップのカウント更新
+            const elAll = document.getElementById('cnt-all');
+            const elU = document.getElementById('cnt-unsettled');
+            const elS = document.getElementById('cnt-settled');
+            if (elAll) elAll.textContent = total;
+            if (elU) elU.textContent = unsettledCount;
+            if (elS) elS.textContent = settledCount;
+
+            if (total === 0) {
                 container.innerHTML = '';
                 emptyState.style.display = 'block';
                 return;
             }
-
             emptyState.style.display = 'none';
-            container.innerHTML = expeditions.map(exp => `
-                <div class="history-item ${exp.settled ? 'settled' : ''}">
-                    <div class="history-item-header">
-                        <span class="history-date">${exp.date} ${exp.settled ? '<span class="settled-badge">精算済</span>' : ''}</span>
-                        <span class="history-total">¥${exp.totalExpense?.toLocaleString() || 0}</span>
+
+            // フィルタ適用
+            const term = (historySearchTerm || '').trim().toLowerCase();
+            const filtered = expeditions.filter(exp => {
+                if (historyFilter === 'unsettled' && exp.settled) return false;
+                if (historyFilter === 'settled' && !exp.settled) return false;
+                if (term) {
+                    const hay = `${exp.destination || ''} ${exp.date || ''}`.toLowerCase();
+                    if (!hay.includes(term)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding:1rem;"><div class="empty-state-icon">🔍</div><p>該当する遠征がありません</p></div>';
+                return;
+            }
+
+            // 月でグルーピング
+            const groups = {};
+            filtered.forEach(exp => {
+                const ym = (exp.date || '').slice(0, 7) || '----';
+                if (!groups[ym]) groups[ym] = [];
+                groups[ym].push(exp);
+            });
+            const sortedYms = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+            const fmtMonth = ym => {
+                const [y, m] = ym.split('-');
+                return y && m ? `${y}年${parseInt(m, 10)}月` : ym;
+            };
+            const fmtDay = d => {
+                const m = (d || '').match(/^\d{4}-(\d{2})-(\d{2})$/);
+                if (!m) return d;
+                const dt = new Date(d);
+                const wd = ['日','月','火','水','木','金','土'][dt.getDay()];
+                return `${parseInt(m[1], 10)}/${parseInt(m[2], 10)} (${wd})`;
+            };
+
+            container.innerHTML = sortedYms.map(ym => {
+                const items = groups[ym];
+                const monthSum = items.reduce((s, e) => s + (e.totalExpense || 0), 0);
+                const cards = items.map(exp => renderHistoryCard(exp, fmtDay)).join('');
+                return `
+                    <div class="month-header">${fmtMonth(ym)} ・ ${items.length}件 ・ ¥${monthSum.toLocaleString()}</div>
+                    ${cards}
+                `;
+            }).join('');
+        }
+
+        function renderHistoryCard(exp, fmtDay) {
+            const settled = !!exp.settled;
+            const badge = settled
+                ? '<span class="badge badge-success">精算済</span>'
+                : '<span class="badge badge-warn">未精算</span>';
+            const vCount = (exp.vehicleDetails || exp.selectedVehicleIds || []).length;
+            return `
+                <div class="h-card ${settled ? 'settled' : ''}">
+                    <div class="h-row1">
+                        <span class="h-date">${fmtDay(exp.date)} ${badge}</span>
+                        <span class="h-amount">¥${(exp.totalExpense || 0).toLocaleString()}</span>
                     </div>
-                    <div class="history-destination">📍 ${exp.destination}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.3rem;">
-                        ${exp.participantCount || 0}人 / 1人 ¥${exp.perPerson?.toLocaleString() || 0}
+                    <div class="h-dest">📍 ${exp.destination || ''}</div>
+                    <div class="h-meta">
+                        <span class="meta-item">👥 ${exp.participantCount || 0}人</span>
+                        <span class="meta-item">💴 ¥${(exp.perPerson || 0).toLocaleString()} / 人</span>
+                        <span class="meta-item">🚗 ${vCount}台</span>
+                        <span class="meta-item">📏 ${exp.distanceTotal || 0}km</span>
                     </div>
-                    <div class="history-actions">
-                        ${exp.settled 
-                            ? `<button class="btn btn-sm btn-outline" onclick="unsettle('${exp.id}')">精算取消</button>`
-                            : `<button class="btn btn-sm btn-primary" onclick="confirmSettle('${exp.id}')">精算済に</button>
-                               <button class="btn btn-sm btn-outline" onclick="editExpedition('${exp.id}')">編集</button>`
+                    <div class="h-actions">
+                        ${settled
+                            ? `<button class="icon-btn" onclick="unsettle('${exp.id}')">↩ 精算取消</button>`
+                            : `<button class="icon-btn primary" onclick="confirmSettle('${exp.id}')">✓ 精算済に</button>
+                               <button class="icon-btn" onclick="editExpedition('${exp.id}')">✎ 編集</button>`
                         }
-                        <button class="btn btn-sm btn-secondary" onclick="loadExpeditionToPrint('${exp.id}')">印刷</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteExpedition('${exp.id}')">削除</button>
+                        <button class="icon-btn" onclick="loadExpeditionToPrint('${exp.id}')">🖨 印刷</button>
+                        <button class="icon-btn danger" onclick="deleteExpedition('${exp.id}')">🗑 削除</button>
                     </div>
                 </div>
-            `).join('');
+            `;
         }
+
+        // 履歴フィルタ・検索のイベント
+        document.addEventListener('DOMContentLoaded', function() {
+            const chips = document.getElementById('historyFilterChips');
+            if (chips) {
+                chips.addEventListener('click', e => {
+                    const btn = e.target.closest('.chip');
+                    if (!btn) return;
+                    chips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    historyFilter = btn.dataset.filter;
+                    renderHistory();
+                });
+            }
+            const search = document.getElementById('historySearchInput');
+            if (search) {
+                search.addEventListener('input', e => {
+                    historySearchTerm = e.target.value;
+                    renderHistory();
+                });
+            }
+        });
 
         function confirmSettle(id) {
             const exp = expeditions.find(e => e.id === id);
@@ -1653,10 +2170,30 @@
             }
             container.innerHTML = unsettledExpeditions.map(exp => `
                 <label class="checkbox-item">
-                    <input type="checkbox" value="${exp.id}">
+                    <input type="checkbox" value="${exp.id}" data-amount="${exp.totalExpense || 0}" onchange="updateSettlementSelectionStat()">
                     ${exp.date.slice(5)} ${exp.destination.slice(0, 8)}
                 </label>
             `).join('');
+            updateSettlementSelectionStat();
+        }
+
+        // v2.5: 清算対象の全選択/解除
+        function settlementSelectAll(checked) {
+            document.querySelectorAll('#settlementExpeditions input[type="checkbox"]').forEach(cb => cb.checked = checked);
+            updateSettlementSelectionStat();
+        }
+
+        // v2.5: 選択状況サマリ
+        function updateSettlementSelectionStat() {
+            const checks = document.querySelectorAll('#settlementExpeditions input[type="checkbox"]:checked');
+            const count = checks.length;
+            const sum = Array.from(checks).reduce((s, cb) => s + (parseFloat(cb.dataset.amount) || 0), 0);
+            const el = document.getElementById('settlementSelectionStat');
+            if (el) {
+                el.innerHTML = count === 0
+                    ? '遠征を選択してください'
+                    : `<strong style="color:var(--primary);">${count}件選択中</strong>　合計 ¥${sum.toLocaleString()}`;
+            }
         }
 
         function calculateSettlement() {
@@ -1709,8 +2246,143 @@
             });
 
             renderSettlementTable(selectedExpeditions, settlementData);
+            renderSettlementCards(selectedExpeditions, settlementData);
             document.getElementById('settlementResults').style.display = 'block';
         }
+
+        // v2.5: カード表示／表表示の切替
+        function switchSettlementView(mode) {
+            const cards = document.getElementById('settlementCardWrap');
+            const table = document.getElementById('settlementTableWrap');
+            const switches = document.querySelectorAll('.result-mode-switch .chip');
+            switches.forEach(c => c.classList.toggle('active', c.dataset.mode === mode));
+            if (mode === 'cards') {
+                cards.classList.remove('hidden');
+                table.classList.remove('active');
+            } else {
+                cards.classList.add('hidden');
+                table.classList.add('active');
+            }
+        }
+
+        // v2.5: 結果フィルタ状態
+        let settlementResultFilter = 'all';
+        let _lastSettlementCardData = null;
+
+        // v2.5: 部員別カードレンダリング＋サマリ＋凡例
+        function renderSettlementCards(selectedExpeditions, settlementData) {
+            const summaryEl = document.getElementById('settlementSummary');
+            const legendEl = document.getElementById('settlementLegend');
+            const grid = document.getElementById('settlementCardGrid');
+            const remainderEl = document.getElementById('settlementRemainder');
+
+            const baseRemainder = selectedExpeditions.reduce((s, e) => s + (e.remainder || 0), 0);
+            const circleNumbers = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮'];
+
+            // 各部員の差引・丸め後集金額を算出してカードデータ化
+            const cardData = [];
+            let collectTotal = 0, refundTotal = 0;
+            let cntC = 0, cntR = 0, cntZ = 0;
+            let roundingRemainder = 0;
+            Object.entries(settlementData).forEach(([memberId, data]) => {
+                if (data.totalCost === 0 && data.totalIncome === 0) return;
+                const raw = data.totalCost - data.totalIncome;
+                let rounded;
+                if (raw > 0) rounded = Math.ceil(raw / 100) * 100;
+                else if (raw < 0) rounded = -Math.floor(Math.abs(raw) / 100) * 100;
+                else rounded = 0;
+                roundingRemainder += rounded - raw;
+
+                const kind = rounded > 0 ? 'collect' : (rounded < 0 ? 'refund' : 'zero');
+                if (kind === 'collect') { collectTotal += rounded; cntC++; }
+                else if (kind === 'refund') { refundTotal += -rounded; cntR++; }
+                else cntZ++;
+                cardData.push({ memberId, name: data.name, raw, rounded, kind, totalCost: data.totalCost, totalIncome: data.totalIncome });
+            });
+            const totalRemainder = baseRemainder + roundingRemainder;
+
+            // サマリ
+            summaryEl.innerHTML = `
+                <div class="item">
+                    <div class="label">対象遠征</div>
+                    <div class="value">${selectedExpeditions.length}<span style="font-size:0.65rem;font-weight:600;">件</span></div>
+                </div>
+                <div class="item">
+                    <div class="label">集金合計</div>
+                    <div class="value">¥${collectTotal.toLocaleString()}</div>
+                </div>
+                <div class="item">
+                    <div class="label">返金合計</div>
+                    <div class="value">¥${refundTotal.toLocaleString()}</div>
+                </div>
+            `;
+
+            // 凡例
+            legendEl.innerHTML = `
+                <div class="legend-title">対象遠征</div>
+                ${selectedExpeditions.map((exp, i) =>
+                    `<div class="legend-item"><span class="legend-circle">${circleNumbers[i] || ''}</span><span>${exp.date} ${exp.destination}</span></div>`
+                ).join('')}
+            `;
+
+            // フィルタチップのカウント
+            const setCnt = (id, n) => { const e = document.getElementById(id); if (e) e.textContent = n; };
+            setCnt('rcnt-all', cardData.length);
+            setCnt('rcnt-collect', cntC);
+            setCnt('rcnt-refund', cntR);
+            setCnt('rcnt-zero', cntZ);
+
+            _lastSettlementCardData = cardData;
+            renderFilteredSettlementCards();
+
+            // 残金行
+            remainderEl.innerHTML = `
+                <span><strong>残金（部費へ繰入れ）</strong><br><span style="font-size:0.6rem;color:var(--text-light);">元の残金 ¥${baseRemainder} + 丸め残金 ¥${roundingRemainder}</span></span>
+                <strong style="font-size:1rem;color:var(--secondary);">¥${totalRemainder.toLocaleString()}</strong>
+            `;
+        }
+
+        function renderFilteredSettlementCards() {
+            const grid = document.getElementById('settlementCardGrid');
+            const data = _lastSettlementCardData || [];
+            const list = data.filter(d => settlementResultFilter === 'all' || d.kind === settlementResultFilter);
+            if (list.length === 0) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1; padding:0.8rem;"><p>該当者がいません</p></div>';
+                return;
+            }
+            grid.innerHTML = list.map(d => {
+                const tag = d.kind === 'collect' ? '<span class="m-tag collect">集金</span>'
+                          : d.kind === 'refund'  ? '<span class="m-tag refund">返金</span>'
+                          : '<span class="m-tag zero">±0</span>';
+                const amount = d.rounded === 0 ? '¥0' :
+                               d.kind === 'collect' ? `¥${d.rounded.toLocaleString()}` :
+                               `−¥${Math.abs(d.rounded).toLocaleString()}`;
+                return `
+                    <div class="m-card ${d.kind}">
+                        <div class="m-name">${d.name}</div>
+                        <div class="m-amount ${d.kind}">${amount}</div>
+                        <div class="m-detail">
+                            ${tag}
+                            <span>負担¥${d.totalCost.toLocaleString()}・収入¥${d.totalIncome.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const f = document.getElementById('settlementResultFilter');
+            if (f) {
+                f.addEventListener('click', e => {
+                    const btn = e.target.closest('.chip');
+                    if (!btn) return;
+                    f.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    settlementResultFilter = btn.dataset.rfilter;
+                    renderFilteredSettlementCards();
+                });
+            }
+        });
 
         function renderSettlementTable(selectedExpeditions, settlementData) {
             const headerRow = document.getElementById('settlementHeader');
