@@ -528,6 +528,10 @@
       <div class="card">
         <div class="card-title">🏀 公式スコアシート出力</div>
         <p class="output-desc">MINIバスケ公式スコアシートに名簿情報（チーム名・選手氏名・ライセンスNo.下3桁・背番号・コーチ）を埋め込んで出力します。</p>
+        <p class="output-desc" style="font-size:11px;color:var(--text-sub);margin-top:-4px">
+          ※ <b>① / ③（公式背番号）</b>: 背番号タブの並び順そのままで上位15名を出力。<br>
+          ※ <b>② / ④（リバーシ背番号）</b>: 背番号タブの上位15名を <b>リバーシ背番号の昇順</b>（00 → 0 → 1 → 2 → … → 99）に並べ替えてPDF出力。
+        </p>
         <div class="output-section" style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-primary" onclick="exportScoresheet('upper','official')">① 上段(白) × 公式背番号</button>
           <button class="btn btn-primary" onclick="exportScoresheet('upper','reversi')">② 上段(白) × リバーシ背番号</button>
