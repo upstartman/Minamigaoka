@@ -4,74 +4,190 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>南ヶ丘注文集計アプリ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Color tokens (Deep Sky Blue background × バスケットボールアクセント) */
+            --bg: #00BFFF;          /* ディープスカイブルー */
+            --bg-soft: #38bdf8;     /* グラデ用 */
+            --surface: #ffffff;
+            --surface-2: #f0f9ff;   /* 淡いブルーの副サーフェス */
+            --surface-3: #e0f2fe;   /* やや濃い淡ブルー */
+            --border: #e2e8f0;      /* クールニュートラルなボーダー */
+            --border-strong: #cbd5e1;
+
+            --text: #0f172a;        /* 深いネイビー（読みやすさ重視） */
+            --text-muted: #475569;
+            --text-subtle: #94a3b8;
+
+            /* メイン: ネイビー（青背景に映えるダークブルー） */
+            --primary: #1e3a8a;
+            --primary-hover: #1e40af;
+            --primary-soft: #dbeafe;
+            --primary-soft-border: #bfdbfe;
+
+            /* 成功: エメラルド */
+            --success: #059669;
+            --success-hover: #047857;
+            --success-soft: #d1fae5;
+            --success-soft-border: #a7f3d0;
+
+            /* 危険: ヴィヴィッドレッド */
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --danger-soft: #fee2e2;
+            --danger-soft-border: #fecaca;
+
+            /* 警告: アンバー（緊急時） */
+            --warning: #d97706;
+            --warning-soft: #fef3c7;
+            --warning-soft-border: #fde68a;
+
+            /* 支払い対象: ヴィヴィッドパープル（集金済の緑と明確に区別） */
+            --info: #7c3aed;
+            --info-soft: #ede9fe;
+            --info-soft-border: #ddd6fe;
+
+            /* バスケットボールオレンジ（ヘッダー・モードトグル用、青の補色） */
+            --basketball: #f97316;
+            --basketball-deep: #ea580c;
+            --basketball-soft: #ffedd5;
+            --basketball-soft-border: #fed7aa;
+
+            /* サブアクセント: ユーザー別ローテーション（はっきりした6色、青背景でも識別） */
+            --accent-1: #ea580c; /* オレンジ */
+            --accent-2: #facc15; /* イエロー */
+            --accent-3: #16a34a; /* 緑 */
+            --accent-4: #9333ea; /* 紫 */
+            --accent-5: #db2777; /* マゼンタ */
+            --accent-6: #0d9488; /* ティール */
+
+            /* Radius */
+            --r-sm: 6px;
+            --r: 10px;
+            --r-lg: 14px;
+
+            /* Shadow（ブルー背景に映えるよう少し強め＆青みを帯びた影） */
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+            --shadow: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
+
+            /* Type */
+            --font-sans: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html { -webkit-text-size-adjust: 100%; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: var(--font-sans);
+            font-feature-settings: "palt" 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+            background-attachment: fixed;
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            padding: 14px 12px;
+            line-height: 1.55;
+            letter-spacing: 0.01em;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 720px;
             margin: 0 auto;
         }
 
         .header {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
+            background: #ffffff;
+            padding: 14px 16px;
+            margin-bottom: 16px;
             text-align: center;
+            border: 1px solid var(--basketball-soft-border);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-sm);
         }
 
         .header h1 {
-            color: #333;
-            font-size: 2em;
+            color: var(--text);
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
         .mode-selector {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
+            display: inline-flex;
+            gap: 4px;
+            padding: 3px;
+            background: var(--surface-2);
+            border: 1px solid var(--basketball-soft-border);
+            border-radius: var(--r);
         }
 
         .mode-btn {
-            padding: 12px 30px;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 25px;
+            padding: 7px 16px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: var(--r-sm);
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .mode-btn.active {
-            background: #667eea;
-            color: white;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
 
         .mode-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            color: var(--basketball-deep);
+            background: var(--basketball-soft);
+        }
+
+        .mode-btn.active {
+            background: var(--basketball);
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(249,115,22,0.35);
+        }
+        .mode-btn.active:hover {
+            background: var(--basketball-deep);
+            color: #fff;
         }
 
         .content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow);
+        }
+
+        .content {
+            background: var(--surface);
+            padding: 16px 14px;
+            border-radius: var(--r);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        h2 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
         }
 
         .section {
@@ -83,189 +199,255 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.85rem;
         }
 
         .form-group input[type="text"],
         .form-group input[type="date"],
+        .form-group input[type="datetime-local"],
         .form-group input[type="number"],
         .form-group input[type="password"],
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 8px 10px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            background: var(--surface);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--text-subtle);
         }
 
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
         .menu-items {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 14px;
+            margin-bottom: 12px;
+            background: var(--surface-2);
         }
 
         .menu-item {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
             align-items: center;
+        }
+
+        .menu-item:last-child {
+            margin-bottom: 0;
         }
 
         .menu-item input {
             flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .menu-item input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
         .menu-item button {
-            padding: 8px 15px;
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
+            padding: 6px 12px;
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger-soft-border);
+            border-radius: var(--r-sm);
             cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            transition: background 0.15s;
+        }
+        .menu-item button:hover {
+            background: var(--danger-soft);
         }
 
         .btn {
-            padding: 12px 30px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
+            padding: 8px 14px;
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid var(--primary);
+            border-radius: var(--r-sm);
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            transition: background 0.15s, border-color 0.15s, transform 0.05s;
         }
 
         .btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
         }
+        .btn:active { transform: translateY(1px); }
 
         .btn-secondary {
-            background: #6c757d;
+            background: var(--surface);
+            color: var(--text);
+            border-color: var(--border-strong);
         }
-
         .btn-secondary:hover {
-            background: #5a6268;
+            background: var(--surface-2);
+            border-color: var(--text-subtle);
         }
 
         .btn-danger {
-            background: #dc3545;
+            background: var(--danger);
+            border-color: var(--danger);
         }
-
         .btn-danger:hover {
-            background: #c82333;
+            background: var(--danger-hover);
+            border-color: var(--danger-hover);
         }
 
         .btn-success {
-            background: #28a745;
+            background: var(--success);
+            border-color: var(--success);
         }
-
         .btn-success:hover {
-            background: #218838;
+            background: #15803d;
+            border-color: #15803d;
         }
 
         .order-list {
             display: grid;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .order-card {
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            transition: all 0.3s;
+            position: relative;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--success);
+            border-radius: var(--r-sm);
+            padding: 12px 12px 12px 14px;
+            background: var(--surface);
+            transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
             cursor: pointer;
         }
 
         .order-card:hover {
-            border-color: #667eea;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-sm);
+            background: var(--surface-2);
+        }
+        .order-card:active { transform: translateY(1px); }
+
+        /* 締切済カードはトーンを落とす */
+        .order-card.is-closed {
+            border-left-color: var(--text-subtle);
+            background: var(--surface-2);
+        }
+        .order-card.is-closed:hover {
+            background: var(--surface-3);
         }
 
         .order-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
 
         .order-date {
-            font-size: 1em;
-            font-weight: bold;
-            color: #333;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
         }
 
         .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            white-space: nowrap;
         }
 
         .status-open {
-            background: #d4edda;
-            color: #155724;
+            background: var(--success-soft);
+            color: #406527;
+            border-color: var(--success-soft-border);
         }
 
         .status-closed {
-            background: #f8d7da;
-            color: #721c24;
+            background: var(--surface-3);
+            color: var(--text-subtle);
+            border-color: var(--border-strong);
         }
 
+        /* 集金済 / 支払済 = 完了は緑で統一（4状態を直感的に） */
         .user-order.paid {
-            background: #d4edda;
-            border: 2px solid #28a745;
-            border-left: 4px solid #28a745;
+            background: var(--success-soft);
+            border: 1px solid var(--success-soft-border);
+            border-left: 3px solid var(--success);
         }
 
         .user-order.paid h4 {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: var(--success);
         }
 
         .user-order.paid h4::after {
             content: ' ✓ 集金済';
             color: white;
-            font-size: 0.8em;
-            margin-left: 10px;
+            font-size: 0.78rem;
+            margin-left: 8px;
+            opacity: 0.95;
         }
 
-        /* 支払い対象者（負の金額）用スタイル */
+        /* 支払い対象（負の金額）= 未済はニュートラル背景、識別は名前バッジ色で */
         .user-order.payment-target {
-            border-left: 4px solid #17a2b8;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--info);
         }
 
-        .user-order.payment-target:not(.paid) {
-            background: #e7f5ff;
-            border: 2px solid #17a2b8;
+        .user-order.payment-target h4 {
+            background: var(--info);
         }
 
+        /* 支払い済（payment-target.paid）= 完了なので緑に上書き */
         .user-order.payment-target.paid {
-            background: #d1ecf1;
-            border: 2px solid #17a2b8;
-            border-left: 4px solid #17a2b8;
+            background: var(--success-soft);
+            border: 1px solid var(--success-soft-border);
+            border-left: 3px solid var(--success);
         }
 
         .user-order.payment-target.paid h4 {
-            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+            background: var(--success);
         }
 
         .user-order.payment-target.paid h4::after {
@@ -273,26 +455,28 @@
         }
 
         .btn-paid {
-            background: #28a745;
-            font-size: 0.85em;
+            background: var(--success);
+            border-color: var(--success);
+            font-size: 0.8rem;
             padding: 6px 12px;
-            margin-left: 10px;
+            margin-left: 8px;
         }
-
         .btn-paid:hover {
-            background: #218838;
+            background: #15803d;
+            border-color: #15803d;
         }
 
         .btn-unpaid {
-            background: #ffc107;
-            color: #333;
-            font-size: 0.85em;
+            background: var(--surface);
+            color: var(--text);
+            border-color: var(--border-strong);
+            font-size: 0.8rem;
             padding: 6px 12px;
-            margin-left: 10px;
+            margin-left: 8px;
         }
-
         .btn-unpaid:hover {
-            background: #e0a800;
+            background: var(--surface-2);
+            border-color: var(--text-subtle);
         }
 
         .user-order-header {
@@ -309,101 +493,136 @@
         }
 
         .order-card-body {
-            color: #666;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .order-card-summary {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+        .order-card-summary span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .order-form-container {
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
         .order-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 16px 0;
+            font-size: 0.95rem;
         }
 
         .order-table th,
         .order-table td {
-            padding: 12px;
+            padding: 10px 12px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border);
         }
 
         .order-table th {
-            background: #f8f9fa;
-            font-weight: bold;
+            background: var(--surface-2);
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
         .order-table input[type="number"] {
             width: 80px;
-            padding: 8px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
+            padding: 6px 8px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .order-table input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
         }
 
         .buttons-container {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 8px;
+            margin-top: 16px;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
-            font-size: 1.1em;
+            color: var(--text-subtle);
+            font-size: 0.95rem;
         }
 
         .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            background: var(--success-soft);
+            color: var(--success);
+            border: 1px solid var(--success-soft-border);
+            padding: 12px 14px;
+            border-radius: var(--r-sm);
+            margin: 12px 0;
+            font-size: 0.9rem;
         }
 
         .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            background: var(--danger-soft);
+            color: var(--danger);
+            border: 1px solid var(--danger-soft-border);
+            padding: 12px 14px;
+            border-radius: var(--r-sm);
+            margin: 12px 0;
+            font-size: 0.9rem;
         }
 
         .summary-section {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e0e0e0;
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
         }
 
         .summary-section h3 {
-            margin-bottom: 15px;
-            color: #333;
+            margin-bottom: 12px;
         }
 
         .user-order-section {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e0e0e0;
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
         }
 
+        /* 既定（集金未済）: 背景はニュートラルで控えめに、識別は名前バッジ色で */
         .user-order {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
+            background: var(--surface);
+            padding: 12px 14px;
+            border-radius: var(--r-sm);
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--warning);
         }
 
         .user-order h4 {
             margin-bottom: 10px;
-            color: #333;
-            font-size: 0.95em;
-            padding: 6px 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 5px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            background: var(--warning);
+            color: #fff;
+            border-radius: var(--r-sm);
             display: inline-block;
+            letter-spacing: 0.01em;
         }
 
         .user-order ul {
@@ -412,244 +631,247 @@
         }
 
         .user-order li {
-            padding: 5px 0;
-            color: #666;
+            padding: 4px 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
 
         .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 18px;
+            color: var(--text-muted);
             text-decoration: none;
-            font-weight: bold;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: color 0.15s;
         }
 
         .back-link:hover {
-            text-decoration: underline;
+            color: var(--primary);
         }
 
         .admin-actions {
-            margin-top: 15px;
+            margin-top: 14px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .admin-actions button {
-            font-size: 0.9em;
-            padding: 8px 15px;
+            font-size: 0.85rem;
+            padding: 6px 12px;
         }
 
-        /* スマートフォン向けのスタイル調整 */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .header {
-                padding: 20px 15px;
-            }
-            
-            .header h1 {
-                font-size: 1.5em;
-            }
-            
-            .content {
-                padding: 20px 15px;
-            }
-            
-            .order-date {
-                font-size: 0.9em;
-            }
-            
-            .status-badge {
-                font-size: 0.8em;
-                padding: 4px 12px;
-            }
-            
-            .order-card {
-                padding: 15px;
-            }
-            
-            .order-card-body {
-                font-size: 0.9em;
-            }
-            
-            .btn {
-                padding: 10px 20px;
-                font-size: 14px;
-            }
-            
-            .form-group label {
-                font-size: 0.95em;
-            }
-            
-            .form-group input[type="text"],
-            .form-group input[type="date"],
-            .form-group input[type="number"],
-            .form-group input[type="password"],
-            .form-group select {
-                padding: 10px;
-                font-size: 14px;
-            }
-            
-            .order-table th,
-            .order-table td {
-                padding: 10px 8px;
-                font-size: 0.9em;
-            }
-            
-            .order-table input[type="number"] {
-                width: 60px;
-                padding: 6px;
-                font-size: 14px;
-            }
-            
-            h2 {
-                font-size: 1.3em;
-            }
-            
-            h3 {
-                font-size: 1.1em;
-            }
-            
-            .admin-actions {
-                flex-wrap: wrap;
-            }
-            
-            .admin-actions button {
-                font-size: 0.85em;
-                padding: 6px 12px;
-            }
+        /* 注文詳細サマリー */
+        .order-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: var(--surface-2);
+            border: 1px solid var(--basketball-soft-border);
+            border-radius: var(--r-sm);
+            padding: 12px 14px;
+            margin: 10px 0 14px;
+        }
+        .order-summary-header .stat {
+            min-width: 56px;
+        }
+        .order-summary-header .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        /* 数値ごとにはっきりした色分け */
+        .order-summary-header .stat:nth-of-type(1) .stat-value { color: var(--success); }       /* 注文人数 = 緑 */
+        .order-summary-header .stat:nth-of-type(2) .stat-value { color: var(--basketball-deep); } /* 合計数量 = オレンジ */
+        .order-summary-header .stat:nth-of-type(3) .stat-value { color: var(--primary); }       /* 合計金額 = ネイビー */
+
+        .order-summary-header .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 0.02em;
+            font-weight: 500;
+        }
+        .order-summary-header .stat-divider {
+            width: 1px;
+            height: 36px;
+            background: var(--basketball-soft-border);
+        }
+        .order-summary-header .stat-status {
+            margin-left: auto;
         }
 
-        /* より小さい画面向けの調整 */
+        /* 再オープンフォーム */
+        .reopen-card {
+            border: 1px solid var(--success-soft-border);
+            background: var(--success-soft);
+            border-radius: var(--r);
+            padding: 16px 18px;
+            margin: 12px 0;
+        }
+        .reopen-card h3 {
+            margin: 0 0 6px;
+            color: var(--text);
+        }
+        .reopen-card .reopen-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* 締切バッジ用 共通サポート（インラインのfallback） */
+        .deadline-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+        .deadline-pill.urgent {
+            background: var(--warning-soft);
+            color: var(--warning);
+            border-color: var(--warning-soft-border);
+        }
+        .deadline-pill.soon {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fed7aa;
+        }
+        .deadline-pill.normal {
+            background: var(--success-soft);
+            color: var(--success);
+            border-color: var(--success-soft-border);
+        }
+        .deadline-pill.closed {
+            background: var(--surface-2);
+            color: var(--text-subtle);
+            border-color: var(--border);
+        }
+        .deadline-pill .deadline-remain {
+            font-weight: 400;
+            opacity: 0.85;
+            font-size: 0.78rem;
+        }
+
+        .deadline-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-muted);
+            border-radius: var(--r);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin: 10px 0 14px;
+        }
+        .deadline-banner.urgent {
+            background: var(--warning-soft);
+            color: var(--warning);
+            border-color: var(--warning-soft-border);
+        }
+        .deadline-banner.soon {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fed7aa;
+        }
+        .deadline-banner.normal {
+            background: var(--success-soft);
+            color: var(--success);
+            border-color: var(--success-soft-border);
+        }
+        .deadline-banner.closed {
+            background: var(--surface-2);
+            color: var(--text-subtle);
+            border-color: var(--border);
+        }
+        .deadline-banner .deadline-remain {
+            font-weight: 400;
+            opacity: 0.85;
+            font-size: 0.85rem;
+        }
+
+        /* 集金サマリー */
+        .payment-summary {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 14px 16px;
+            border-radius: var(--r-sm);
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+        }
+        .payment-summary p {
+            margin: 4px 0;
+            color: var(--text-muted);
+        }
+        .payment-summary p strong { color: var(--text); font-weight: 500; }
+
+        /* 支払対象バッジ（目立たせる） */
+        .payment-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: var(--info);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-left: 8px;
+            letter-spacing: 0.04em;
+            box-shadow: 0 1px 3px rgba(124, 58, 237, 0.3);
+            border: 1.5px solid #fff;
+            outline: 1px solid var(--info);
+        }
+        .payment-tag::before {
+            content: "💰";
+            font-size: 0.85rem;
+        }
+
+        /* スマホ前提 - 小さい画面で更に詰める */
         @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-            
-            .header {
-                padding: 15px 10px;
-                margin-bottom: 15px;
-            }
-            
-            .header h1 {
-                font-size: 1.3em;
-                margin-bottom: 8px;
-            }
-            
-            .content {
-                padding: 15px 10px;
-            }
-            
-            .mode-btn {
-                padding: 10px 20px;
-                font-size: 13px;
-            }
-            
-            .order-date {
-                font-size: 0.85em;
-            }
-            
-            .status-badge {
-                font-size: 0.75em;
-                padding: 3px 10px;
-            }
-            
-            .order-card {
-                padding: 12px;
-            }
-            
-            .order-card-body {
-                font-size: 0.85em;
-            }
-            
-            .btn {
-                padding: 8px 16px;
-                font-size: 13px;
-            }
-            
-            .form-group {
-                margin-bottom: 15px;
-            }
-            
-            .form-group label {
-                font-size: 0.9em;
-                margin-bottom: 6px;
-            }
-            
-            .form-group input[type="text"],
-            .form-group input[type="date"],
-            .form-group input[type="number"],
-            .form-group input[type="password"],
-            .form-group select {
-                padding: 8px;
-                font-size: 13px;
-            }
-            
-            .order-table {
-                font-size: 0.85em;
-            }
-            
+            body { padding: 10px 8px; }
+            .header { padding: 12px 12px; margin-bottom: 12px; }
+            .header h1 { font-size: 1.05rem; margin-bottom: 8px; }
+            .content { padding: 12px 10px; }
+            .mode-btn { padding: 6px 12px; font-size: 0.8rem; }
+            .buttons-container { flex-direction: column; gap: 6px; }
+            .buttons-container .btn { width: 100%; }
+            .menu-item { flex-direction: column; gap: 6px; align-items: stretch; }
+            .menu-item input { width: 100%; }
+            .menu-item button { width: 100%; padding: 8px; }
+            .admin-actions { flex-wrap: wrap; }
             .order-table th,
-            .order-table td {
-                padding: 8px 5px;
-            }
-            
-            .order-table input[type="number"] {
-                width: 50px;
-                padding: 5px;
-                font-size: 13px;
-            }
-            
-            h2 {
-                font-size: 1.2em;
-                margin-bottom: 15px;
-            }
-            
-            h3 {
-                font-size: 1em;
-            }
-            
-            .buttons-container {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .buttons-container .btn {
-                width: 100%;
-            }
-            
-            .admin-actions button {
-                font-size: 0.8em;
-                padding: 5px 10px;
-            }
-            
-            .back-link {
-                font-size: 0.9em;
-                margin-bottom: 15px;
-            }
-            
-            .menu-item {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .menu-item input {
-                width: 100%;
-            }
-            
-            .menu-item button {
-                width: 100%;
-                padding: 8px;
-            }
+            .order-table td { padding: 7px 5px; font-size: 0.85rem; }
+            .order-table input[type="number"] { width: 56px; }
+            .order-summary-header { gap: 10px; padding: 10px 12px; }
+            .order-summary-header .stat-value { font-size: 1.1rem; }
+            .order-summary-header .stat-divider { display: none; }
+        }
+
+        /* タブレット以上では少しゆとりを持たせる */
+        @media (min-width: 640px) {
+            body { padding: 24px 20px; }
+            .content { padding: 22px 20px; }
+            .header { padding: 18px 20px; }
+            .header h1 { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>南ヶ丘注文集計アプリ</h1>
+            <h1>🏀 南ヶ丘注文集計アプリ</h1>
             <div class="mode-selector">
                 <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
                 <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
@@ -693,15 +915,20 @@
                     </div>
                     <div class="form-group">
                         <label>日付</label>
-                        <input type="date" id="newOrderDate">
+                        <input type="date" id="newOrderDate" onchange="onNewOrderDateChange()">
                     </div>
                     <div class="form-group">
                         <label>注文内容</label>
                         <input type="text" id="newShopName" placeholder="例: お弁当（ほっともっと）">
                     </div>
                     <div class="form-group">
+                        <label>注文締め切り日時（任意）</label>
+                        <input type="datetime-local" id="newDeadline" oninput="updateNewDeadlineHint()">
+                        <div id="newDeadlineHint" style="font-size: 0.85em; margin-top: 6px;"></div>
+                    </div>
+                    <div class="form-group">
                         <label>メモ（任意）</label>
-                        <textarea id="newMemo" placeholder="例: 締切は3/5(水)までです。" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; resize: vertical;"></textarea>
+                        <textarea id="newMemo" placeholder="例： 集金締め切りは4/2(木)までです。" rows="3" style="resize: vertical;"></textarea>
                     </div>
                     <div class="form-group">
                         <label>項目</label>
@@ -778,6 +1005,131 @@
             return dateString || '';
         }
 
+        // ======================================
+        // 締切日時 ヘルパー
+        // ======================================
+
+        // Date → "YYYY-MM-DDTHH:mm" (datetime-local 入力用、ローカルタイム)
+        function formatLocalDateTime(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // 注文日の前日17時を "YYYY-MM-DDTHH:mm" で返す（プリセット用）
+        function defaultDeadlineFromOrderDate(orderDateStr) {
+            if (!orderDateStr) return '';
+            const parts = orderDateStr.split('-');
+            if (parts.length !== 3) return '';
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            d.setDate(d.getDate() - 1);
+            d.setHours(17, 0, 0, 0);
+            return formatLocalDateTime(d);
+        }
+
+        // Firestore Timestamp → "YYYY-MM-DDTHH:mm"
+        function deadlineToInputValue(deadline) {
+            if (!deadline) return '';
+            const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+            return formatLocalDateTime(d);
+        }
+
+        // "YYYY-MM-DDTHH:mm" → Firestore Timestamp (空なら null)
+        function inputValueToDeadline(s) {
+            if (!s) return null;
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return null;
+            return Timestamp.fromDate(d);
+        }
+
+        // 締切日時が過去かどうか
+        function isDeadlinePassed(deadline) {
+            if (!deadline) return false;
+            const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+            return d.getTime() <= Date.now();
+        }
+
+        // 実効ステータス: 手動 closed か締切超過なら closed
+        function effectiveStatus(orderPage) {
+            if (orderPage.status === 'closed') return 'closed';
+            if (isDeadlinePassed(orderPage.deadline)) return 'closed';
+            return 'open';
+        }
+
+        // 締切表示用 "2026-05-01 17:00"
+        function formatDeadlineText(deadline) {
+            if (!deadline) return '';
+            const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // 残り時間テキスト
+        function remainingTimeText(deadline) {
+            if (!deadline) return '';
+            const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+            const diffMs = d.getTime() - Date.now();
+            if (diffMs <= 0) return '締切を過ぎています';
+            const totalMin = Math.floor(diffMs / 60000);
+            const days = Math.floor(totalMin / (60 * 24));
+            const hours = Math.floor((totalMin % (60 * 24)) / 60);
+            const mins = totalMin % 60;
+            if (days > 0) return `締切まで残り ${days}日 ${hours}時間`;
+            if (hours > 0) return `締切まで残り ${hours}時間 ${mins}分`;
+            return `締切まで残り ${mins}分`;
+        }
+
+        // 入力中の文字列値からヒント表示
+        function deadlineHintHtml(deadlineStr) {
+            if (!deadlineStr) return '<span style="color:var(--text-subtle);">未設定の場合は締切なし（無期限）になります</span>';
+            const d = new Date(deadlineStr);
+            if (isNaN(d.getTime())) return '';
+            const diffMs = d.getTime() - Date.now();
+            if (diffMs <= 0) return '<span style="color:var(--danger);">⚠ 過去の日時です。このまま登録すると即座に締切扱いになります</span>';
+            return `<span style="color:var(--success);">${remainingTimeText({ toDate: () => d })}</span>`;
+        }
+
+        // 緊急度クラス決定
+        function deadlineUrgencyClass(deadline, eff) {
+            if (!deadline) return '';
+            if (eff !== 'open') return 'closed';
+            const d = deadline.toDate ? deadline.toDate() : new Date(deadline);
+            const diffMs = d.getTime() - Date.now();
+            const oneHour = 60 * 60 * 1000;
+            if (diffMs <= 2 * oneHour) return 'urgent';
+            if (diffMs <= 24 * oneHour) return 'soon';
+            return 'normal';
+        }
+
+        // 締切バッジHTML（一覧カード用）
+        function deadlineBadgeHtml(deadline, eff) {
+            if (!deadline) return '';
+            const cls = deadlineUrgencyClass(deadline, eff);
+            const dateText = formatDeadlineText(deadline);
+            const icon = cls === 'urgent' ? '🔥' : cls === 'soon' ? '⏰' : '⏱';
+            const remain = eff === 'open' ? `<span class="deadline-remain">（${remainingTimeText(deadline)}）</span>` : '';
+            return `<div class="deadline-pill ${cls}">${icon} 締切: ${dateText}${remain}</div>`;
+        }
+
+        // 締切バナーHTML（詳細画面用、より大きく）
+        function deadlineBadgeLargeHtml(deadline, eff) {
+            if (!deadline) return '';
+            const cls = deadlineUrgencyClass(deadline, eff);
+            const dateText = formatDeadlineText(deadline);
+            const icon = cls === 'urgent' ? '🔥' : cls === 'soon' ? '⏰' : '⏱';
+            const remain = eff === 'open'
+                ? `<span class="deadline-remain">（${remainingTimeText(deadline)}）</span>`
+                : `<span class="deadline-remain">（締切済）</span>`;
+            return `<div class="deadline-banner ${cls}">${icon} 締切: ${dateText}${remain}</div>`;
+        }
+
+        // 締切自動更新（best-effort: closed への書き戻し）
+        function autoCloseIfPast(orderId, data) {
+            if (data.status === 'open' && isDeadlinePassed(data.deadline)) {
+                updateDoc(doc(db, 'orderPages', orderId), { status: 'closed' }).catch(() => {});
+                data.status = 'closed';
+            }
+        }
+
         // モード切り替え
         window.switchMode = function(mode) {
             currentMode = mode;
@@ -811,13 +1163,15 @@
                 const querySnapshot = await getDocs(collection(db, 'orderPages'));
                 const orderPages = [];
                 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    autoCloseIfPast(docSnap.id, data);
                     orderPages.push({
-                        orderId: doc.id,
+                        orderId: docSnap.id,
                         orderDate: data.orderDate,
                         shopName: data.shopName || '',
                         memo: data.memo || '',
+                        deadline: data.deadline || null,
                         menus: data.menus || [],
                         status: data.status,
                         createdAt: data.createdAt
@@ -845,6 +1199,7 @@
                     orderDate: params.orderDate,
                     shopName: params.shopName || '',
                     memo: params.memo || '',
+                    deadline: params.deadline || null,
                     menus: params.menus,
                     status: 'open',
                     createdAt: Timestamp.now()
@@ -874,11 +1229,13 @@
                 }
 
                 const orderPageData = orderPageDoc.data();
+                autoCloseIfPast(orderId, orderPageData);
                 const orderPage = {
                     orderId: orderId,
                     orderDate: orderPageData.orderDate,
                     shopName: orderPageData.shopName || '',
                     memo: orderPageData.memo || '',
+                    deadline: orderPageData.deadline || null,
                     menus: orderPageData.menus || [],
                     status: orderPageData.status,
                     createdAt: orderPageData.createdAt
@@ -933,7 +1290,11 @@
 
                 const orderPageData = orderPageDoc.data();
                 if (orderPageData.status === 'closed') {
-                    return { success: false, message: 'This order is closed and cannot be modified' };
+                    return { success: false, message: 'この注文は締め切られているため変更できません' };
+                }
+                if (isDeadlinePassed(orderPageData.deadline)) {
+                    updateDoc(doc(db, 'orderPages', orderId), { status: 'closed' }).catch(() => {});
+                    return { success: false, message: '締切日時を過ぎているため注文できません' };
                 }
 
                 // 既存の注文を削除
@@ -1013,13 +1374,15 @@
             }
         }
 
-        // 注文再開
+        // 注文再開（新しい締切日時で）
         async function reopenOrderAPI(params) {
             try {
                 const orderId = params.orderId;
-                await updateDoc(doc(db, 'orderPages', orderId), {
-                    status: 'open'
-                });
+                const updateData = { status: 'open' };
+                if (Object.prototype.hasOwnProperty.call(params, 'deadline')) {
+                    updateData.deadline = params.deadline; // null = 締切なし
+                }
+                await updateDoc(doc(db, 'orderPages', orderId), updateData);
                 return { success: true, message: 'Order reopened successfully' };
             } catch (error) {
                 console.error('reopenOrder error:', error);
@@ -1078,11 +1441,13 @@
                 }
 
                 const orderPageData = orderPageDoc.data();
+                autoCloseIfPast(orderId, orderPageData);
                 const orderPage = {
                     orderId: orderId,
                     orderDate: orderPageData.orderDate,
                     shopName: orderPageData.shopName || '',
                     memo: orderPageData.memo || '',
+                    deadline: orderPageData.deadline || null,
                     menus: orderPageData.menus || [],
                     status: orderPageData.status,
                     paidUsers: orderPageData.paidUsers || []
@@ -1224,12 +1589,19 @@
             try {
                 const orderId = params.orderId;
                 
-                await updateDoc(doc(db, 'orderPages', orderId), {
+                const updateData = {
                     orderDate: params.orderDate,
                     shopName: params.shopName || '',
                     memo: params.memo || '',
                     menus: params.menus
-                });
+                };
+                if (Object.prototype.hasOwnProperty.call(params, 'deadline')) {
+                    updateData.deadline = params.deadline; // null も許可
+                }
+                if (Object.prototype.hasOwnProperty.call(params, 'status')) {
+                    updateData.status = params.status;
+                }
+                await updateDoc(doc(db, 'orderPages', orderId), updateData);
 
                 return { success: true, message: 'Order page updated successfully' };
             } catch (error) {
@@ -1262,17 +1634,20 @@
 
                 let html = '';
                 sortedData.forEach(order => {
-                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
-                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const eff = effectiveStatus(order);
+                    const statusClass = eff === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = eff === 'open' ? '受付中' : '締切済';
                     const formattedDate = formatDate(order.orderDate);
                     const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
-                    
+                    const deadlineLine = deadlineBadgeHtml(order.deadline, eff);
+
                     html += `
-                        <div class="order-card" onclick="${order.status === 'open' ? `showOrderForm('${order.orderId}')` : ''}">
+                        <div class="order-card ${eff === 'open' ? '' : 'is-closed'}" onclick="${eff === 'open' ? `showOrderForm('${order.orderId}')` : ''}">
                             <div class="order-card-header">
                                 <div class="order-date">${formattedDate}${shopInfo}</div>
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
+                            ${deadlineLine}
                             <div class="order-card-body">
                                 項目: ${order.menus.map(m => m.name).join(', ')}
                             </div>
@@ -1574,6 +1949,8 @@
             
             document.getElementById('newOrderDate').value = '';
             document.getElementById('newShopName').value = '';
+            document.getElementById('newDeadline').value = '';
+            document.getElementById('newDeadlineHint').innerHTML = deadlineHintHtml('');
             document.getElementById('newMemo').value = '';
             document.getElementById('menuItems').innerHTML = `
                 <div class="menu-item">
@@ -1582,6 +1959,32 @@
                 </div>
             `;
             document.getElementById('createOrderMessage').innerHTML = '';
+        };
+
+        // 注文日変更時: 締切が空または前回のデフォルトと同じならデフォルト(前日17時)を入れる
+        window.onNewOrderDateChange = function() {
+            const orderDate = document.getElementById('newOrderDate').value;
+            const deadlineEl = document.getElementById('newDeadline');
+            const newDefault = defaultDeadlineFromOrderDate(orderDate);
+            const current = deadlineEl.value;
+            const prevDefault = deadlineEl.dataset.prevDefault || '';
+            if (!current || current === prevDefault) {
+                deadlineEl.value = newDefault;
+            }
+            deadlineEl.dataset.prevDefault = newDefault;
+            updateNewDeadlineHint();
+        };
+
+        // 締切入力のヒント更新
+        window.updateNewDeadlineHint = function() {
+            const v = document.getElementById('newDeadline').value;
+            document.getElementById('newDeadlineHint').innerHTML = deadlineHintHtml(v);
+        };
+
+        // 編集画面の締切入力ヒント更新
+        window.updateEditDeadlineHint = function() {
+            const v = document.getElementById('editDeadline').value;
+            document.getElementById('editDeadlineHint').innerHTML = deadlineHintHtml(v);
         };
 
         // 項目追加
@@ -1603,6 +2006,7 @@
             const orderDate = document.getElementById('newOrderDate').value;
             const shopName = document.getElementById('newShopName').value.trim();
             const memo = document.getElementById('newMemo').value.trim();
+            const deadlineStr = document.getElementById('newDeadline').value;
 
             if (!orderDate) {
                 messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
@@ -1632,6 +2036,7 @@
                 orderDate: orderDate,
                 shopName: shopName,
                 memo: memo,
+                deadline: inputValueToDeadline(deadlineStr),
                 menus: menus
             });
 
@@ -1678,10 +2083,12 @@
 
                 let html = '';
                 sortedData.forEach((order, index) => {
-                    const statusClass = order.status === 'open' ? 'status-open' : 'status-closed';
-                    const statusText = order.status === 'open' ? '受付中' : '締切済';
+                    const eff = effectiveStatus(order);
+                    const statusClass = eff === 'open' ? 'status-open' : 'status-closed';
+                    const statusText = eff === 'open' ? '受付中' : '締切済';
                     const formattedDate = formatDate(order.orderDate);
                     const shopInfo = order.shopName ? ` - ${order.shopName}` : '';
+                    const deadlineLine = deadlineBadgeHtml(order.deadline, eff);
                     
                     // サマリー情報を取得
                     const summary = summaries[index];
@@ -1696,17 +2103,18 @@
                     }
                     
                     html += `
-                        <div class="order-card" onclick="showOrderDetail('${order.orderId}')" style="cursor: pointer;">
+                        <div class="order-card ${eff === 'open' ? '' : 'is-closed'}" onclick="showOrderDetail('${order.orderId}')" style="cursor: pointer;">
                             <div class="order-card-header">
                                 <div class="order-date">${formattedDate}${shopInfo}</div>
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
-                            <div class="order-card-summary" style="display: flex; gap: 15px; padding: 8px 0; font-size: 0.9em; color: #555; border-bottom: 1px solid #eee; margin-bottom: 8px;">
+                            ${deadlineLine}
+                            <div class="order-card-summary">
                                 <span>👤 ${totalUsers}人</span>
                                 <span>📦 ${totalQuantity}個</span>
                                 <span>💰 ¥${totalAmount.toLocaleString()}</span>
                             </div>
-                            <div class="order-card-body" style="font-size: 0.85em; color: #666;">
+                            <div class="order-card-body">
                                 項目: ${order.menus.map(m => m.name).join(', ')}
                             </div>
                             <div class="admin-actions" onclick="event.stopPropagation();">
@@ -1748,29 +2156,39 @@
                 
                 let html = `
                     <h2>${formattedDate}${shopInfo}の注文詳細</h2>
-                    <div class="order-summary-header" style="display: flex; gap: 15px; flex-wrap: wrap; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 15px; border-radius: 10px; margin: 15px 0; color: white;">
-                        <div style="text-align: center; min-width: 60px;">
-                            <div style="font-size: 1.3em; font-weight: bold;">${totalUsers}</div>
-                            <div style="font-size: 0.75em; opacity: 0.9;">注文人数</div>
+                    <div class="order-summary-header">
+                        <div class="stat">
+                            <div class="stat-value">${totalUsers}</div>
+                            <div class="stat-label">注文人数</div>
                         </div>
-                        <div style="text-align: center; min-width: 60px;">
-                            <div style="font-size: 1.3em; font-weight: bold;">${totalQuantity}</div>
-                            <div style="font-size: 0.75em; opacity: 0.9;">合計数量</div>
+                        <div class="stat-divider"></div>
+                        <div class="stat">
+                            <div class="stat-value">${totalQuantity}</div>
+                            <div class="stat-label">合計数量</div>
                         </div>
-                        <div style="text-align: center; min-width: 80px;">
-                            <div style="font-size: 1.3em; font-weight: bold;">¥${totalAmount.toLocaleString()}</div>
-                            <div style="font-size: 0.75em; opacity: 0.9;">合計金額</div>
+                        <div class="stat-divider"></div>
+                        <div class="stat">
+                            <div class="stat-value">¥${totalAmount.toLocaleString()}</div>
+                            <div class="stat-label">合計金額</div>
                         </div>
-                        <div style="display: flex; align-items: center; margin-left: auto;">
-                            <span class="status-badge ${orderPage.status === 'open' ? 'status-open' : 'status-closed'}" style="font-size: 0.9em;">${orderPage.status === 'open' ? '受付中' : '締切済'}</span>
+                        <div class="stat-status">
+                            <span class="status-badge ${effectiveStatus(orderPage) === 'open' ? 'status-open' : 'status-closed'}">${effectiveStatus(orderPage) === 'open' ? '受付中' : '締切済'}</span>
                         </div>
                     </div>
                 `;
-                
-                if (orderPage.status === 'open') {
+
+                if (orderPage.deadline) {
+                    html += deadlineBadgeLargeHtml(orderPage.deadline, effectiveStatus(orderPage));
+                }
+
+                if (effectiveStatus(orderPage) === 'open') {
                     html += '<button class="btn btn-danger" onclick="closeOrder()">この注文を締め切る</button>';
                 } else {
-                    html += '<button class="btn btn-success" onclick="reopenOrder()">締切を取り消す（受付中に戻す）</button>';
+                    html += `
+                        <div id="reopenSection">
+                            <button class="btn btn-success" onclick="showReopenForm()">締切を取り消す（受付中に戻す）</button>
+                        </div>
+                    `;
                 }
                 
                 // 項目別集計
@@ -1842,19 +2260,19 @@
                 
                 let paymentSummaryHtml = `<p><strong>完了状況:</strong> ${paidCount} / ${totalUsers} 人</p>`;
                 if (unpaidCollectAmount > 0) {
-                    paymentSummaryHtml += `<p><strong>未集金額:</strong> <span style="color: #dc3545;">¥${unpaidCollectAmount.toLocaleString()}</span></p>`;
+                    paymentSummaryHtml += `<p><strong>未集金額:</strong> <span style="color: var(--danger);">¥${unpaidCollectAmount.toLocaleString()}</span></p>`;
                 }
                 if (unpaidPaymentAmount > 0) {
-                    paymentSummaryHtml += `<p><strong>未支払額:</strong> <span style="color: #17a2b8;">¥${unpaidPaymentAmount.toLocaleString()}</span></p>`;
+                    paymentSummaryHtml += `<p><strong>未支払額:</strong> <span style="color: var(--info);">¥${unpaidPaymentAmount.toLocaleString()}</span></p>`;
                 }
                 if (unpaidCollectAmount === 0 && unpaidPaymentAmount === 0 && totalUsers > 0) {
-                    paymentSummaryHtml += `<p style="color: #28a745;"><strong>✅ 全員完了！</strong></p>`;
+                    paymentSummaryHtml += `<p style="color: var(--success);"><strong>✅ 全員完了！</strong></p>`;
                 }
-                
+
                 html += `
                     <div class="user-order-section">
                         <h3>ユーザー別注文</h3>
-                        <div class="payment-summary" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div class="payment-summary">
                             ${paymentSummaryHtml}
                         </div>
                 `;
@@ -1879,7 +2297,7 @@
                     html += `
                         <div class="user-order ${cardClass}">
                             <div class="user-order-header">
-                                <h4>${userName}${isPayment ? ' <span style="background: #28a745; color: white; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; margin-left: 5px;">支払</span>' : ''}</h4>
+                                <h4>${userName}${isPayment ? ' <span class="payment-tag">支払</span>' : ''}</h4>
                                 ${isPaid 
                                     ? `<button class="btn btn-unpaid" onclick="togglePaymentStatus('${escapedUserName}', false)">${unpaidLabel}</button>`
                                     : `<button class="btn btn-paid" onclick="togglePaymentStatus('${escapedUserName}', true)">${paidLabel}</button>`
@@ -1890,13 +2308,13 @@
                     
                     orders.forEach(order => {
                         const amountDisplay = order.amount < 0 
-                            ? `<span style="color: #28a745;">-¥${Math.abs(order.amount).toLocaleString()}</span>`
+                            ? `<span style="color: var(--info);">-¥${Math.abs(order.amount).toLocaleString()}</span>`
                             : `¥${order.amount.toLocaleString()}`;
                         html += `<li>${order.menuName} × ${order.quantity} = ${amountDisplay}</li>`;
                     });
                     
                     const totalDisplay = userTotal < 0
-                        ? `<span style="color: #28a745;">-¥${Math.abs(userTotal).toLocaleString()}</span>（支払い）`
+                        ? `<span style="color: var(--info);">-¥${Math.abs(userTotal).toLocaleString()}</span>（支払い）`
                         : `¥${userTotal.toLocaleString()}`;
                     
                     html += `
@@ -1930,14 +2348,59 @@
             }
         };
 
-        // 締切を取り消す
-        window.reopenOrder = async function() {
-            if (!confirm('締切を取り消して受付中に戻しますか?')) {
-                return;
+        // 締切を取り消す → 新しい締切日時の入力フォームを表示
+        window.showReopenForm = function() {
+            const section = document.getElementById('reopenSection');
+            if (!section) return;
+            // デフォルト値: 現在時刻 + 1時間
+            const def = new Date(Date.now() + 60 * 60 * 1000);
+            def.setSeconds(0, 0);
+            const defStr = formatLocalDateTime(def);
+            section.innerHTML = `
+                <div class="reopen-card">
+                    <h3>締切を取り消して受付中に戻します</h3>
+                    <p class="reopen-desc">新しい締め切り日時を設定してください。空欄にすると締切なし（無期限）になります。</p>
+                    <div class="form-group">
+                        <label>新しい注文締め切り日時</label>
+                        <input type="datetime-local" id="reopenDeadline" value="${defStr}" oninput="updateReopenDeadlineHint()">
+                        <div id="reopenDeadlineHint" style="font-size: 0.85em; margin-top: 6px;"></div>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn btn-success" onclick="confirmReopen()">受付再開</button>
+                        <button class="btn btn-secondary" onclick="cancelReopen()">キャンセル</button>
+                    </div>
+                </div>
+            `;
+            updateReopenDeadlineHint();
+        };
+
+        window.updateReopenDeadlineHint = function() {
+            const v = document.getElementById('reopenDeadline').value;
+            document.getElementById('reopenDeadlineHint').innerHTML = deadlineHintHtml(v);
+        };
+
+        window.cancelReopen = function() {
+            showOrderDetail(currentOrderId);
+        };
+
+        window.confirmReopen = async function() {
+            const deadlineStr = document.getElementById('reopenDeadline').value;
+            // 過去日時のままの再開は意味がないため拒否
+            if (deadlineStr) {
+                const d = new Date(deadlineStr);
+                if (!isNaN(d.getTime()) && d.getTime() <= Date.now()) {
+                    alert('締切日時が過去です。未来の日時を指定するか、空欄（無期限）にしてください。');
+                    return;
+                }
+            } else {
+                if (!confirm('締切なし（無期限）で受付を再開しますか?')) return;
             }
-            
-            const result = await reopenOrderAPI({ orderId: currentOrderId });
-            
+
+            const result = await reopenOrderAPI({
+                orderId: currentOrderId,
+                deadline: inputValueToDeadline(deadlineStr)
+            });
+
             if (result.success) {
                 alert('受付中に戻しました');
                 showOrderDetail(currentOrderId);
@@ -2075,8 +2538,13 @@
                         <input type="text" id="editShopName" value="${orderPage.shopName || ''}" placeholder="例: お弁当（ほっともっと）">
                     </div>
                     <div class="form-group">
+                        <label>注文締め切り日時（任意）</label>
+                        <input type="datetime-local" id="editDeadline" value="${deadlineToInputValue(orderPage.deadline)}" oninput="updateEditDeadlineHint()">
+                        <div id="editDeadlineHint" style="font-size: 0.85em; margin-top: 6px;"></div>
+                    </div>
+                    <div class="form-group">
                         <label>メモ（任意）</label>
-                        <textarea id="editMemo" placeholder="例: 締切は3/5(水)までです。" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; resize: vertical;">${orderPage.memo || ''}</textarea>
+                        <textarea id="editMemo" placeholder="例： 集金締め切りは4/2(木)までです。" rows="3" style="resize: vertical;">${orderPage.memo || ''}</textarea>
                     </div>
                     <div class="form-group">
                         <label>項目</label>
@@ -2105,6 +2573,7 @@
                 `;
                 
                 container.innerHTML = html;
+                updateEditDeadlineHint();
             } else {
                 container.innerHTML = `<div class="error">${result.message}</div>`;
             }
@@ -2129,7 +2598,8 @@
             const orderDate = document.getElementById('editOrderDate').value;
             const shopName = document.getElementById('editShopName').value.trim();
             const memo = document.getElementById('editMemo').value.trim();
-            
+            const deadlineStr = document.getElementById('editDeadline').value;
+
             if (!orderDate) {
                 messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
                 setTimeout(() => messageEl.innerHTML = '', 3000);
@@ -2159,6 +2629,7 @@
                 orderDate: orderDate,
                 shopName: shopName,
                 memo: memo,
+                deadline: inputValueToDeadline(deadlineStr),
                 menus: menus
             });
             
