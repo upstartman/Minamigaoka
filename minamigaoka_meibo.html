@@ -1325,7 +1325,7 @@
       // licenseDigits: 3桁を1桁ずつ別セルに配置するためのX座標3個
       colX: {
         licenseDigits: [33, 47, 61],   // 選手行 ライセンスNo.（3桁、14pt間隔）
-        name: 95,                       // 選手氏名
+        nameCenter: 118,                // 選手氏名（セル中央X、中央揃え基準）
         no: 172,                        // 背番号（中央揃えのセル中心X）
         coachName: 135,                 // コーチ・A.コーチ 氏名
         coachLicenseDigits: [72, 86, 100], // コーチ・A.コーチ ライセンスNo.（3桁、14pt間隔）
@@ -1395,8 +1395,8 @@
           const y = row1Y - i * dy;
           rows.push({
             licenseDigits: licDigitsAt(y),
-            name:    { x: colX.name + dx, y },
-            no:      { x: colX.no   + dx, y },
+            nameCenter: { x: colX.nameCenter + dx, y },
+            no:         { x: colX.no         + dx, y },
           });
         }
         return {
@@ -1464,7 +1464,7 @@
             r.licenseDigits.forEach((p, d) => {
               page.drawText(`L${i+1}.${d+1}`, { x: p.x, y: p.y, font, size: 5, color: rgb(0, 0.6, 0) });
             });
-            page.drawText(`N${i+1}`, { x: r.name.x, y: r.name.y, font, size: 6, color: rgb(0, 0.6, 0) });
+            page.drawText(`N${i+1}`, { x: r.nameCenter.x, y: r.nameCenter.y, font, size: 6, color: rgb(0, 0.6, 0) });
             page.drawText(`#${i+1}`, { x: r.no.x,   y: r.no.y,   font, size: 6, color: rgb(0, 0.6, 0) });
           }
           page.drawText(`${sec}TEAM`, { x: secLayout.teamName.x, y: secLayout.teamName.y, font, size: 8, color: rgb(0, 0.5, 0) });
@@ -1693,17 +1693,26 @@
       const unordered = allMembers.filter(m => !orderedKeys.includes(`${m.familyId}-${m.name}`));
       const sorted = [...ordered, ...unordered];
 
+      // 上位15名を抽出。公式は jerseyOrder のまま / リバーシは「リバーシ背番号 昇順（00→0→1→…→99、未設定は末尾）」に並び替え
+      let top15 = sorted.slice(0, 15);
+      if (jerseyKind === 'reversi') {
+        const reversiKey = (v) => {
+          if (v == null || v === '') return Infinity; // 未設定は末尾へ
+          const s = String(v);
+          if (s === '00') return -1;                  // 00 は 0 より前
+          const n = parseInt(s, 10);
+          return Number.isFinite(n) ? n : Infinity;
+        };
+        top15 = [...top15].sort((a, b) => reversiKey(a.reversiNumber) - reversiKey(b.reversiNumber));
+      }
       let entries = [];
-      // 公式・リバーシ共に jerseyOrder の並び順を使う。番号だけ切り替え
-      sorted.forEach((m, i) => {
-        if (i < 15) {
-          const no = jerseyKind === 'official' ? (i + 4) : (m.reversiNumber || '');
-          entries.push({
-            no,
-            name: m.fullName,
-            license3: (m.jbaLicense || '').toString().slice(-3),
-          });
-        }
+      top15.forEach((m, i) => {
+        const no = jerseyKind === 'official' ? (i + 4) : (m.reversiNumber || '');
+        entries.push({
+          no,
+          name: m.fullName,
+          license3: (m.jbaLicense || '').toString().slice(-3),
+        });
       });
       return entries;
     }
@@ -1798,7 +1807,13 @@
           const row = layout.rows[i];
           if (!row) return;
           drawLicenseDigits(e.license3, row.licenseDigits, 10);
-          drawMixed(e.name, row.name, 9);
+          // 選手氏名は中央揃え（colX.nameCenter をセル中心X として扱う）
+          const nameSize = 9;
+          const nameW = [...String(e.name || '')].reduce((w, ch) => {
+            const useFont = isAscii(ch) ? latinFont : jpFont;
+            try { return w + useFont.widthOfTextAtSize(ch, nameSize); } catch (_) { return w + nameSize * 0.5; }
+          }, 0);
+          drawMixed(e.name, { x: row.nameCenter.x - nameW / 2, y: row.nameCenter.y }, nameSize);
           // 背番号は中央揃え（colX.no をセル中心X として扱う）
           const noStr = String(e.no || '');
           const noW = latinFont.widthOfTextAtSize(noStr, 9);
