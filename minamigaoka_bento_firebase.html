@@ -816,6 +816,191 @@
         }
         .payment-summary p strong { color: var(--text); font-weight: 500; }
 
+        /* メンバー選択モーダル */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(2px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        .modal-card {
+            background: var(--surface);
+            border-radius: var(--r);
+            width: 100%;
+            max-width: 560px;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 2px 8px;
+            border-radius: var(--r-sm);
+        }
+        .modal-close:hover { background: var(--surface-2); color: var(--text); }
+        .modal-search {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-search input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .modal-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+        .modal-actions-top {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .btn-mini {
+            padding: 5px 10px;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .btn-mini:hover { background: var(--surface-2); }
+        .btn-mini-primary {
+            background: var(--basketball);
+            color: #fff;
+            border-color: var(--basketball);
+        }
+        .btn-mini-primary:hover { background: var(--basketball-deep); border-color: var(--basketball-deep); }
+        .modal-count {
+            margin-left: auto;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 4px;
+        }
+        .member-group-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--basketball-deep);
+            background: var(--surface-2);
+            position: sticky;
+            top: 0;
+        }
+        .member-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .member-row:hover { background: var(--surface-2); }
+        .member-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .member-row-name {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .member-row-tag {
+            font-size: 0.75rem;
+            color: var(--text-subtle);
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        /* 集金画面: 選択済みメンバーチップ */
+        .selected-member-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            border: 1px solid var(--primary-soft-border);
+            border-radius: 999px;
+            padding: 3px 4px 3px 10px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            margin: 2px 4px 2px 0;
+        }
+        .selected-member-chip button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            color: var(--primary);
+            padding: 0 4px;
+            border-radius: 999px;
+        }
+        .selected-member-chip button:hover { background: rgba(29,58,138,0.12); }
+
+        /* 集金画面: 清算インポートバッジ */
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: var(--info-soft);
+            color: var(--info);
+            border: 1px solid var(--info-soft-border);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: 6px;
+        }
+
         /* 支払対象バッジ（目立たせる） */
         .payment-tag {
             display: inline-flex;
@@ -875,6 +1060,7 @@
             <div class="mode-selector">
                 <button class="mode-btn active" onclick="switchMode('user')">注文画面</button>
                 <button class="mode-btn" onclick="switchMode('admin')">管理画面</button>
+                <button class="mode-btn" onclick="switchMode('collection')">集金画面</button>
             </div>
         </div>
 
@@ -952,6 +1138,90 @@
                     <div id="orderDetailContent"></div>
                 </div>
             </div>
+
+            <!-- 集金モード -->
+            <div id="collectionMode" class="section">
+                <div id="collectionListSection" class="section active">
+                    <h2>集金管理</h2>
+                    <div class="create-button-container" style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="showCreateCollectionPage()">＋ 新規集金ページ作成</button>
+                    </div>
+                    <div id="collectionList"></div>
+                </div>
+
+                <div id="createCollectionSection" class="section">
+                    <a href="#" class="back-link" onclick="showCollectionList(); return false;">← 集金管理に戻る</a>
+                    <h2 id="collectionFormTitle">新規集金ページ作成</h2>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="newCollectionDate" onchange="onNewCollectionDateChange()">
+                    </div>
+                    <div class="form-group">
+                        <label>集金内容</label>
+                        <input type="text" id="newCollectionTitle" placeholder="例: 11月分 遠征費">
+                    </div>
+                    <div class="form-group">
+                        <label>集金締め切り日時（任意）</label>
+                        <input type="datetime-local" id="newCollectionDeadline" oninput="updateNewCollectionDeadlineHint()">
+                        <div id="newCollectionDeadlineHint" style="font-size: 0.85em; margin-top: 6px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>メモ（任意）</label>
+                        <textarea id="newCollectionMemo" placeholder="例： 4/5(日)の遠征費用清算です。" rows="3" style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>集金対象者</label>
+                        <button type="button" class="btn btn-secondary" onclick="openMemberSelection()">
+                            <span id="memberSelectionLabel">0名選択中 — 選択する</span>
+                        </button>
+                        <div id="selectedMembersList" style="margin-top: 10px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>項目（一律で全員に適用）</label>
+                        <div class="menu-items" id="collectionMenuItems">
+                            <div class="menu-item">
+                                <input type="text" placeholder="項目名" class="menu-name">
+                                <input type="number" placeholder="価格" class="menu-price" min="0">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="addCollectionMenuItem()">+ 項目追加</button>
+                    </div>
+                    <div class="buttons-container">
+                        <button class="btn" onclick="saveCollectionPage()">作成</button>
+                        <button class="btn btn-secondary" onclick="showCollectionList()">キャンセル</button>
+                    </div>
+                    <div id="createCollectionMessage"></div>
+                </div>
+
+                <div id="collectionDetailSection" class="section">
+                    <a href="#" class="back-link" onclick="showCollectionList(); return false;">← 集金管理に戻る</a>
+                    <div id="collectionDetailContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- メンバー選択モーダル -->
+    <div id="memberSelectionModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>集金対象者を選択</h3>
+                <button class="modal-close" onclick="closeMemberSelection()">×</button>
+            </div>
+            <div class="modal-search">
+                <input type="text" id="memberSearchInput" placeholder="🔍 検索（名前・カナ・家庭名）" oninput="filterMemberList()">
+            </div>
+            <div class="modal-actions-top">
+                <button type="button" class="btn-mini" onclick="memberSelectAll(true)">☑ 全選択</button>
+                <button type="button" class="btn-mini btn-mini-primary" onclick="memberSelectMembersOnly()">🏀 部員全選択</button>
+                <button type="button" class="btn-mini" onclick="memberSelectAll(false)">☐ 全解除</button>
+                <span class="modal-count" id="memberSelectionCount">0名選択中</span>
+            </div>
+            <div class="modal-body" id="memberListBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMemberSelection()">キャンセル</button>
+                <button class="btn" onclick="confirmMemberSelection()">確定</button>
+            </div>
         </div>
     </div>
 
@@ -988,8 +1258,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // 名簿アプリ Firebase 接続（集金画面のメンバー選択用）
+        const meiboFirebaseConfig = {
+            apiKey: "AIzaSyACgA83z7xBWICIFLUK1_AwDFL9_EXRJW8",
+            authDomain: "minamigaoka-meibo.firebaseapp.com",
+            projectId: "minamigaoka-meibo",
+            storageBucket: "minamigaoka-meibo.firebasestorage.app",
+            messagingSenderId: "160499455872",
+            appId: "1:160499455872:web:meibo"
+        };
+        const meiboApp = initializeApp(meiboFirebaseConfig, 'meiboApp');
+        const meiboDb = getFirestore(meiboApp);
+
         let currentMode = 'user';
         let currentOrderId = null;
+        let currentCollectionId = null;
+        let meiboMembersCache = null; // 名簿メンバーキャッシュ
+        let memberSelectionState = []; // モーダルでの選択状態
 
         // UUID生成
         function generateUUID() {
@@ -1015,13 +1300,23 @@
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
-        // 注文日の前日17時を "YYYY-MM-DDTHH:mm" で返す（プリセット用）
+        // 注文日の前日17時を "YYYY-MM-DDTHH:mm" で返す（注文ページ用プリセット）
         function defaultDeadlineFromOrderDate(orderDateStr) {
             if (!orderDateStr) return '';
             const parts = orderDateStr.split('-');
             if (parts.length !== 3) return '';
             const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
             d.setDate(d.getDate() - 1);
+            d.setHours(17, 0, 0, 0);
+            return formatLocalDateTime(d);
+        }
+
+        // 当日17時を "YYYY-MM-DDTHH:mm" で返す（集金ページ用プリセット）
+        function defaultDeadlineFromCollectionDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return '';
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
             d.setHours(17, 0, 0, 0);
             return formatLocalDateTime(d);
         }
@@ -1133,27 +1428,290 @@
         // モード切り替え
         window.switchMode = function(mode) {
             currentMode = mode;
-            
+
             // ボタンのアクティブ状態を更新
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
 
             // セクションの表示切り替え
             document.getElementById('userMode').classList.remove('active');
             document.getElementById('adminMode').classList.remove('active');
+            const collectionRoot = document.getElementById('collectionMode');
+            if (collectionRoot) collectionRoot.classList.remove('active');
 
             if (mode === 'user') {
                 document.getElementById('userMode').classList.add('active');
                 showOrderList();
-            } else {
+            } else if (mode === 'admin') {
                 document.getElementById('adminMode').classList.add('active');
                 showOrderManagement();
+            } else if (mode === 'collection') {
+                if (collectionRoot) collectionRoot.classList.add('active');
+                showCollectionList();
             }
         };
 
         // ======================================
+        // ======================================
+        // 名簿アプリ メンバー取得
+        // ======================================
+
+        // 学年計算（age → 学年文字列）
+        function ageToGrade(age) {
+            if (age == null) return '';
+            const a = Number(age);
+            if (isNaN(a)) return '';
+            // 部員＝小学生想定: 6歳=小1 ... 12歳=小6
+            if (a >= 6 && a <= 12) return `小${a - 5}`;
+            if (a >= 13 && a <= 15) return `中${a - 12}`;
+            if (a >= 16 && a <= 18) return `高${a - 15}`;
+            if (a >= 0 && a <= 5) return '未就学';
+            return '';
+        }
+
+        // 名簿アプリから families を読み込み、平坦化したメンバーリストを返す
+        async function loadMeiboMembers(forceReload = false) {
+            if (meiboMembersCache && !forceReload) return meiboMembersCache;
+            try {
+                const snap = await getDocs(collection(meiboDb, 'families'));
+                const members = [];
+                snap.forEach(docSnap => {
+                    const f = docSnap.data();
+                    const familyId = docSnap.id;
+                    const familyName = f.name || '';
+                    (f.members || []).forEach((m, idx) => {
+                        members.push({
+                            familyId,
+                            familyName,
+                            memberIndex: idx,
+                            name: m.name || '',
+                            kana: m.kana || '',
+                            type: m.type || 'member',
+                            role: m.role || '',
+                            age: m.age,
+                            grade: ageToGrade(m.age),
+                            position: m.position || '',
+                            jerseyNumber: m.jerseyNumber || '',
+                            fullName: `${familyName} ${m.name || ''}`.trim()
+                        });
+                    });
+                });
+                meiboMembersCache = members;
+                return members;
+            } catch (error) {
+                console.error('loadMeiboMembers error:', error);
+                return [];
+            }
+        }
+
+        // ======================================
+        // 集金ページ API (collectionPages)
+        // ======================================
+
+        // 集金ページ一覧
+        async function getCollectionPages() {
+            try {
+                const snap = await getDocs(collection(db, 'collectionPages'));
+                const pages = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    autoCloseIfPastCollection(docSnap.id, data);
+                    pages.push({
+                        collectionId: docSnap.id,
+                        date: data.date || '',
+                        title: data.title || '',
+                        deadline: data.deadline || null,
+                        memo: data.memo || '',
+                        status: data.status || 'open',
+                        source: data.source || 'manual',
+                        menus: data.menus || [],
+                        targets: data.targets || [],
+                        familyEntries: data.familyEntries || [],
+                        paidFamilies: data.paidFamilies || [],
+                        expenseRef: data.expenseRef || null,
+                        createdAt: data.createdAt
+                    });
+                });
+                pages.sort((a, b) => {
+                    const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+                    const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+                    return tb - ta;
+                });
+                return { success: true, data: pages };
+            } catch (error) {
+                console.error('getCollectionPages error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金詳細
+        async function getCollectionDetail(collectionId) {
+            try {
+                const snap = await getDoc(doc(db, 'collectionPages', collectionId));
+                if (!snap.exists()) return { success: false, message: 'Collection page not found' };
+                const data = snap.data();
+                autoCloseIfPastCollection(collectionId, data);
+                return {
+                    success: true,
+                    data: {
+                        collectionId,
+                        date: data.date || '',
+                        title: data.title || '',
+                        deadline: data.deadline || null,
+                        memo: data.memo || '',
+                        status: data.status || 'open',
+                        source: data.source || 'manual',
+                        menus: data.menus || [],
+                        targets: data.targets || [],
+                        familyEntries: data.familyEntries || [],
+                        paidFamilies: data.paidFamilies || [],
+                        expenseRef: data.expenseRef || null,
+                        createdAt: data.createdAt
+                    }
+                };
+            } catch (error) {
+                console.error('getCollectionDetail error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金ページ作成
+        async function createCollectionPageAPI(params) {
+            try {
+                const docRef = await addDoc(collection(db, 'collectionPages'), {
+                    date: params.date,
+                    title: params.title || '',
+                    deadline: params.deadline || null,
+                    memo: params.memo || '',
+                    menus: params.menus || [],
+                    targets: params.targets || [],
+                    paidFamilies: [],
+                    status: 'open',
+                    source: 'manual',
+                    createdAt: Timestamp.now()
+                });
+                return { success: true, data: { collectionId: docRef.id } };
+            } catch (error) {
+                console.error('createCollectionPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金ページ編集（手動作成のみ全項目編集可能）
+        async function editCollectionPageAPI(params) {
+            try {
+                const updateData = {};
+                ['date','title','memo','menus','targets'].forEach(k => {
+                    if (Object.prototype.hasOwnProperty.call(params, k)) updateData[k] = params[k];
+                });
+                if (Object.prototype.hasOwnProperty.call(params, 'deadline')) updateData.deadline = params.deadline;
+                await updateDoc(doc(db, 'collectionPages', params.collectionId), updateData);
+                return { success: true };
+            } catch (error) {
+                console.error('editCollectionPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 締切日時のみ更新（清算インポート由来データ用）
+        async function updateCollectionDeadlineAPI(collectionId, deadline) {
+            try {
+                await updateDoc(doc(db, 'collectionPages', collectionId), { deadline: deadline });
+                return { success: true };
+            } catch (error) {
+                console.error('updateCollectionDeadline error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金完了 / 完了取消
+        async function setCollectionStatusAPI(collectionId, status, deadline) {
+            try {
+                const upd = { status };
+                if (deadline !== undefined) upd.deadline = deadline;
+                await updateDoc(doc(db, 'collectionPages', collectionId), upd);
+                return { success: true };
+            } catch (error) {
+                console.error('setCollectionStatus error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 家族の集金済 / 未集金 トグル
+        async function toggleCollectionPaidFamilyAPI(collectionId, familyId, isPaid) {
+            try {
+                const snap = await getDoc(doc(db, 'collectionPages', collectionId));
+                if (!snap.exists()) return { success: false, message: 'not found' };
+                let paid = snap.data().paidFamilies || [];
+                if (isPaid) {
+                    if (!paid.includes(familyId)) paid.push(familyId);
+                } else {
+                    paid = paid.filter(id => id !== familyId);
+                }
+                await updateDoc(doc(db, 'collectionPages', collectionId), { paidFamilies: paid });
+                return { success: true };
+            } catch (error) {
+                console.error('togglePaidFamily error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金ページ削除
+        async function deleteCollectionPageAPI(collectionId) {
+            try {
+                await deleteDoc(doc(db, 'collectionPages', collectionId));
+                return { success: true };
+            } catch (error) {
+                console.error('deleteCollectionPage error:', error);
+                return { success: false, message: error.toString() };
+            }
+        }
+
+        // 集金ページの自動完了（締切超過）
+        function autoCloseIfPastCollection(collectionId, data) {
+            if (data.status === 'open' && isDeadlinePassed(data.deadline)) {
+                updateDoc(doc(db, 'collectionPages', collectionId), { status: 'closed' }).catch(() => {});
+                data.status = 'closed';
+            }
+        }
+
+        // 集金ページを家族単位に集約（targets / familyEntries の両方に対応）
+        function aggregateCollectionByFamily(page) {
+            // 清算インポート由来: familyEntries をそのまま使う
+            if (page.source === 'expense-import' && Array.isArray(page.familyEntries) && page.familyEntries.length > 0) {
+                return page.familyEntries.map(fe => ({
+                    familyId: fe.familyId,
+                    familyName: fe.familyName,
+                    members: (fe.members || []).map(m => ({
+                        name: m.name,
+                        amount: m.amount
+                    })),
+                    totalAmount: fe.totalAmount != null
+                        ? fe.totalAmount
+                        : (fe.members || []).reduce((s, m) => s + (m.amount || 0), 0)
+                }));
+            }
+            // 手動作成: targets を familyId でグルーピング、各家族の合計 = メンバー数 × menus価格合計
+            const itemTotal = (page.menus || []).reduce((s, m) => s + (Number(m.price) || 0), 0);
+            const grouped = {};
+            (page.targets || []).forEach(t => {
+                const fid = t.familyId || 'unknown';
+                if (!grouped[fid]) {
+                    grouped[fid] = {
+                        familyId: fid,
+                        familyName: t.familyName || '',
+                        members: [],
+                        totalAmount: 0
+                    };
+                }
+                grouped[fid].members.push({ name: t.name, amount: itemTotal });
+                grouped[fid].totalAmount += itemTotal;
+            });
+            return Object.values(grouped);
+        }
+
         // Firebase Firestore API 関数
         // ======================================
 
@@ -2642,6 +3200,632 @@
                 messageEl.innerHTML = `<div class="error">${result.message}</div>`;
                 setTimeout(() => messageEl.innerHTML = '', 3000);
             }
+        };
+
+        // ======================================
+        // 集金画面 ハンドラ群
+        // ======================================
+
+        // 集金一覧
+        window.showCollectionList = async function() {
+            currentCollectionId = null;
+            document.getElementById('collectionListSection').classList.add('active');
+            document.getElementById('createCollectionSection').classList.remove('active');
+            document.getElementById('collectionDetailSection').classList.remove('active');
+
+            const container = document.getElementById('collectionList');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            const result = await getCollectionPages();
+            if (!result.success) {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+                return;
+            }
+            const pages = result.data;
+            if (pages.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">集金ページがありません。「＋ 新規集金ページ作成」または遠征清算アプリからのインポートで作成してください。</p>';
+                return;
+            }
+
+            let html = '';
+            pages.forEach(page => {
+                const eff = effectiveStatus(page);
+                const statusClass = eff === 'open' ? 'status-open' : 'status-closed';
+                const statusText = eff === 'open' ? '受付中' : '完了';
+                const deadlineLine = deadlineBadgeHtml(page.deadline, eff);
+                const families = aggregateCollectionByFamily(page);
+                const totalAmount = families.reduce((s, f) => s + (f.totalAmount || 0), 0);
+                const familyCount = families.length;
+                const paidCount = (page.paidFamilies || []).length;
+                const sourceBadge = page.source === 'expense-import'
+                    ? '<span class="source-badge">🔗 遠征清算より</span>'
+                    : '';
+
+                html += `
+                    <div class="order-card ${eff === 'open' ? '' : 'is-closed'}" onclick="showCollectionDetail('${page.collectionId}')" style="cursor:pointer;">
+                        <div class="order-card-header">
+                            <div class="order-date">${page.date}${page.title ? ' - ' + page.title : ''}${sourceBadge}</div>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                        ${deadlineLine}
+                        <div class="order-card-summary">
+                            <span>👪 ${familyCount}家族</span>
+                            <span>✓ ${paidCount}/${familyCount}</span>
+                            <span>💰 ¥${Math.abs(totalAmount).toLocaleString()}</span>
+                        </div>
+                        <div class="admin-actions" onclick="event.stopPropagation();">
+                            ${page.source === 'manual'
+                                ? `<button class="btn" onclick="showEditCollectionPage('${page.collectionId}')">編集</button>`
+                                : ''
+                            }
+                            <button class="btn btn-danger" onclick="deleteCollectionPage('${page.collectionId}')">削除</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        };
+
+        // 新規集金ページ作成画面表示
+        window.showCreateCollectionPage = async function() {
+            currentCollectionId = null;
+            memberSelectionState = [];
+            document.getElementById('collectionListSection').classList.remove('active');
+            document.getElementById('createCollectionSection').classList.add('active');
+            document.getElementById('collectionDetailSection').classList.remove('active');
+
+            document.getElementById('collectionFormTitle').textContent = '新規集金ページ作成';
+            document.getElementById('newCollectionDate').value = '';
+            document.getElementById('newCollectionTitle').value = '';
+            document.getElementById('newCollectionDeadline').value = '';
+            document.getElementById('newCollectionDeadlineHint').innerHTML = deadlineHintHtml('');
+            document.getElementById('newCollectionMemo').value = '';
+            document.getElementById('collectionMenuItems').innerHTML = `
+                <div class="menu-item">
+                    <input type="text" placeholder="項目名" class="menu-name">
+                    <input type="number" placeholder="価格" class="menu-price" min="0">
+                </div>
+            `;
+            renderSelectedMembers();
+            document.getElementById('createCollectionMessage').innerHTML = '';
+
+            // 名簿プリロード（表示遅延を防ぐ）
+            loadMeiboMembers().catch(() => {});
+        };
+
+        // 集金日変更時の締切デフォルト（当日17時）
+        window.onNewCollectionDateChange = function() {
+            const dateStr = document.getElementById('newCollectionDate').value;
+            const dlEl = document.getElementById('newCollectionDeadline');
+            const newDefault = defaultDeadlineFromCollectionDate(dateStr);
+            const current = dlEl.value;
+            const prevDefault = dlEl.dataset.prevDefault || '';
+            if (!current || current === prevDefault) {
+                dlEl.value = newDefault;
+            }
+            dlEl.dataset.prevDefault = newDefault;
+            updateNewCollectionDeadlineHint();
+        };
+
+        window.updateNewCollectionDeadlineHint = function() {
+            const v = document.getElementById('newCollectionDeadline').value;
+            document.getElementById('newCollectionDeadlineHint').innerHTML = deadlineHintHtml(v);
+        };
+
+        window.addCollectionMenuItem = function() {
+            const container = document.getElementById('collectionMenuItems');
+            const div = document.createElement('div');
+            div.className = 'menu-item';
+            div.innerHTML = `
+                <input type="text" placeholder="項目名" class="menu-name">
+                <input type="number" placeholder="価格" class="menu-price" min="0">
+                <button onclick="this.parentElement.remove()">削除</button>
+            `;
+            container.appendChild(div);
+        };
+
+        // 選択済みメンバーの表示更新
+        function renderSelectedMembers() {
+            const list = document.getElementById('selectedMembersList');
+            const label = document.getElementById('memberSelectionLabel');
+            label.textContent = `${memberSelectionState.length}名選択中 — 選択する`;
+            if (memberSelectionState.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+            list.innerHTML = memberSelectionState.map((m, idx) => `
+                <span class="selected-member-chip">
+                    ${escapeHtml(m.fullName || (m.familyName + ' ' + m.name))}
+                    <button onclick="removeSelectedMember(${idx})">×</button>
+                </span>
+            `).join('');
+        }
+
+        window.removeSelectedMember = function(index) {
+            memberSelectionState.splice(index, 1);
+            renderSelectedMembers();
+        };
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            }[c]));
+        }
+
+        // 集金ページ保存
+        window.saveCollectionPage = async function() {
+            const messageEl = document.getElementById('createCollectionMessage');
+            const date = document.getElementById('newCollectionDate').value;
+            const title = document.getElementById('newCollectionTitle').value.trim();
+            const memo = document.getElementById('newCollectionMemo').value.trim();
+            const deadlineStr = document.getElementById('newCollectionDeadline').value;
+
+            if (!date) {
+                messageEl.innerHTML = '<div class="error">日付を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            if (!title) {
+                messageEl.innerHTML = '<div class="error">集金内容を入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+            if (memberSelectionState.length === 0) {
+                messageEl.innerHTML = '<div class="error">集金対象者を1名以上選択してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const items = document.querySelectorAll('#collectionMenuItems .menu-item');
+            const menus = [];
+            items.forEach(it => {
+                const n = it.querySelector('.menu-name').value.trim();
+                const p = parseFloat(it.querySelector('.menu-price').value);
+                if (n && !isNaN(p) && p > 0) menus.push({ name: n, price: p });
+            });
+            if (menus.length === 0) {
+                messageEl.innerHTML = '<div class="error">項目を1つ以上入力してください</div>';
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+                return;
+            }
+
+            const targets = memberSelectionState.map(m => ({
+                familyId: m.familyId,
+                familyName: m.familyName,
+                memberIndex: m.memberIndex,
+                name: m.name,
+                type: m.type,
+                grade: m.grade || ''
+            }));
+
+            const params = {
+                date,
+                title,
+                memo,
+                deadline: inputValueToDeadline(deadlineStr),
+                menus,
+                targets
+            };
+
+            let result;
+            if (currentCollectionId) {
+                result = await editCollectionPageAPI({ collectionId: currentCollectionId, ...params });
+            } else {
+                result = await createCollectionPageAPI(params);
+            }
+
+            if (result.success) {
+                messageEl.innerHTML = '<div class="success">保存しました</div>';
+                setTimeout(() => showCollectionList(), 1000);
+            } else {
+                messageEl.innerHTML = `<div class="error">${result.message}</div>`;
+                setTimeout(() => messageEl.innerHTML = '', 3000);
+            }
+        };
+
+        // 編集
+        window.showEditCollectionPage = async function(collectionId) {
+            const result = await getCollectionDetail(collectionId);
+            if (!result.success) {
+                alert(result.message);
+                return;
+            }
+            const page = result.data;
+            if (page.source !== 'manual') {
+                alert('清算アプリ由来のデータは編集できません。締切日時の変更や集金状況の管理は詳細画面から行えます。');
+                return;
+            }
+
+            currentCollectionId = collectionId;
+            memberSelectionState = (page.targets || []).map(t => ({ ...t, fullName: `${t.familyName} ${t.name}`.trim() }));
+
+            document.getElementById('collectionListSection').classList.remove('active');
+            document.getElementById('createCollectionSection').classList.add('active');
+            document.getElementById('collectionDetailSection').classList.remove('active');
+
+            document.getElementById('collectionFormTitle').textContent = '集金ページ編集';
+            document.getElementById('newCollectionDate').value = page.date || '';
+            document.getElementById('newCollectionTitle').value = page.title || '';
+            document.getElementById('newCollectionDeadline').value = deadlineToInputValue(page.deadline);
+            document.getElementById('newCollectionMemo').value = page.memo || '';
+            updateNewCollectionDeadlineHint();
+
+            const container = document.getElementById('collectionMenuItems');
+            container.innerHTML = '';
+            (page.menus || []).forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.innerHTML = `
+                    <input type="text" placeholder="項目名" class="menu-name" value="${escapeHtml(m.name)}">
+                    <input type="number" placeholder="価格" class="menu-price" min="0" value="${m.price}">
+                    <button onclick="this.parentElement.remove()">削除</button>
+                `;
+                container.appendChild(div);
+            });
+            if (container.children.length === 0) {
+                addCollectionMenuItem();
+            }
+
+            renderSelectedMembers();
+            document.getElementById('createCollectionMessage').innerHTML = '';
+            loadMeiboMembers().catch(() => {});
+        };
+
+        // 削除
+        window.deleteCollectionPage = async function(collectionId) {
+            if (!confirm('この集金ページを削除しますか?')) return;
+            const r = await deleteCollectionPageAPI(collectionId);
+            if (r.success) {
+                showCollectionList();
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        // 詳細
+        window.showCollectionDetail = async function(collectionId) {
+            currentCollectionId = collectionId;
+            document.getElementById('collectionListSection').classList.remove('active');
+            document.getElementById('createCollectionSection').classList.remove('active');
+            document.getElementById('collectionDetailSection').classList.add('active');
+
+            const container = document.getElementById('collectionDetailContent');
+            container.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            const result = await getCollectionDetail(collectionId);
+            if (!result.success) {
+                container.innerHTML = `<div class="error">${result.message}</div>`;
+                return;
+            }
+            const page = result.data;
+            const families = aggregateCollectionByFamily(page);
+            const totalAmount = families.reduce((s, f) => s + (f.totalAmount || 0), 0);
+            const totalCollect = families.reduce((s, f) => s + (f.totalAmount > 0 ? f.totalAmount : 0), 0);
+            const totalPayment = families.reduce((s, f) => s + (f.totalAmount < 0 ? Math.abs(f.totalAmount) : 0), 0);
+            const familyCount = families.length;
+            const paidCount = (page.paidFamilies || []).length;
+            const eff = effectiveStatus(page);
+            const sourceBadge = page.source === 'expense-import'
+                ? '<span class="source-badge">🔗 遠征清算より</span>'
+                : '';
+
+            let html = `
+                <h2>${escapeHtml(page.date)}${page.title ? ' - ' + escapeHtml(page.title) : ''}${sourceBadge}</h2>
+                <div class="order-summary-header">
+                    <div class="stat">
+                        <div class="stat-value">${familyCount}</div>
+                        <div class="stat-label">家族数</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-value">${paidCount}</div>
+                        <div class="stat-label">集金済</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-value">¥${Math.abs(totalAmount).toLocaleString()}</div>
+                        <div class="stat-label">合計</div>
+                    </div>
+                    <div class="stat-status">
+                        <span class="status-badge ${eff === 'open' ? 'status-open' : 'status-closed'}">${eff === 'open' ? '受付中' : '完了'}</span>
+                    </div>
+                </div>
+            `;
+
+            if (page.deadline) {
+                html += deadlineBadgeLargeHtml(page.deadline, eff);
+            }
+
+            if (page.memo) {
+                html += `<div class="payment-summary"><p style="white-space:pre-wrap;">${escapeHtml(page.memo)}</p></div>`;
+            }
+
+            // 締切日時の手動編集（清算インポート由来データでも可能）
+            html += `
+                <details style="margin: 10px 0;">
+                    <summary style="cursor:pointer; font-size:0.85rem; color:var(--text-muted);">⏰ 締切日時を変更</summary>
+                    <div class="form-group" style="margin-top:8px;">
+                        <input type="datetime-local" id="detailDeadlineEdit" value="${deadlineToInputValue(page.deadline)}">
+                        <div class="buttons-container" style="margin-top:6px;">
+                            <button class="btn" onclick="saveDetailDeadline()">保存</button>
+                            <button class="btn btn-secondary" onclick="clearDetailDeadline()">締切なし</button>
+                        </div>
+                    </div>
+                </details>
+            `;
+
+            if (eff === 'open') {
+                html += '<button class="btn btn-success" onclick="completeCollection()">✓ 集金を完了する</button>';
+            } else {
+                html += `
+                    <div id="reopenSection">
+                        <button class="btn btn-secondary" onclick="reopenCollection()">完了を取り消す（受付中に戻す）</button>
+                    </div>
+                `;
+            }
+
+            // 項目別
+            if (page.source === 'manual' && page.menus && page.menus.length > 0) {
+                html += `<div class="summary-section"><h3>項目（一律で全員に適用）</h3><ul style="list-style:none; padding:0;">`;
+                page.menus.forEach(m => {
+                    html += `<li style="padding:4px 0; color:var(--text-muted); font-size:0.9rem;">・${escapeHtml(m.name)}: ¥${Number(m.price).toLocaleString()}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+
+            // 家族別集金状況
+            html += `<div class="user-order-section"><h3>家族別集金状況</h3>`;
+            const paidFamilies = page.paidFamilies || [];
+            if (totalPayment > 0) {
+                html += `<div class="payment-summary"><p>💰 集金合計: <strong>¥${totalCollect.toLocaleString()}</strong> ／ 💸 支払合計: <strong style="color:var(--info);">¥${totalPayment.toLocaleString()}</strong></p></div>`;
+            }
+
+            families.forEach(fam => {
+                const isPaid = paidFamilies.includes(fam.familyId);
+                const isPayment = fam.totalAmount < 0;
+                let cardClass = isPaid ? 'paid' : '';
+                if (isPayment) cardClass += ' payment-target';
+                const escFid = String(fam.familyId).replace(/'/g, "\\'");
+                const escFname = String(fam.familyName || '').replace(/'/g, "\\'");
+                const actionLabel = isPaid
+                    ? (isPayment ? '未支払に戻す' : '未集金に戻す')
+                    : (isPayment ? '支払済みにする' : '集金済みにする');
+                const actionClass = isPaid ? 'btn-unpaid' : 'btn-paid';
+                const memberLines = fam.members.map(m => {
+                    const amt = m.amount < 0
+                        ? `<span style="color:var(--info);">-¥${Math.abs(m.amount).toLocaleString()}</span>`
+                        : `¥${Number(m.amount).toLocaleString()}`;
+                    return `<li>${escapeHtml(m.name)}: ${amt}</li>`;
+                }).join('');
+                const totalLine = fam.totalAmount < 0
+                    ? `<span style="color:var(--info);">-¥${Math.abs(fam.totalAmount).toLocaleString()}</span>（支払い）`
+                    : `¥${fam.totalAmount.toLocaleString()}`;
+
+                html += `
+                    <div class="user-order ${cardClass}">
+                        <div class="user-order-header">
+                            <h4>${escapeHtml(fam.familyName)}家${isPayment ? ' <span class="payment-tag">支払</span>' : ''}</h4>
+                            <button class="btn ${actionClass}" onclick="toggleCollectionPaidFamily('${escFid}', ${!isPaid}, '${escFname}', ${fam.totalAmount}, ${isPayment})">${actionLabel}</button>
+                        </div>
+                        <ul>${memberLines}</ul>
+                        <p style="margin-top:6px;"><strong>小計: ${totalLine}</strong></p>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            container.innerHTML = html;
+        };
+
+        window.completeCollection = async function() {
+            if (!confirm('この集金を完了しますか? 完了するとステータスが「完了」に変わります。')) return;
+            const r = await setCollectionStatusAPI(currentCollectionId, 'closed');
+            if (r.success) {
+                showCollectionDetail(currentCollectionId);
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        window.reopenCollection = async function() {
+            if (!confirm('完了を取り消して受付中に戻しますか?')) return;
+            // 締切が過去のままだと再度自動完了するため、null（締切なし）にして再開
+            const r = await setCollectionStatusAPI(currentCollectionId, 'open', null);
+            if (r.success) {
+                showCollectionDetail(currentCollectionId);
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        window.saveDetailDeadline = async function() {
+            const v = document.getElementById('detailDeadlineEdit').value;
+            const r = await updateCollectionDeadlineAPI(currentCollectionId, inputValueToDeadline(v));
+            if (r.success) {
+                showCollectionDetail(currentCollectionId);
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        window.clearDetailDeadline = async function() {
+            const r = await updateCollectionDeadlineAPI(currentCollectionId, null);
+            if (r.success) {
+                showCollectionDetail(currentCollectionId);
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        window.toggleCollectionPaidFamily = async function(familyId, isPaid, familyName, totalAmount, isPayment) {
+            // 表示用テキスト
+            const famLabel = familyName ? `${familyName}家` : 'この家族';
+            const amtText = totalAmount != null
+                ? (Number(totalAmount) < 0
+                    ? `¥${Math.abs(Number(totalAmount)).toLocaleString()}（支払い）`
+                    : `¥${Number(totalAmount).toLocaleString()}`)
+                : '';
+            let msg;
+            if (isPaid) {
+                if (isPayment) {
+                    msg = `${famLabel} を「支払い済み」にしますか？\n金額: ${amtText}`;
+                } else {
+                    msg = `${famLabel} から ${amtText} を集金済みにしますか？`;
+                }
+            } else {
+                msg = `${famLabel} を未済の状態に戻しますか？`;
+            }
+            if (!confirm(msg)) return;
+            const r = await toggleCollectionPaidFamilyAPI(currentCollectionId, familyId, isPaid);
+            if (r.success) {
+                showCollectionDetail(currentCollectionId);
+            } else {
+                alert(`エラー: ${r.message}`);
+            }
+        };
+
+        // ======================================
+        // メンバー選択モーダル
+        // ======================================
+
+        let modalMembers = [];
+        let modalSelected = new Set(); // key: familyId#memberIndex
+        let modalFilter = '';
+
+        function memberKey(m) {
+            return `${m.familyId}#${m.memberIndex}`;
+        }
+
+        window.openMemberSelection = async function() {
+            const modal = document.getElementById('memberSelectionModal');
+            modal.style.display = 'flex';
+            document.getElementById('memberListBody').innerHTML = '<div class="loading">名簿を読み込み中...</div>';
+            document.getElementById('memberSearchInput').value = '';
+            modalFilter = '';
+
+            const members = await loadMeiboMembers();
+            modalMembers = members;
+            modalSelected = new Set(memberSelectionState.map(m => memberKey(m)));
+            renderMemberList();
+            updateModalCount();
+        };
+
+        window.closeMemberSelection = function() {
+            document.getElementById('memberSelectionModal').style.display = 'none';
+        };
+
+        window.filterMemberList = function() {
+            modalFilter = document.getElementById('memberSearchInput').value.trim().toLowerCase();
+            renderMemberList();
+        };
+
+        function renderMemberList() {
+            const body = document.getElementById('memberListBody');
+            if (modalMembers.length === 0) {
+                body.innerHTML = '<p style="padding:20px; text-align:center; color:var(--text-subtle);">名簿データがありません。</p>';
+                return;
+            }
+
+            // フィルタ
+            const filtered = modalFilter
+                ? modalMembers.filter(m =>
+                    (m.name || '').toLowerCase().includes(modalFilter) ||
+                    (m.kana || '').toLowerCase().includes(modalFilter) ||
+                    (m.familyName || '').toLowerCase().includes(modalFilter) ||
+                    (m.fullName || '').toLowerCase().includes(modalFilter)
+                )
+                : modalMembers;
+
+            // グルーピング: 部員(学年降順) → 保護者・コーチ
+            const groups = {};
+            filtered.forEach(m => {
+                let key;
+                if (m.type === 'member') {
+                    key = m.grade || 'その他';
+                } else if (m.role === 'coach') {
+                    key = 'コーチ';
+                } else {
+                    key = '保護者';
+                }
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(m);
+            });
+
+            // 表示順
+            const memberOrder = ['小6','小5','小4','小3','小2','小1','未就学','中3','中2','中1','その他'];
+            const orderedKeys = [];
+            memberOrder.forEach(k => { if (groups[k]) orderedKeys.push(k); });
+            ['コーチ','保護者'].forEach(k => { if (groups[k]) orderedKeys.push(k); });
+            // それ以外
+            Object.keys(groups).forEach(k => { if (!orderedKeys.includes(k)) orderedKeys.push(k); });
+
+            let html = '';
+            orderedKeys.forEach(key => {
+                html += `<div class="member-group-head">${escapeHtml(key)}（${groups[key].length}名）</div>`;
+                groups[key].forEach(m => {
+                    const k = memberKey(m);
+                    const checked = modalSelected.has(k) ? 'checked' : '';
+                    const tag = m.type === 'member' ? (m.grade || '') : (m.role === 'coach' ? 'コーチ' : '保護者');
+                    html += `
+                        <label class="member-row">
+                            <input type="checkbox" data-key="${k}" ${checked} onchange="onMemberCheckboxChange(this)">
+                            <span class="member-row-name">${escapeHtml(m.familyName)} ${escapeHtml(m.name)}${m.kana ? ` <span style="color:var(--text-subtle); font-size:0.8em;">(${escapeHtml(m.kana)})</span>` : ''}</span>
+                            <span class="member-row-tag">${escapeHtml(tag)}</span>
+                        </label>
+                    `;
+                });
+            });
+            body.innerHTML = html;
+        }
+
+        window.onMemberCheckboxChange = function(el) {
+            const k = el.dataset.key;
+            if (el.checked) modalSelected.add(k);
+            else modalSelected.delete(k);
+            updateModalCount();
+        };
+
+        window.memberSelectAll = function(select) {
+            // 現在表示中の項目に対して
+            const checkboxes = document.querySelectorAll('#memberListBody input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                const k = cb.dataset.key;
+                if (select) modalSelected.add(k);
+                else modalSelected.delete(k);
+                cb.checked = select;
+            });
+            updateModalCount();
+        };
+
+        window.memberSelectMembersOnly = function() {
+            modalMembers.forEach(m => {
+                if (m.type === 'member') {
+                    modalSelected.add(memberKey(m));
+                }
+            });
+            renderMemberList();
+            updateModalCount();
+        };
+
+        function updateModalCount() {
+            document.getElementById('memberSelectionCount').textContent = `${modalSelected.size}名選択中`;
+        }
+
+        window.confirmMemberSelection = function() {
+            memberSelectionState = modalMembers
+                .filter(m => modalSelected.has(memberKey(m)))
+                .map(m => ({
+                    familyId: m.familyId,
+                    familyName: m.familyName,
+                    memberIndex: m.memberIndex,
+                    name: m.name,
+                    type: m.type,
+                    role: m.role,
+                    grade: m.grade,
+                    fullName: `${m.familyName} ${m.name}`.trim()
+                }));
+            renderSelectedMembers();
+            closeMemberSelection();
         };
 
         // 初期化

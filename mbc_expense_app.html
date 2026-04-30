@@ -1279,6 +1279,11 @@
 
     <script>
         // ==================== CHANGELOG ====================
+        // v2.6 (2026-04-30): 集金アプリ送信先の変更
+        //   - sendToCollectionApp() の出力先を orderPages/orders から collectionPages（集金画面専用コレクション）に変更
+        //   - 名簿アプリの familyId/familyName を活用して家族単位に事前集約（familyEntries）して送信
+        //   - source: 'expense-import' を付与。集金アプリ側で編集制限が掛かる
+        //   - これにより清算データは注文集計アプリの注文画面/管理画面には混入しなくなる
         // v2.0 (2026-04-27): 名簿アプリ(minamigaoka-meibo)連携対応
         //   - 部員情報を名簿アプリのfamilies/membersから取得（部員管理タブは削除）
         //   - 車両提供者を名簿アプリの保護者(type='parent')から選択するUIに変更
@@ -2741,6 +2746,24 @@
         }
 
         // ==================== 集金アプリへ送信 ====================
+        // 清算結果表示を初期化（送信完了時などに呼ぶ）
+        function resetSettlementView() {
+            const results = document.getElementById('settlementResults');
+            if (results) results.style.display = 'none';
+            const setEmpty = (id) => { const el = document.getElementById(id); if (el) el.innerHTML = ''; };
+            setEmpty('settlementSummary');
+            setEmpty('settlementLegend');
+            setEmpty('settlementCardGrid');
+            setEmpty('settlementHeader');
+            setEmpty('settlementBody');
+            const remainder = document.getElementById('settlementRemainder');
+            if (remainder) remainder.innerHTML = '';
+            const stat = document.getElementById('settlementSelectionStat');
+            if (stat) stat.innerHTML = '';
+            // 選択チェックを全解除
+            document.querySelectorAll('#settlementExpeditions input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+        }
+
         async function sendToCollectionApp() {
             const selectedIds = Array.from(document.querySelectorAll('#settlementExpeditions input:checked')).map(cb => cb.value);
             if (selectedIds.length === 0) {
@@ -2754,22 +2777,31 @@
             }
 
             const selectedExpeditions = expeditions.filter(exp => selectedIds.includes(exp.id));
-            
-            // 清算データを計算
-            const settlementData = {};
             const baseRemainder = selectedExpeditions.reduce((sum, exp) => sum + (exp.remainder || 0), 0);
 
-            // v2.0: 現役+legacy両対応
+            // 各メンバー単位で集計（familyId/familyName を保持）
+            const settlementData = {};
             members.forEach(member => {
                 settlementData[member.id] = {
+                    memberId: member.id,
                     name: member.name,
+                    familyId: member.familyId,
+                    familyName: member.familyName,
                     totalCost: 0,
                     totalIncome: 0
                 };
             });
             const ensureEntry = (id) => {
                 if (settlementData[id]) return;
-                settlementData[id] = { name: getMemberName(id) || '(旧)', totalCost: 0, totalIncome: 0 };
+                const legacy = (legacyMembers || []).find(lm => lm.id === id);
+                settlementData[id] = {
+                    memberId: id,
+                    name: getMemberName(id) || '(旧)',
+                    familyId: legacy?.familyId || null,
+                    familyName: legacy?.familyName || '',
+                    totalCost: 0,
+                    totalIncome: 0
+                };
             };
 
             selectedExpeditions.forEach(exp => {
@@ -2785,149 +2817,107 @@
                 });
             });
 
-            // 集金・支払いデータを作成（正=集金、負=支払い）
-            const collectItems = [];
-            const paymentItems = [];
+            // 100円単位丸め + 家族単位集約
             let roundingRemainder = 0;
-
-            Object.entries(settlementData).forEach(([memberId, data]) => {
-                if (data.totalCost === 0 && data.totalIncome === 0) return;
-
-                const rawCollectAmount = data.totalCost - data.totalIncome;
-                let roundedCollectAmount;
-
-                if (rawCollectAmount > 0) {
-                    roundedCollectAmount = Math.ceil(rawCollectAmount / 100) * 100;
-                } else if (rawCollectAmount < 0) {
-                    roundedCollectAmount = -Math.floor(Math.abs(rawCollectAmount) / 100) * 100;
-                } else {
-                    roundedCollectAmount = 0;
-                }
-                roundingRemainder += roundedCollectAmount - rawCollectAmount;
-
-                if (roundedCollectAmount > 0) {
-                    collectItems.push({
-                        name: data.name,
-                        amount: roundedCollectAmount
-                    });
-                } else if (roundedCollectAmount < 0) {
-                    paymentItems.push({
-                        name: data.name,
-                        amount: roundedCollectAmount  // 負の値のまま
+            const memberAmounts = [];
+            Object.values(settlementData).forEach(d => {
+                if (d.totalCost === 0 && d.totalIncome === 0) return;
+                const raw = d.totalCost - d.totalIncome;
+                let amt;
+                if (raw > 0) amt = Math.ceil(raw / 100) * 100;
+                else if (raw < 0) amt = -Math.floor(Math.abs(raw) / 100) * 100;
+                else amt = 0;
+                roundingRemainder += amt - raw;
+                if (amt !== 0) {
+                    memberAmounts.push({
+                        memberId: d.memberId,
+                        name: d.name,
+                        familyId: d.familyId,
+                        familyName: d.familyName,
+                        amount: amt
                     });
                 }
             });
 
-            if (collectItems.length === 0 && paymentItems.length === 0) {
+            if (memberAmounts.length === 0) {
                 alert('集金・支払い対象者がいません。');
                 return;
             }
 
-            // 日付範囲を取得
+            // 家族単位にグループ化
+            const familyMap = {};
+            let unknownCounter = 0;
+            memberAmounts.forEach(m => {
+                const fid = m.familyId || `__unknown_${unknownCounter++}`;
+                const fname = m.familyName || '(不明)';
+                if (!familyMap[fid]) {
+                    familyMap[fid] = {
+                        familyId: fid,
+                        familyName: fname,
+                        members: [],
+                        totalAmount: 0
+                    };
+                }
+                familyMap[fid].members.push({ name: m.name, amount: m.amount });
+                familyMap[fid].totalAmount += m.amount;
+            });
+            const familyEntries = Object.values(familyMap);
+
+            // 日付範囲
             const sortedExpeditions = [...selectedExpeditions].sort((a, b) => a.date.localeCompare(b.date));
             const dateRange = sortedExpeditions.length > 1
                 ? `${sortedExpeditions[0].date} ～ ${sortedExpeditions[sortedExpeditions.length - 1].date}`
                 : sortedExpeditions[0].date;
-
-            // 確認ダイアログ
             const totalRemainder = baseRemainder + roundingRemainder;
-            const totalCollect = collectItems.reduce((sum, item) => sum + item.amount, 0);
-            const totalPayment = paymentItems.reduce((sum, item) => sum + Math.abs(item.amount), 0);
-            
+            const totalCollect = familyEntries.reduce((s, f) => s + (f.totalAmount > 0 ? f.totalAmount : 0), 0);
+            const totalPayment = familyEntries.reduce((s, f) => s + (f.totalAmount < 0 ? Math.abs(f.totalAmount) : 0), 0);
+            const collectFamilyCount = familyEntries.filter(f => f.totalAmount > 0).length;
+            const paymentFamilyCount = familyEntries.filter(f => f.totalAmount < 0).length;
+
             let confirmMsg = `以下の内容で集金アプリに送信します。\n\n`;
             confirmMsg += `📅 期間: ${dateRange}\n`;
-            confirmMsg += `💰 集金合計: ¥${totalCollect.toLocaleString()}（${collectItems.length}人）\n`;
-            confirmMsg += `💸 支払合計: ¥${totalPayment.toLocaleString()}（${paymentItems.length}人）\n`;
-            confirmMsg += `📝 残金: ¥${Math.round(totalRemainder).toLocaleString()}\n\n`;
-            
-            if (collectItems.length > 0) {
-                confirmMsg += `【集金対象者】\n`;
-                collectItems.forEach(item => {
-                    confirmMsg += `・${item.name}: ¥${item.amount.toLocaleString()}\n`;
-                });
-            }
-            if (paymentItems.length > 0) {
-                confirmMsg += `\n【支払対象者（車両提供者等）】\n`;
-                paymentItems.forEach(item => {
-                    confirmMsg += `・${item.name}: ¥${Math.abs(item.amount).toLocaleString()}\n`;
-                });
-            }
-            confirmMsg += `\n送信しますか？`;
-
-            if (!confirm(confirmMsg)) {
-                return;
-            }
+            confirmMsg += `👪 家族数: ${familyEntries.length}\n`;
+            confirmMsg += `💰 集金合計: ¥${totalCollect.toLocaleString()}（${collectFamilyCount}家族）\n`;
+            confirmMsg += `💸 支払合計: ¥${totalPayment.toLocaleString()}（${paymentFamilyCount}家族）\n`;
+            confirmMsg += `📝 残金: ¥${Math.round(totalRemainder).toLocaleString()}\n\n送信しますか？`;
+            if (!confirm(confirmMsg)) return;
 
             try {
-                // 注文ページを作成
                 const today = new Date().toISOString().split('T')[0];
                 const destinations = selectedExpeditions.map(exp => exp.destination).join('、');
-                const shopName = `遠征費用清算（${destinations.length > 20 ? destinations.slice(0, 20) + '…' : destinations}）`;
-                
-                // メニュー項目を作成（集金用と支払用）
-                const menus = [];
-                if (collectItems.length > 0) {
-                    menus.push({ name: '遠征費用（集金）', price: 100 });
-                }
-                if (paymentItems.length > 0) {
-                    menus.push({ name: '遠征費用（支払）', price: -100 });
-                }
-                
-                const orderPageRef = await bentoDb.collection('orderPages').add({
-                    orderDate: today,
-                    shopName: shopName,
-                    memo: `期間: ${dateRange}\n残金（部費へ繰入れ）: ¥${Math.round(totalRemainder).toLocaleString()}\n\n※金額が負の人は支払い対象です`,
-                    menus: menus,
+                const titleText = `遠征費用清算（${destinations.length > 30 ? destinations.slice(0, 30) + '…' : destinations}）`;
+
+                // 集金画面の collectionPages コレクションへ書き込み（注文画面・管理画面には表示されない）
+                await bentoDb.collection('collectionPages').add({
+                    date: today,
+                    title: titleText,
+                    deadline: null,
+                    memo: `期間: ${dateRange}\n残金（部費へ繰入れ）: ¥${Math.round(totalRemainder).toLocaleString()}\n\n※家族別集金/支払の表示です。負の金額の家族は支払い対象です。`,
+                    menus: [],
+                    targets: [],
+                    paidFamilies: [],
                     status: 'open',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    paidUsers: []
+                    source: 'expense-import',
+                    expenseRef: {
+                        expeditionIds: selectedIds,
+                        dateRange: dateRange,
+                        remainder: Math.round(totalRemainder)
+                    },
+                    familyEntries: familyEntries,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                const orderId = orderPageRef.id;
-
-                // 各メンバーの注文を作成
-                const batch = bentoDb.batch();
-                
-                // 集金対象者
-                collectItems.forEach(item => {
-                    const orderRef = bentoDb.collection('orders').doc();
-                    batch.set(orderRef, {
-                        orderId: orderId,
-                        orderDate: today,
-                        menuName: '遠征費用（集金）',
-                        price: item.amount,
-                        userName: item.name,
-                        quantity: 1,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
-                
-                // 支払対象者（負の金額）
-                paymentItems.forEach(item => {
-                    const orderRef = bentoDb.collection('orders').doc();
-                    batch.set(orderRef, {
-                        orderId: orderId,
-                        orderDate: today,
-                        menuName: '遠征費用（支払）',
-                        price: item.amount,  // 負の値のまま登録
-                        userName: item.name,
-                        quantity: 1,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
-                
-                await batch.commit();
 
                 // 選択された遠征を清算済みにする
                 for (const expId of selectedIds) {
                     await db.collection('expeditions').doc(expId).update({ settled: true });
                 }
 
-                alert(`✅ 集金アプリへの送信が完了しました！\n\n集金アプリを開いて「${shopName}」を確認してください。\n\n💰 集金: ${collectItems.length}人\n💸 支払: ${paymentItems.length}人`);
-                
-                // 画面を更新
-                loadAllData();
+                alert(`✅ 集金アプリへの送信が完了しました！\n\n集金画面を開いて「${titleText}」を確認してください。\n\n👪 家族数: ${familyEntries.length}\n💰 集金: ${collectFamilyCount}家族 / 💸 支払: ${paymentFamilyCount}家族`);
 
+                // 清算結果の表示をリセット（送信済データの残留を防ぐ）
+                resetSettlementView();
+
+                await loadAllData();
             } catch (error) {
                 console.error('Send to collection app error:', error);
                 alert('送信に失敗しました: ' + error.message);
