@@ -110,11 +110,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .day-cell {
   background: var(--paper);
-  min-height: 76px;
-  padding: 4px;
+  min-height: 92px;
+  padding: 3px;
   position: relative;
   display: flex; flex-direction: column;
   cursor: pointer;
+  overflow: hidden;
 }
 .day-cell.other { background: #faf7f0; opacity: .5; }
 .day-cell.today { background: linear-gradient(180deg, #fff4e0 0%, var(--paper) 100%); }
@@ -134,10 +135,23 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 .event-tag {
-  font-size: 9px; padding: 1px 3px; border-radius: 3px; margin-top: 2px;
-  font-weight: 600; line-height: 1.2;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 9px; padding: 2px 3px; border-radius: 3px; margin-top: 2px;
+  font-weight: 600; line-height: 1.25;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
+.event-tag .ev-line {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.event-tag .ev-line.title { font-weight: 800; }
+.event-tag .ev-line.time, .event-tag .ev-line.place { opacity: .85; font-weight: 500; font-size: 8.5px; }
 .event-tag.practice { background: #fde8c8; color: #a04e00; }
 .event-tag.match { background: #ffd1c2; color: #9b2200; }
 .event-tag.league { background: #d4e8d4; color: #2a6a2a; }
@@ -943,18 +957,19 @@ function renderDayCell(date, isOther, today) {
   let tagsHTML = '';
   evts.slice(0, 2).forEach(ev => {
     const label = ev.title || ({practice:'練習',match:'練習試合',league:'大会試合',other:''})[ev.type];
-    const timeText = ev.time ? `<span style="opacity:.85;font-weight:500">${escapeHTML(ev.time)}</span>` : '';
-    const placeText = ev.place ? `<span style="opacity:.85;font-weight:500">@${escapeHTML(ev.place)}</span>` : '';
-    tagsHTML += `<div class="event-tag ${ev.type}">${timeText ? timeText+' ' : ''}${escapeHTML(label)}${placeText ? ' '+placeText : ''}</div>`;
+    const timeLine = ev.time ? `<span class="ev-line time">${escapeHTML(ev.time)}</span>` : '';
+    const titleLine = `<span class="ev-line title">${escapeHTML(label)}</span>`;
+    const placeLine = ev.place ? `<span class="ev-line place">@${escapeHTML(ev.place)}</span>` : '';
+    tagsHTML += `<div class="event-tag ${ev.type}">${timeLine}${titleLine}${placeLine}</div>`;
   });
-  if (evts.length > 2) tagsHTML += `<div class="event-tag" style="background:#eee;color:#888">+${evts.length-2}</div>`;
+  if (evts.length > 2) tagsHTML += `<div class="event-tag" style="background:#eee;color:#888"><span class="ev-line">+${evts.length-2}</span></div>`;
   if (keyDuty) {
     const mem = getMember(keyDuty.memberId);
-    tagsHTML += `<div class="event-tag key">🔑<b style="font-weight:800">${mem ? escapeHTML(mem.name) : '?'}</b></div>`;
+    tagsHTML += `<div class="event-tag key"><span class="ev-line title">🔑${mem ? escapeHTML(mem.name) : '?'}</span></div>`;
   }
   if (duty) {
     const team = getTeam(duty.teamId);
-    if (team) tagsHTML += `<div class="event-tag duty">🔔<b style="font-weight:800">${escapeHTML(team.name)}</b></div>`;
+    if (team) tagsHTML += `<div class="event-tag duty"><span class="ev-line title">🔔${escapeHTML(team.name)}</span></div>`;
   }
 
   return `<div class="${classes}" onclick="openDay('${key}')">
