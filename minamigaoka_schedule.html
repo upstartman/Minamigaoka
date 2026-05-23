@@ -1157,9 +1157,9 @@ function setType(t) {
   // 新規入力時のみ、種類に応じて時間デフォルトを適用
   if (!editingEvent) {
     const defaults = {
-      practice: { start: '9:00', end: '12:00' },
-      match:    { start: '7:30', end: '17:00' },
-      league:   { start: '7:30', end: '17:00' },
+      practice: { start: '09:00', end: '12:00' },
+      match:    { start: '07:30', end: '17:00' },
+      league:   { start: '07:30', end: '17:00' },
       other:    { start: '', end: '' }
     };
     const d = defaults[t] || defaults.other;
