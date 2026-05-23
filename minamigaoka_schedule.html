@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>南ヶ丘MBC 活動予定表</title>
+<title>南ヶ丘MBC活動計画表</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -554,7 +554,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     <div class="logo">
       <div class="logo-icon">🏀</div>
       <div>
-        <div class="logo-text">南ヶ丘MBC</div>
+        <div class="logo-text">南ヶ丘MBC活動計画表</div>
         <div class="logo-sub">MINAMIGAOKA</div>
       </div>
     </div>
@@ -726,7 +726,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     <div class="sheet-title">⚙️ 設定</div>
     <div class="sheet-section">
       <div class="sheet-label"><span>🗓️ 自動入力</span></div>
-      <button class="btn full secondary" onclick="fillDefaultPractices()" style="margin-bottom:8px">木金にデフォルトの練習を一括追加</button>
+      <button class="btn full secondary" onclick="fillDefaultPractices()" style="margin-bottom:8px">木金にデフォルトの練習(18:30〜21:00)を一括追加</button>
+      <button class="btn full secondary" onclick="fillSaturdayPractices()" style="margin-bottom:8px">土曜にデフォルトの練習(9:00〜12:00)を一括追加</button>
       <button class="btn full secondary" onclick="autoRotateDuty()">お当番を班ローテーションで自動割当</button>
     </div>
   </div>
@@ -970,6 +971,21 @@ function renderCalendar() {
   const m = viewMonth.getMonth();
 
   const grid = document.getElementById('calGrid');
+
+  // 曜日ごとに当月の活動有無を集計し、無い曜日の列幅を狭める
+  const daysInMonthForCount = new Date(y, m+1, 0).getDate();
+  const hasActivityByDow = [false,false,false,false,false,false,false];
+  for (let d = 1; d <= daysInMonthForCount; d++) {
+    const date = new Date(y, m, d);
+    const key = dateKey(date);
+    const dow = date.getDay();
+    if ((state.events[key] || []).length > 0 || state.keyDuty[key] || state.duty[key]) {
+      hasActivityByDow[dow] = true;
+    }
+  }
+  const colOrder = [1,2,3,4,5,6,0]; // 月火水木金土日
+  grid.style.gridTemplateColumns = colOrder.map(idx => hasActivityByDow[idx] ? '1.15fr' : '0.7fr').join(' ');
+
   grid.innerHTML = '';
   [1,2,3,4,5,6,0].forEach(idx => {
     const cls = idx === 6 ? 'sat' : idx === 0 ? 'sun' : '';
@@ -1208,6 +1224,30 @@ async function fillDefaultPractices() {
     if (!state.events[key]) state.events[key] = [];
     state.events[key].push({
       id: uid(), type: 'practice', title: '練習', time: '18:30〜21:00', place: '', teamId: '', memo: ''
+    });
+    count++;
+  }
+  await saveData();
+  closeSheet('settingsSheet');
+  render();
+  toast(`${count}件追加しました`);
+}
+
+async function fillSaturdayPractices() {
+  if (!confirm('この月の土曜にデフォルト練習(9:00〜12:00)を追加します。既存の練習がある日はスキップします。')) return;
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    if (date.getDay() !== 6) continue;
+    const key = dateKey(date);
+    const existing = state.events[key] || [];
+    if (existing.some(e => e.type === 'practice')) continue;
+    if (!state.events[key]) state.events[key] = [];
+    state.events[key].push({
+      id: uid(), type: 'practice', title: '練習', time: '9:00〜12:00', place: '', memo: ''
     });
     count++;
   }
