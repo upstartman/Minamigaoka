@@ -1126,11 +1126,9 @@ function openAddForm() {
   closeSheet('eventSheet');
   document.getElementById('addTitle').textContent = '予定を追加';
   document.getElementById('evTitle').value = '';
-  document.getElementById('evTimeStart').value = '18:30';
-  document.getElementById('evTimeEnd').value = '21:00';
   document.getElementById('evPlace').value = '';
   document.getElementById('evMemo').value = '';
-  setType('practice');
+  setType('practice'); // 種類に応じた時間デフォルトもここで適用
   document.getElementById('addSheet').classList.add('show');
 }
 
@@ -1156,6 +1154,18 @@ function setType(t) {
   // 練習はタイトル不要
   const titleField = document.getElementById('titleField');
   if (titleField) titleField.style.display = (t === 'practice') ? 'none' : 'block';
+  // 新規入力時のみ、種類に応じて時間デフォルトを適用
+  if (!editingEvent) {
+    const defaults = {
+      practice: { start: '9:00', end: '12:00' },
+      match:    { start: '7:30', end: '17:00' },
+      league:   { start: '7:30', end: '17:00' },
+      other:    { start: '', end: '' }
+    };
+    const d = defaults[t] || defaults.other;
+    document.getElementById('evTimeStart').value = d.start;
+    document.getElementById('evTimeEnd').value = d.end;
+  }
 }
 document.querySelectorAll('#typePicker .type-opt').forEach(el => { el.onclick = () => setType(el.dataset.type); });
 
