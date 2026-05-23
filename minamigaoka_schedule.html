@@ -115,7 +115,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   position: relative;
   display: flex; flex-direction: column;
   cursor: pointer;
-  overflow: hidden;
 }
 .day-cell.other { background: #faf7f0; opacity: .5; }
 .day-cell.today { background: linear-gradient(180deg, #fff4e0 0%, var(--paper) 100%); }
@@ -146,12 +145,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .event-tag .ev-line {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }
 .event-tag .ev-line.title { font-weight: 800; }
 .event-tag .ev-line.time, .event-tag .ev-line.place { opacity: .85; font-weight: 500; font-size: 8.5px; }
+.event-tag .ev-line.time { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .event-tag.practice { background: #fde8c8; color: #a04e00; }
 .event-tag.match { background: #ffd1c2; color: #9b2200; }
 .event-tag.league { background: #d4e8d4; color: #2a6a2a; }
@@ -352,6 +353,56 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 800;
   margin-top: 2px;
   letter-spacing: .03em;
+}
+.swap-card-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin: 0 -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.swap-card {
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 10px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.swap-card > * { pointer-events: none; }
+.swap-card:active { background: var(--cream); border-color: var(--orange); }
+.swap-card .d { font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1; letter-spacing: .02em; }
+.swap-card .dow { font-size: 10px; font-weight: 700; color: #888; }
+.swap-card.sat .d { color: var(--sat); }
+.swap-card.sat .dow { color: var(--sat); }
+.swap-card.sun .d { color: var(--sun); }
+.swap-card.sun .dow { color: var(--sun); }
+.swap-card .team-badge-inline { margin: 2px 0 0 0; font-size: 11px; padding: 2px 8px; }
+
+.team-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-right: 6px;
+  letter-spacing: .03em;
+  line-height: 1.2;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 .duty-row-slim .chevron { color: #ccc; font-size: 18px; flex-shrink: 0; }
 .assign-main .row-team-dot {
@@ -580,10 +631,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
         <div class="lbl">🔔 お当番</div>
         <div class="sub">練習試合・大会試合の日・班単位</div>
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn secondary small" onclick="goToday()">今月へ</button>
-        <button class="btn secondary small" onclick="autoRotateDuty()">🔄 自動割当</button>
-      </div>
+      <button class="btn secondary small" onclick="goToday()">今月へ</button>
     </div>
     <div id="dutyList"></div>
   </div>
@@ -1341,10 +1389,8 @@ function renderDutyList() {
       <div class="ev-col">${evPills}${placeText?`<span class="ev-pill" style="background:transparent;color:#888;padding:0;font-weight:500">@${escapeHTML(placeText)}</span>`:''}</div>
       <div class="assign-col">
         ${team ? (effMembers.length
-            ? `<div class="assign-main duty-names" style="color:${team.color}">🔔 ${formatEffectiveMembers(key)}</div>
-               <div class="assign-team" style="color:${team.color}">${escapeHTML(team.name)}</div>`
-            : `<div class="assign-main" style="color:${team.color}"><span class="row-team-dot" style="background:${team.color}"></span>🔔 ${escapeHTML(team.name)}</div>
-               <div class="assign-sub">メンバー未登録</div>`)
+            ? `<div class="assign-main duty-names" style="color:${team.color}"><span class="team-badge-inline" style="background:${team.color}">${escapeHTML(team.name)}</span>${formatEffectiveMembers(key)}</div>`
+            : `<div class="assign-main"><span class="team-badge-inline" style="background:${team.color}">${escapeHTML(team.name)}</span><span style="color:${team.color}">メンバー未登録</span></div>`)
           : '<div class="assign-empty">タップして割当</div>'}
       </div>
       <div class="chevron">›</div>
@@ -1439,28 +1485,32 @@ function openDutyAssign(key) {
   });
   html += `</div>`;
 
-  // 班同士の入替え
+  // 班同士の入替え (基準日から±30日以内の試合日)
   if (current) {
-    const y = viewMonth.getFullYear();
-    const m = viewMonth.getMonth();
-    const daysInMonth = new Date(y, m+1, 0).getDate();
-    let teamSwapHtml = '';
-    for (let d = 1; d <= daysInMonth; d++) {
-      const other = new Date(y, m, d);
-      const ok = dateKey(other);
-      if (ok === key) continue;
-      if (!hasMatchOrLeague(ok)) continue;
-      const od = state.duty[ok];
-      if (!od) continue;
-      const ot = getTeam(od.teamId);
-      teamSwapHtml += `<div class="swap-target">
-        <div class="date">${other.getMonth()+1}/${other.getDate()} (${DOW[other.getDay()]})</div>
-        <div class="info">担当: ${ot?escapeHTML(ot.name):'不明'}</div>
-        <button class="btn secondary small" onclick="doDutySwap('${key}','${ok}')">この日と班を入替え</button>
-      </div>`;
-    }
-    if (teamSwapHtml) {
-      html += `<div class="sheet-section"><div class="sheet-label"><span>🔁 他の試合日と班同士で入替え</span></div>${teamSwapHtml}</div>`;
+    const baseTime = date.getTime();
+    const RANGE_MS = 30 * 24 * 60 * 60 * 1000;
+    const candidates = Object.keys(state.duty)
+      .filter(ok => ok !== key)
+      .filter(ok => hasMatchOrLeague(ok))
+      .map(ok => ({ ok, date: parseKey(ok) }))
+      .filter(c => Math.abs(c.date.getTime() - baseTime) <= RANGE_MS)
+      .sort((a, b) => a.date - b.date);
+
+    if (candidates.length) {
+      let teamSwapHtml = '';
+      candidates.forEach(({ ok, date: other }) => {
+        const od = state.duty[ok];
+        const ot = getTeam(od.teamId);
+        const dow = other.getDay();
+        const dowCls = dow === 6 ? 'sat' : dow === 0 ? 'sun' : '';
+        teamSwapHtml += `<button class="swap-card ${dowCls}" onclick="doDutySwap('${key}','${ok}')">
+          <span class="d">${other.getMonth()+1}/${other.getDate()}</span>
+          <span class="dow">(${DOW[dow]})</span>
+          <span class="team-badge-inline" style="background:${ot?ot.color:'#999'}">${ot?escapeHTML(ot.name):'?'}</span>
+        </button>`;
+      });
+      html += `<div class="sheet-section"><div class="sheet-label"><span>🔁 他の試合日と班同士で入替え</span><span style="font-size:10px;color:#888;font-weight:500">前後1ヶ月以内</span></div>
+        <div class="swap-card-scroll">${teamSwapHtml}</div></div>`;
     }
 
     // 既存のオーバーライド表示
