@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>南ヶ丘MBC 活動予定表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --orange: #f57c2c;
+  --orange-light: #ffb56e;
+  --orange-dark: #d96416;
+  --cream: #fff7ec;
+  --ink: #2a1f17;
+  --paper: #fffdf7;
+  --line: #e8dec9;
+  --sat: #4ca7d8;
+  --sun: #d65454;
+  --green: #6aaa64;
+  --shadow: 0 2px 8px rgba(42,31,23,.08);
+  --shadow-lg: 0 8px 24px rgba(42,31,23,.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 14px;
+  overscroll-behavior: none;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+.header {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-light) 100%);
+  color: white;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+.header-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+.logo-text { font-weight: 800; font-size: 15px; letter-spacing: .03em; line-height: 1.1; }
+.logo-sub { font-size: 10px; opacity: .9; font-family: 'Bebas Neue', sans-serif; letter-spacing: .15em; }
+.user-chip {
+  background: rgba(255,255,255,.2);
+  padding: 5px 10px; border-radius: 16px;
+  font-size: 12px; font-weight: 500;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  border: 1px solid rgba(255,255,255,.3);
+}
+
+.tabs {
+  display: flex;
+  background: var(--paper);
+  border-bottom: 2px solid var(--line);
+  position: sticky; top: 64px; z-index: 40;
+  overflow-x: auto;
+}
+.tab {
+  flex: 1; min-width: 70px;
+  padding: 10px 4px;
+  font-weight: 700; font-size: 11px;
+  color: #888;
+  border-bottom: 3px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.tab.active { color: var(--orange-dark); border-bottom-color: var(--orange); }
+.tab-icon { display: block; font-size: 16px; margin-bottom: 2px; }
+
+.month-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--paper); }
+.month-nav button {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--cream); font-size: 18px; font-weight: 700; color: var(--orange-dark);
+}
+.month-nav button:active { background: var(--orange-light); }
+.month-title { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.month-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--orange); line-height: 1; }
+.note { font-size: 10px; color: #888; padding: 0 16px 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.note > span { flex: 1; text-align: center; }
+.note a { color: var(--orange-dark); text-decoration: underline; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--line);
+  gap: 1px;
+  border-top: 1px solid var(--line);
+}
+.dow-cell { background: var(--paper); text-align: center; padding: 6px 0; font-size: 11px; font-weight: 700; color: #666; }
+.dow-cell.sat { color: var(--sat); }
+.dow-cell.sun { color: var(--sun); }
+
+.day-cell {
+  background: var(--paper);
+  min-height: 76px;
+  padding: 4px;
+  position: relative;
+  display: flex; flex-direction: column;
+  cursor: pointer;
+}
+.day-cell.other { background: #faf7f0; opacity: .5; }
+.day-cell.today { background: linear-gradient(180deg, #fff4e0 0%, var(--paper) 100%); }
+.day-cell.sat { background: #ecf6fb; }
+.day-cell.sun { background: #fcefef; }
+.day-cell.today.sat { background: linear-gradient(180deg, #d8ecf6 0%, #ecf6fb 100%); }
+.day-cell.today.sun { background: linear-gradient(180deg, #f9dede 0%, #fcefef 100%); }
+
+.day-num { font-family: 'Bebas Neue', sans-serif; font-size: 14px; font-weight: 400; letter-spacing: .02em; }
+.day-cell.sat .day-num { color: var(--sat); }
+.day-cell.sun .day-num { color: var(--sun); }
+.day-cell.today .day-num {
+  background: var(--orange); color: white !important;
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+
+.event-tag {
+  font-size: 9px; padding: 1px 3px; border-radius: 3px; margin-top: 2px;
+  font-weight: 600; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.event-tag.practice { background: #fde8c8; color: #a04e00; }
+.event-tag.match { background: #ffd1c2; color: #9b2200; }
+.event-tag.league { background: #d4e8d4; color: #2a6a2a; }
+.event-tag.other { background: #e0e0e0; color: #444; }
+.event-tag.key { background: #e0e6ff; color: #2b3a8c; }
+.event-tag.duty { background: #ffe1e8; color: #9b1a3e; }
+
+.bottom-sheet { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; display: none; animation: fadeIn .2s; }
+.bottom-sheet.show { display: block; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.sheet-body {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--paper);
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  max-height: 85vh; overflow-y: auto;
+  animation: slideUp .25s;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 12px; }
+.sheet-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.sheet-date { font-size: 22px; font-weight: 800; color: var(--orange); line-height: 1.2; letter-spacing: .02em; }
+.sheet-section { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.sheet-section:first-of-type { border-top: none; padding-top: 0; }
+.sheet-label { font-size: 11px; font-weight: 700; color: #666; margin-bottom: 6px; letter-spacing: .05em; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+
+.event-item {
+  background: var(--cream);
+  padding: 10px; border-radius: 10px; margin-bottom: 6px;
+  display: flex; align-items: flex-start; gap: 8px;
+  border-left: 3px solid var(--orange);
+}
+.event-item.key-item { border-left-color: #5c6dc4; }
+.event-item.duty-item { border-left-color: #d65479; }
+.event-item .type-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+.event-item .e-body { flex: 1; min-width: 0; }
+.event-item .e-title { font-weight: 700; font-size: 13px; }
+.event-item .e-meta { font-size: 11px; color: #666; margin-top: 2px; }
+.event-item .e-actions { display: flex; gap: 4px; align-items: center; }
+.event-item .e-del { color: #c00; font-size: 18px; padding: 4px 6px; font-weight: 300; line-height: 1; }
+.event-item .e-edit { color: var(--orange-dark); font-size: 14px; padding: 4px 6px; }
+
+.btn { background: var(--orange); color: white; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: transform .1s; }
+.btn:active { transform: scale(.96); }
+.btn.secondary { background: var(--cream); color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: #e74c3c; }
+.btn.small { padding: 6px 10px; font-size: 11px; }
+.btn.full { width: 100%; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: #555; margin-bottom: 4px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px; font-family: inherit;
+  background: white;
+}
+.field input:focus, .field select:focus { outline: 2px solid var(--orange); }
+.time-row { display: flex; align-items: center; gap: 8px; }
+.time-row input[type="time"] { flex: 1; font-size: 16px; font-weight: 700; text-align: center; }
+.time-sep { font-size: 16px; font-weight: 700; color: #888; }
+
+.type-picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+.type-opt { padding: 10px 8px; border: 2px solid var(--line); border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center; background: white; }
+.type-opt.active { border-color: var(--orange); background: #fff4e0; color: var(--orange-dark); }
+
+.duty-container { padding: 12px; }
+.duty-card { background: var(--paper); border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.duty-week { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: #888; letter-spacing: .1em; }
+.duty-date-big { font-size: 17px; font-weight: 800; margin: 2px 0 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.duty-pill { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.pill-key { background: #e0e6ff; color: #2b3a8c; }
+.pill-duty { background: #ffe1e8; color: #9b1a3e; }
+.pill-event { background: #fde8c8; color: #a04e00; font-size: 9px; }
+
+/* スリムなリスト用 */
+.duty-list {
+  background: var(--paper);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.duty-row-slim {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background .15s;
+}
+.duty-row-slim:last-child { border-bottom: none; }
+.duty-row-slim:active { background: var(--cream); }
+.duty-row-slim .date-col {
+  flex-shrink: 0;
+  width: 50px;
+  text-align: center;
+  line-height: 1.1;
+}
+.duty-row-slim .date-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: .02em;
+}
+.duty-row-slim .date-dow { font-size: 10px; font-weight: 700; color: #888; }
+.duty-row-slim.sat .date-num, .duty-row-slim.sat .date-dow { color: var(--sat); }
+.duty-row-slim.sun .date-num, .duty-row-slim.sun .date-dow { color: var(--sun); }
+.duty-row-slim.today { background: linear-gradient(90deg, #fff4e0 0%, var(--paper) 60%); }
+.duty-row-slim.past { opacity: .55; }
+.duty-row-slim.past .assign-main { font-weight: 700; }
+
+.past-collapse {
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--cream);
+}
+.past-collapse > summary {
+  list-style: none;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.past-collapse > summary::-webkit-details-marker { display: none; }
+.past-collapse > summary::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform .15s;
+}
+.past-collapse[open] > summary::before { transform: rotate(90deg); }
+.past-collapse > summary:active { background: var(--paper); }
+.duty-row-slim .ev-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 110px;
+}
+.duty-row-slim .ev-pill {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.duty-row-slim .assign-col {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.duty-row-slim .assign-main {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duty-row-slim .assign-sub {
+  font-size: 10px;
+  color: #888;
+  font-weight: 500;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duty-row-slim .assign-empty { color: #bbb; font-size: 13px; font-weight: 600; }
+.duty-row-slim .duty-names {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+  display: block;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+}
+.duty-row-slim .duty-names span { font-weight: 800 !important; }
+.duty-row-slim .assign-team {
+  font-size: 17px;
+  font-weight: 800;
+  margin-top: 2px;
+  letter-spacing: .03em;
+}
+.duty-row-slim .chevron { color: #ccc; font-size: 18px; flex-shrink: 0; }
+.assign-main .row-team-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.6);
+}
+
+/* メンバー交換のボタン式UI */
+.swap-pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+.swap-pick {
+  padding: 10px 8px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700;
+  text-align: left;
+}
+.swap-pick .team-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.swap-pick .sub { font-size: 10px; font-weight: 500; color: #888; margin-left: auto; }
+.swap-pick.active { border-color: var(--orange); background: #fff4e0; color: var(--orange-dark); }
+.swap-pick.disabled { opacity: .35; pointer-events: none; }
+.swap-pick > * { pointer-events: none; }
+.swap-pick:active { background: #fff4e0; }
+.swap-step-label {
+  font-size: 11px; font-weight: 700; color: var(--orange-dark);
+  margin-top: 8px; margin-bottom: 4px; letter-spacing: .05em;
+}
+
+/* 大きな人名強調 */
+.name-big {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.name-medium {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+.duty-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--line); }
+.duty-row:first-of-type { border-top: none; }
+.duty-row .role { font-size: 11px; font-weight: 700; color: #666; min-width: 50px; }
+.duty-row .members { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; }
+.duty-row .swap-btn {
+  background: var(--cream); border: 1px solid var(--line);
+  padding: 4px 10px; border-radius: 14px;
+  font-size: 11px; font-weight: 700; color: var(--orange-dark);
+  white-space: nowrap;
+}
+
+.team-section { padding: 12px; }
+.team-card { background: var(--paper); border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.team-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 6px; }
+.team-name { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.team-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-family: 'Bebas Neue', sans-serif; font-size: 16px;
+  flex-shrink: 0;
+}
+.member-chip {
+  display: inline-flex; align-items: center;
+  background: var(--cream);
+  padding: 5px 8px 5px 10px;
+  border-radius: 16px;
+  font-size: 12px; font-weight: 600;
+  margin: 0 4px 4px 0; gap: 4px;
+}
+.member-chip .x {
+  background: #ccc; color: white;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+.add-input-row { display: flex; gap: 6px; margin-top: 6px; }
+.add-input-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; }
+
+.empty { text-align: center; padding: 40px 20px; color: #888; }
+.empty .icon { font-size: 36px; margin-bottom: 8px; opacity: .5; }
+.empty .text { font-size: 13px; }
+
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: white;
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 13px; z-index: 200;
+  opacity: 0; transition: opacity .3s;
+  white-space: nowrap; box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--paper); border-radius: 10px; margin-bottom: 8px; box-shadow: var(--shadow); gap: 8px; }
+.settings-row .lbl { font-weight: 700; font-size: 13px; }
+.settings-row .sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+.member-pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+.member-pick {
+  padding: 12px 10px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px; font-weight: 800;
+  background: white;
+  text-align: left;
+  display: flex; align-items: center; gap: 8px;
+  letter-spacing: .02em;
+}
+.member-pick .team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.member-pick.active { border-color: var(--orange); background: #fff4e0; color: var(--orange-dark); }
+.member-pick > * { pointer-events: none; }
+.member-pick:active { background: #fff4e0; }
+
+.swap-target { background: var(--cream); padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+.swap-target .date { font-weight: 700; font-size: 12px; color: var(--orange-dark); }
+.swap-target .info { color: #666; font-size: 11px; margin: 2px 0 6px; }
+
+.loading { position: fixed; inset: 0; background: var(--cream); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 1000; }
+.spinner { width: 40px; height: 40px; border: 4px solid var(--line); border-top-color: var(--orange); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fab {
+  position: fixed; right: 16px; bottom: 20px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+  color: white; font-size: 22px; font-weight: 300;
+  box-shadow: var(--shadow-lg);
+  z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.fab:active { transform: scale(.92); }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading">
+  <div class="spinner"></div>
+  <div style="font-weight:700;color:#888">読み込み中...</div>
+</div>
+
+<div class="header">
+  <div class="header-row">
+    <div class="logo">
+      <div class="logo-icon">🏀</div>
+      <div>
+        <div class="logo-text">南ヶ丘MBC</div>
+        <div class="logo-sub">MINAMIGAOKA</div>
+      </div>
+    </div>
+    <button class="user-chip" onclick="showSettings()">⚙️ 設定</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="calendar" onclick="switchTab('calendar')">
+    <span class="tab-icon">📅</span>カレンダー
+  </button>
+  <button class="tab" data-tab="key" onclick="switchTab('key')">
+    <span class="tab-icon">🔑</span>鍵当番
+  </button>
+  <button class="tab" data-tab="duty" onclick="switchTab('duty')">
+    <span class="tab-icon">🔔</span>お当番
+  </button>
+  <button class="tab" data-tab="team" onclick="switchTab('team')">
+    <span class="tab-icon">👥</span>班管理
+  </button>
+</div>
+
+<div id="view-calendar">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div class="month-title">
+      <span id="yearLabel"></span>年
+      <span class="month-num" id="monthLabel"></span>月
+    </div>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="note">
+    <span>*練習場所記載のないものは<a>南小体育館</a></span>
+    <button class="btn secondary small" onclick="goToday()">今月へ</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <button class="fab" onclick="exportImage()" title="画像で保存">📷</button>
+</div>
+
+<div id="view-key" class="hidden">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div class="month-title">
+      <span id="yearLabelKey"></span>年
+      <span class="month-num" id="monthLabelKey"></span>月
+    </div>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="duty-container">
+    <div class="settings-row">
+      <div>
+        <div class="lbl">🔑 鍵当番</div>
+        <div class="sub">木金の練習がある日・人単位</div>
+      </div>
+      <button class="btn secondary small" onclick="goToday()">今月へ</button>
+    </div>
+    <div id="keyList"></div>
+  </div>
+  <button class="fab" onclick="exportImage()">📷</button>
+</div>
+
+<div id="view-duty" class="hidden">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <div class="month-title">
+      <span id="yearLabelDuty"></span>年
+      <span class="month-num" id="monthLabelDuty"></span>月
+    </div>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="duty-container">
+    <div class="settings-row">
+      <div>
+        <div class="lbl">🔔 お当番</div>
+        <div class="sub">練習試合・大会試合の日・班単位</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn secondary small" onclick="goToday()">今月へ</button>
+        <button class="btn secondary small" onclick="autoRotateDuty()">🔄 自動割当</button>
+      </div>
+    </div>
+    <div id="dutyList"></div>
+  </div>
+  <button class="fab" onclick="exportImage()">📷</button>
+</div>
+
+<div id="view-team" class="hidden">
+  <div class="team-section">
+    <div class="settings-row">
+      <div>
+        <div class="lbl">🏀 班の構成</div>
+        <div class="sub" id="teamCountLabel">3班で運用中</div>
+      </div>
+      <button class="btn secondary small" onclick="addTeam()">+ 班追加</button>
+    </div>
+    <div id="teamList"></div>
+  </div>
+</div>
+
+<div id="eventSheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('eventSheet')">
+  <div class="sheet-body">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span class="sheet-date" id="sheetDateNum"></span>
+    </div>
+    <div id="sheetEvents"></div>
+    <div class="btn-row">
+      <button class="btn full" onclick="openAddForm()">+ 予定を追加</button>
+    </div>
+  </div>
+</div>
+
+<div id="addSheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('addSheet')">
+  <div class="sheet-body">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span id="addTitle">予定を追加</span></div>
+    <div class="sheet-section">
+      <div class="sheet-label"><span>📝 種類</span></div>
+      <div class="type-picker" id="typePicker">
+        <div class="type-opt active" data-type="practice">🏃 練習</div>
+        <div class="type-opt" data-type="match">🏆 練習試合</div>
+        <div class="type-opt" data-type="league">⭐ 大会試合</div>
+        <div class="type-opt" data-type="other">📌 その他</div>
+      </div>
+      <div class="field" id="titleField">
+        <label>タイトル</label>
+        <input type="text" id="evTitle" placeholder="例: ファーストカップ">
+      </div>
+      <div class="field">
+        <label>時間</label>
+        <div class="time-row">
+          <input type="time" id="evTimeStart" step="300">
+          <span class="time-sep">〜</span>
+          <input type="time" id="evTimeEnd" step="300">
+        </div>
+      </div>
+      <div class="field">
+        <label>場所</label>
+        <input type="text" id="evPlace" placeholder="例: 押上小（空欄なら南小体育館）">
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="evMemo" rows="2"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" onclick="closeSheet('addSheet')">キャンセル</button>
+        <button class="btn full" onclick="saveEvent()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="keySheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('keySheet')">
+  <div class="sheet-body">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🔑 鍵当番を選択</div>
+    <div id="keyContent"></div>
+  </div>
+</div>
+
+<div id="dutySheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('dutySheet')">
+  <div class="sheet-body">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🔔 お当番</div>
+    <div id="dutyContent"></div>
+  </div>
+</div>
+
+<div id="settingsSheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('settingsSheet')">
+  <div class="sheet-body">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚙️ 設定</div>
+    <div class="sheet-section">
+      <div class="sheet-label"><span>🗓️ 自動入力</span></div>
+      <button class="btn full secondary" onclick="fillDefaultPractices()" style="margin-bottom:8px">木金にデフォルトの練習を一括追加</button>
+      <button class="btn full secondary" onclick="autoRotateDuty()">お当番を班ローテーションで自動割当</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============ FIREBASE CONFIG ============
+const firebaseConfig = {
+  apiKey: "AIzaSyAIYyl157-pOdkFkCIIUwPGha-d95ZjWLM",
+  authDomain: "minamigaoka-schedule.firebaseapp.com",
+  projectId: "minamigaoka-schedule",
+  storageBucket: "minamigaoka-schedule.firebasestorage.app",
+  messagingSenderId: "163832033621",
+  appId: "1:163832033621:web:cf20206fab7134dc2bbfdc"
+};
+
+let db = null;
+let USE_FIREBASE = false;
+
+try {
+  if (firebaseConfig.apiKey) {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    USE_FIREBASE = true;
+  }
+} catch(e) {
+  console.warn('Firebase init failed, using localStorage', e);
+}
+
+// ============ STATE ============
+// events:  {"YYYY-MM-DD": [{id, type, title, time, place, teamId, memo}]}
+// keyDuty: {"YYYY-MM-DD": {memberId}}  // 人単位
+// duty:    {"YYYY-MM-DD": {teamId}}    // 班単位
+// dutyMemberOverrides: {"YYYY-MM-DD": [{outMemberId, inMemberId}]}  // 設定済お当番のメンバー個別交換
+let state = {
+  events: {},
+  keyDuty: {},
+  duty: {},
+  dutyMemberOverrides: {},
+  teams: [
+    { id: 'A', name: 'A班', color: '#e74c3c', members: [] },
+    { id: 'B', name: 'B班', color: '#3498db', members: [] },
+    { id: 'C', name: 'C班', color: '#27ae60', members: [] }
+  ]
+};
+
+let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let selectedDate = null;
+let editingEvent = null;
+let editingType = 'practice';
+let swapDraft = { outMemberId: null, inMemberId: null };
+
+const STORAGE_KEY = 'minamigaoka_schedule_v2';
+
+async function loadData() {
+  if (USE_FIREBASE) {
+    try {
+      const doc = await db.collection('app').doc('main').get();
+      if (doc.exists) applySnapshot(doc.data());
+      db.collection('app').doc('main').onSnapshot(snap => {
+        if (snap.exists) { applySnapshot(snap.data()); render(); }
+      });
+      return;
+    } catch(e) { console.warn('Firebase load failed, fallback to localStorage', e); }
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) applySnapshot(JSON.parse(raw));
+  } catch(e) { console.warn(e); }
+}
+
+function applySnapshot(data) {
+  if (data.events) state.events = data.events;
+  if (data.teams) {
+    state.teams = data.teams.map(t => ({
+      ...t,
+      members: (t.members || []).map(m =>
+        typeof m === 'string' ? { id: uid(), name: m } : m
+      )
+    }));
+  }
+  if (data.keyDuty) state.keyDuty = data.keyDuty;
+  if (data.duty) state.duty = data.duty;
+  if (data.dutyMemberOverrides) state.dutyMemberOverrides = data.dutyMemberOverrides;
+}
+
+async function saveData() {
+  const payload = {
+    events: state.events,
+    teams: state.teams,
+    keyDuty: state.keyDuty,
+    duty: state.duty,
+    dutyMemberOverrides: state.dutyMemberOverrides,
+    updatedAt: new Date().toISOString()
+  };
+  if (USE_FIREBASE) {
+    try { await db.collection('app').doc('main').set(payload); return; }
+    catch(e) { console.warn('Firebase save failed, fallback to localStorage', e); }
+  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }
+  catch(e) { console.warn(e); }
+}
+
+// ============ HELPERS ============
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseKey(k) {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function isSameDay(a, b) {
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+function getTeam(id) { return state.teams.find(t => t.id === id); }
+function getMember(memberId) {
+  for (const t of state.teams) {
+    const m = t.members.find(x => x.id === memberId);
+    if (m) return { ...m, teamId: t.id, teamName: t.name, teamColor: t.color };
+  }
+  return null;
+}
+function parseTimeRange(timeStr) {
+  if (!timeStr) return { start: '', end: '' };
+  const m = timeStr.match(/^(\d{1,2}:\d{2})\s*[〜~\-]\s*(\d{1,2}:\d{2})$/);
+  if (m) return { start: m[1], end: m[2] };
+  const m1 = timeStr.match(/^(\d{1,2}:\d{2})$/);
+  if (m1) return { start: m1[1], end: '' };
+  return { start: '', end: '' };
+}
+
+function buildTimeRange(start, end) {
+  if (!start && !end) return '';
+  if (start && end) return `${start}〜${end}`;
+  return start || end;
+}
+
+function escapeHTML(s) {
+  if (!s && s !== 0) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// 鍵当番が設定可能か: 木金で、かつ何らかの活動(練習・試合・大会試合)がある日
+function canHaveKeyDuty(key) {
+  const date = parseKey(key);
+  const dow = date.getDay();
+  if (dow !== 4 && dow !== 5) return false; // 木金のみ
+  const evts = state.events[key] || [];
+  return evts.some(e => e.type === 'practice' || e.type === 'match' || e.type === 'league');
+}
+function hasMatchOrLeague(key) {
+  const evts = state.events[key] || [];
+  return evts.some(e => e.type === 'match' || e.type === 'league');
+}
+function getWeekId(date) {
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return dateKey(d);
+}
+
+// 指定日のお当番メンバー(オーバーライド適用後)を返す
+// 返り値: [{id, name, fromTeamName, isOverride}]
+function getEffectiveDutyMembers(key) {
+  const duty = state.duty[key];
+  if (!duty) return [];
+  const team = getTeam(duty.teamId);
+  if (!team) return [];
+  const overrides = state.dutyMemberOverrides[key] || [];
+  // 元のメンバーから始めて、外す/入れるを適用
+  let result = team.members.map(m => ({ id: m.id, name: m.name, fromTeamId: team.id, isOverride: false }));
+  overrides.forEach(o => {
+    // outMemberIdを外して、inMemberIdを追加
+    result = result.filter(m => m.id !== o.outMemberId);
+    const inMem = getMember(o.inMemberId);
+    if (inMem) {
+      result.push({ id: inMem.id, name: inMem.name, fromTeamId: inMem.teamId, isOverride: true });
+    }
+  });
+  return result;
+}
+
+function formatEffectiveMembers(key) {
+  const list = getEffectiveDutyMembers(key);
+  if (!list.length) return '';
+  return list.map(m => {
+    const ot = state.teams.find(t => t.id === m.fromTeamId);
+    const teamLabel = m.isOverride && ot ? `(${ot.name})` : '';
+    return escapeHTML(m.name) + (teamLabel ? `<span style="color:#888;font-size:10px">${escapeHTML(teamLabel)}</span>` : '');
+  }).join('、');
+}
+
+// ============ TABS ============
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${name}"]`).classList.add('active');
+  ['calendar','key','duty','team'].forEach(n => {
+    document.getElementById('view-'+n).classList.toggle('hidden', n !== name);
+  });
+  if (name === 'key') renderKeyList();
+  if (name === 'duty') renderDutyList();
+  if (name === 'team') renderTeams();
+}
+
+// ============ CALENDAR ============
+const DOW = ['日','月','火','水','木','金','土'];
+function changeMonth(delta) {
+  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()+delta, 1);
+  render();
+}
+
+function goToday() {
+  const now = new Date();
+  viewMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  render();
+  toast('今月に戻りました');
+}
+
+function updateMonthLabels() {
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth() + 1;
+  ['', 'Key', 'Duty'].forEach(suffix => {
+    const yEl = document.getElementById('yearLabel' + suffix);
+    const mEl = document.getElementById('monthLabel' + suffix);
+    if (yEl) yEl.textContent = y;
+    if (mEl) mEl.textContent = m;
+  });
+}
+
+function renderCalendar() {
+  updateMonthLabels();
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  [1,2,3,4,5,6,0].forEach(idx => {
+    const cls = idx === 6 ? 'sat' : idx === 0 ? 'sun' : '';
+    grid.insertAdjacentHTML('beforeend', `<div class="dow-cell ${cls}">${DOW[idx]}</div>`);
+  });
+
+  const firstDay = new Date(y, m, 1);
+  const startDayJS = firstDay.getDay();
+  const offset = startDayJS === 0 ? 6 : startDayJS - 1;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevMonthDays = new Date(y, m, 0).getDate();
+  const today = new Date();
+
+  for (let i = offset-1; i >= 0; i--) grid.insertAdjacentHTML('beforeend', renderDayCell(new Date(y, m-1, prevMonthDays-i), true));
+  for (let d = 1; d <= daysInMonth; d++) grid.insertAdjacentHTML('beforeend', renderDayCell(new Date(y, m, d), false, today));
+  const totalCells = offset + daysInMonth;
+  const remain = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remain; i++) grid.insertAdjacentHTML('beforeend', renderDayCell(new Date(y, m+1, i), true));
+}
+
+function renderDayCell(date, isOther, today) {
+  const dow = date.getDay();
+  const key = dateKey(date);
+  const evts = state.events[key] || [];
+  const duty = state.duty[key];
+  const keyDuty = state.keyDuty[key];
+  let classes = 'day-cell';
+  if (isOther) classes += ' other';
+  if (today && isSameDay(date, today)) classes += ' today';
+  if (dow === 6) classes += ' sat';
+  if (dow === 0) classes += ' sun';
+
+  let tagsHTML = '';
+  evts.slice(0, 2).forEach(ev => {
+    const label = ev.title || ({practice:'練習',match:'練習試合',league:'大会試合',other:''})[ev.type];
+    const timeText = ev.time ? `<span style="opacity:.85;font-weight:500">${escapeHTML(ev.time)}</span>` : '';
+    const placeText = ev.place ? `<span style="opacity:.85;font-weight:500">@${escapeHTML(ev.place)}</span>` : '';
+    tagsHTML += `<div class="event-tag ${ev.type}">${timeText ? timeText+' ' : ''}${escapeHTML(label)}${placeText ? ' '+placeText : ''}</div>`;
+  });
+  if (evts.length > 2) tagsHTML += `<div class="event-tag" style="background:#eee;color:#888">+${evts.length-2}</div>`;
+  if (keyDuty) {
+    const mem = getMember(keyDuty.memberId);
+    tagsHTML += `<div class="event-tag key">🔑<b style="font-weight:800">${mem ? escapeHTML(mem.name) : '?'}</b></div>`;
+  }
+  if (duty) {
+    const team = getTeam(duty.teamId);
+    if (team) tagsHTML += `<div class="event-tag duty">🔔<b style="font-weight:800">${escapeHTML(team.name)}</b></div>`;
+  }
+
+  return `<div class="${classes}" onclick="openDay('${key}')">
+    <div class="day-num">${date.getDate()}</div>
+    ${tagsHTML}
+  </div>`;
+}
+
+// ============ DAY DETAIL ============
+function openDay(key) {
+  selectedDate = key;
+  const date = parseKey(key);
+  const dow = DOW[date.getDay()];
+  const dowColor = date.getDay() === 6 ? 'var(--sat)' : date.getDay() === 0 ? 'var(--sun)' : 'var(--orange)';
+  document.getElementById('sheetDateNum').innerHTML =
+    `${date.getMonth()+1}月${date.getDate()}日<span style="font-size:20px;margin-left:4px;color:${dowColor}">(${dow})</span>`;
+  renderDayEvents();
+  document.getElementById('eventSheet').classList.add('show');
+}
+
+function renderDayEvents() {
+  const container = document.getElementById('sheetEvents');
+  const evts = state.events[selectedDate] || [];
+  const duty = state.duty[selectedDate];
+  const keyDuty = state.keyDuty[selectedDate];
+  let html = '';
+
+  if (evts.length) {
+    html += '<div class="sheet-section"><div class="sheet-label"><span>📅 予定</span></div>';
+    evts.forEach(ev => {
+      const badge = ev.type === 'practice' ? '🏃 練習' : ev.type === 'match' ? '🏆 練習試合' : ev.type === 'league' ? '⭐ 大会試合' : '📌 その他';
+      const team = ev.teamId ? getTeam(ev.teamId) : null;
+      html += `<div class="event-item">
+        <span class="type-badge event-tag ${ev.type}">${badge}</span>
+        <div class="e-body">
+          <div class="e-title">${escapeHTML(ev.title || '(無題)')}</div>
+          <div class="e-meta">${escapeHTML(ev.time || '')} ${ev.place ? '・'+escapeHTML(ev.place) : ''}</div>
+          ${team ? `<div class="e-meta">☆${escapeHTML(team.name)}</div>` : ''}
+          ${ev.memo ? `<div class="e-meta">📝 ${escapeHTML(ev.memo)}</div>` : ''}
+        </div>
+        <div class="e-actions">
+          <button class="e-edit" onclick="event.stopPropagation();editEvent('${ev.id}')">✏️</button>
+          <button class="e-del" onclick="event.stopPropagation();deleteEvent('${ev.id}')">×</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (canHaveKeyDuty(selectedDate)) {
+    const mem = keyDuty ? getMember(keyDuty.memberId) : null;
+    html += `<div class="sheet-section">
+      <div class="sheet-label"><span>🔑 鍵当番</span></div>
+      <div class="event-item key-item">
+        <div class="e-body">
+          <div class="name-medium">${mem ? escapeHTML(mem.name) : '未割当'}</div>
+        </div>
+        <button class="swap-btn" onclick="openKeyAssign('${selectedDate}')">${mem ? '🔄 変更' : '+ 割当'}</button>
+      </div>
+    </div>`;
+  }
+
+  if (hasMatchOrLeague(selectedDate)) {
+    const team = duty ? getTeam(duty.teamId) : null;
+    const effHtml = team ? formatEffectiveMembers(selectedDate) : '';
+    html += `<div class="sheet-section">
+      <div class="sheet-label"><span>🔔 お当番</span></div>
+      <div class="event-item duty-item">
+        <div class="e-body">
+          <div class="name-medium" style="color:${team?team.color:'#999'}">${team ? escapeHTML(team.name) : '未割当'}</div>
+          ${effHtml ? `<div style="font-size:13px;font-weight:700;color:#333;margin-top:4px">${effHtml}</div>` : ''}
+        </div>
+        <button class="swap-btn" onclick="openDutyAssign('${selectedDate}')">${team ? '🔄 交換' : '+ 割当'}</button>
+      </div>
+    </div>`;
+  }
+
+  if (!html) html = '<div class="empty"><div class="icon">📭</div><div class="text">予定はありません</div></div>';
+  container.innerHTML = html;
+}
+
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('show');
+  if (id === 'dutySheet') swapDraft = { outMemberId: null, inMemberId: null };
+}
+
+// ============ ADD/EDIT EVENT ============
+function openAddForm() {
+  editingEvent = null;
+  closeSheet('eventSheet');
+  document.getElementById('addTitle').textContent = '予定を追加';
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evTimeStart').value = '18:30';
+  document.getElementById('evTimeEnd').value = '21:00';
+  document.getElementById('evPlace').value = '';
+  document.getElementById('evMemo').value = '';
+  setType('practice');
+  document.getElementById('addSheet').classList.add('show');
+}
+
+function editEvent(id) {
+  const ev = (state.events[selectedDate] || []).find(e => e.id === id);
+  if (!ev) return;
+  closeSheet('eventSheet');
+  editingEvent = ev;
+  document.getElementById('addTitle').textContent = '予定を編集';
+  document.getElementById('evTitle').value = ev.title || '';
+  const parsed = parseTimeRange(ev.time);
+  document.getElementById('evTimeStart').value = parsed.start;
+  document.getElementById('evTimeEnd').value = parsed.end;
+  document.getElementById('evPlace').value = ev.place || '';
+  document.getElementById('evMemo').value = ev.memo || '';
+  setType(ev.type);
+  document.getElementById('addSheet').classList.add('show');
+}
+
+function setType(t) {
+  editingType = t;
+  document.querySelectorAll('.type-opt').forEach(el => el.classList.toggle('active', el.dataset.type === t));
+  // 練習はタイトル不要
+  const titleField = document.getElementById('titleField');
+  if (titleField) titleField.style.display = (t === 'practice') ? 'none' : 'block';
+}
+document.querySelectorAll('#typePicker .type-opt').forEach(el => { el.onclick = () => setType(el.dataset.type); });
+
+async function saveEvent() {
+  let title = document.getElementById('evTitle').value.trim();
+  if (editingType === 'practice') {
+    if (!title) title = '練習';
+  } else if (!title) {
+    toast('タイトルを入力してください'); return;
+  }
+  const payload = {
+    type: editingType,
+    title,
+    time: buildTimeRange(
+      document.getElementById('evTimeStart').value,
+      document.getElementById('evTimeEnd').value
+    ),
+    place: document.getElementById('evPlace').value.trim(),
+    memo: document.getElementById('evMemo').value.trim()
+  };
+  if (editingEvent) {
+    Object.assign(editingEvent, payload);
+  } else {
+    payload.id = uid();
+    if (!state.events[selectedDate]) state.events[selectedDate] = [];
+    state.events[selectedDate].push(payload);
+  }
+  cleanupAssignments(selectedDate);
+  await saveData();
+  closeSheet('addSheet');
+  render();
+  toast(editingEvent ? '更新しました' : '予定を追加しました');
+  editingEvent = null;
+}
+
+async function deleteEvent(id) {
+  if (!confirm('この予定を削除しますか?')) return;
+  state.events[selectedDate] = (state.events[selectedDate] || []).filter(e => e.id !== id);
+  if (!state.events[selectedDate].length) delete state.events[selectedDate];
+  cleanupAssignments(selectedDate);
+  await saveData();
+  renderDayEvents();
+  renderCalendar();
+  toast('削除しました');
+}
+
+function cleanupAssignments(key) {
+  if (!canHaveKeyDuty(key)) delete state.keyDuty[key];
+  if (!hasMatchOrLeague(key)) delete state.duty[key];
+}
+
+// ============ DEFAULT PRACTICE FILL ============
+async function fillDefaultPractices() {
+  if (!confirm('この月の木曜・金曜にデフォルト練習(18:30〜21:00)を追加します。既存の練習がある日はスキップします。')) return;
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const dow = date.getDay();
+    if (dow !== 4 && dow !== 5) continue;
+    const key = dateKey(date);
+    const existing = state.events[key] || [];
+    if (existing.some(e => e.type === 'practice')) continue;
+    if (!state.events[key]) state.events[key] = [];
+    state.events[key].push({
+      id: uid(), type: 'practice', title: '練習', time: '18:30〜21:00', place: '', teamId: '', memo: ''
+    });
+    count++;
+  }
+  await saveData();
+  closeSheet('settingsSheet');
+  render();
+  toast(`${count}件追加しました`);
+}
+
+// ============ KEY DUTY (人単位) ============
+function renderKeyList() {
+  updateMonthLabels();
+  const container = document.getElementById('keyList');
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let pastRows = '';
+  let pastCount = 0;
+  let currentRows = '';
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const key = dateKey(date);
+    if (!canHaveKeyDuty(key)) continue;
+    const kd = state.keyDuty[key];
+    const mem = kd ? getMember(kd.memberId) : null;
+    const dow = date.getDay();
+    const dowCls = dow === 6 ? ' sat' : dow === 0 ? ' sun' : '';
+    const isToday = isSameDay(date, today) ? ' today' : '';
+    const past = date < todayMidnight && !isToday;
+    const isPast = past ? ' past' : '';
+    const evts = state.events[key] || [];
+    const evPills = evts.slice(0,2).map(e => {
+      const lbl = e.title || ({practice:'練習',match:'練習試合',league:'大会試合',other:'その他'})[e.type];
+      const cls = e.type;
+      return `<span class="ev-pill ${cls}" style="background:${({practice:'#fde8c8',match:'#ffd1c2',league:'#d4e8d4',other:'#e0e0e0'})[e.type]};color:${({practice:'#a04e00',match:'#9b2200',league:'#2a6a2a',other:'#444'})[e.type]}">${escapeHTML(lbl)}</span>`;
+    }).join('');
+    const placeText = evts.find(e => e.place)?.place || '';
+    const row = `<div class="duty-row-slim${dowCls}${isToday}${isPast}" onclick="openKeyAssign('${key}')">
+      <div class="date-col">
+        <div class="date-num">${date.getDate()}</div>
+        <div class="date-dow">${DOW[dow]}</div>
+      </div>
+      <div class="ev-col">${evPills}${placeText?`<span class="ev-pill" style="background:transparent;color:#888;padding:0;font-weight:500">@${escapeHTML(placeText)}</span>`:''}</div>
+      <div class="assign-col">
+        ${mem ? `<div class="assign-main">🔑 ${escapeHTML(mem.name)}</div>`
+          : '<div class="assign-empty">タップして割当</div>'}
+      </div>
+      <div class="chevron">›</div>
+    </div>`;
+    if (past) { pastRows += row; pastCount++; }
+    else { currentRows += row; }
+    count++;
+  }
+  let html = '<div class="duty-list">';
+  if (pastCount) {
+    html += `<details class="past-collapse"><summary>過去 ${pastCount} 件を表示</summary>${pastRows}</details>`;
+  }
+  html += currentRows + '</div>';
+  if (!count) html = '<div class="empty"><div class="icon">📭</div><div class="text">木金で練習のある日がありません。</div></div>';
+  container.innerHTML = html;
+}
+
+function openKeyAssign(key) {
+  const date = parseKey(key);
+  const current = state.keyDuty[key];
+  const container = document.getElementById('keyContent');
+
+  let html = `<div class="sheet-section">
+    <div class="sheet-label"><span>📅 ${date.getMonth()+1}月${date.getDate()}日 (${DOW[date.getDay()]})</span></div>
+    <div style="font-size:13px;color:#666">現在: ${current ? escapeHTML(getMember(current.memberId)?.name || '不明') : '未割当'}</div>
+  </div>`;
+
+  html += `<div class="sheet-section"><div class="sheet-label"><span>👤 メンバーを選択</span></div>`;
+  html += `<div class="member-pick-grid">`;
+  state.teams.forEach(t => {
+    t.members.forEach(m => {
+      const active = current && current.memberId === m.id;
+      html += `<button class="member-pick ${active?'active':''}" onclick="assignKey('${key}','${m.id}')">
+        <span class="team-dot" style="background:${t.color}"></span>
+        ${escapeHTML(m.name)}
+      </button>`;
+    });
+  });
+  if (!state.teams.some(t => t.members.length)) {
+    html += '<div style="grid-column:1/-1;font-size:12px;color:#888;text-align:center;padding:12px">班管理でメンバーを登録してください</div>';
+  }
+  html += `</div></div>`;
+
+  if (current) {
+    html += `<div class="sheet-section">
+      <button class="btn danger full" onclick="clearKey('${key}')">割当を解除</button>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+  closeSheet('eventSheet');
+  document.getElementById('keySheet').classList.add('show');
+}
+
+async function assignKey(key, memberId) {
+  const date = parseKey(key);
+  const dow = date.getDay();
+  state.keyDuty[key] = { memberId };
+
+  // 木曜の場合、同週の金曜に練習があれば同じ人を割当
+  let linkedFriday = false;
+  if (dow === 4) {
+    const friDate = new Date(date);
+    friDate.setDate(friDate.getDate() + 1);
+    const friKey = dateKey(friDate);
+    if (canHaveKeyDuty(friKey)) {
+      state.keyDuty[friKey] = { memberId };
+      linkedFriday = true;
+    }
+  }
+  await saveData();
+  closeSheet('keySheet');
+  render();
+  const mem = getMember(memberId);
+  const memName = mem ? mem.name : '担当';
+  if (linkedFriday) {
+    toast(`鍵当番に${memName}さんを設定(金曜も同じ人を自動セット)`);
+  } else {
+    toast(`鍵当番に${memName}さんを設定しました`);
+  }
+}
+
+async function clearKey(key) {
+  const date = parseKey(key);
+  const cur = state.keyDuty[key];
+  const memName = cur ? (getMember(cur.memberId)?.name || '担当') : '';
+  if (!confirm(`${date.getMonth()+1}月${date.getDate()}日の鍵当番(${memName})を解除します。よろしいですか?`)) return;
+  delete state.keyDuty[key];
+  await saveData();
+  closeSheet('keySheet');
+  render();
+  toast('解除しました');
+}
+
+// ============ DUTY (班単位) ============
+function renderDutyList() {
+  updateMonthLabels();
+  const container = document.getElementById('dutyList');
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let pastRows = '';
+  let pastCount = 0;
+  let currentRows = '';
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const key = dateKey(date);
+    if (!hasMatchOrLeague(key)) continue;
+    const duty = state.duty[key];
+    const team = duty ? getTeam(duty.teamId) : null;
+    const dow = date.getDay();
+    const dowCls = dow === 6 ? ' sat' : dow === 0 ? ' sun' : '';
+    const isToday = isSameDay(date, today) ? ' today' : '';
+    const past = date < todayMidnight && !isToday;
+    const isPast = past ? ' past' : '';
+    const evts = (state.events[key] || []).filter(e => e.type === 'match' || e.type === 'league');
+    const evPills = evts.slice(0,2).map(e => {
+      const lbl = e.title || ({match:'練習試合',league:'大会試合'})[e.type];
+      return `<span class="ev-pill" style="background:${e.type==='match'?'#ffd1c2':'#d4e8d4'};color:${e.type==='match'?'#9b2200':'#2a6a2a'}">${escapeHTML(lbl)}</span>`;
+    }).join('');
+    const placeText = evts.find(e => e.place)?.place || '';
+    const effMembers = team ? getEffectiveDutyMembers(key) : [];
+    const row = `<div class="duty-row-slim${dowCls}${isToday}${isPast}" onclick="openDutyAssign('${key}')">
+      <div class="date-col">
+        <div class="date-num">${date.getDate()}</div>
+        <div class="date-dow">${DOW[dow]}</div>
+      </div>
+      <div class="ev-col">${evPills}${placeText?`<span class="ev-pill" style="background:transparent;color:#888;padding:0;font-weight:500">@${escapeHTML(placeText)}</span>`:''}</div>
+      <div class="assign-col">
+        ${team ? (effMembers.length
+            ? `<div class="assign-main duty-names" style="color:${team.color}">🔔 ${formatEffectiveMembers(key)}</div>
+               <div class="assign-team" style="color:${team.color}">${escapeHTML(team.name)}</div>`
+            : `<div class="assign-main" style="color:${team.color}"><span class="row-team-dot" style="background:${team.color}"></span>🔔 ${escapeHTML(team.name)}</div>
+               <div class="assign-sub">メンバー未登録</div>`)
+          : '<div class="assign-empty">タップして割当</div>'}
+      </div>
+      <div class="chevron">›</div>
+    </div>`;
+    if (past) { pastRows += row; pastCount++; }
+    else { currentRows += row; }
+    count++;
+  }
+  let html = '<div class="duty-list">';
+  if (pastCount) {
+    html += `<details class="past-collapse"><summary>過去 ${pastCount} 件を表示</summary>${pastRows}</details>`;
+  }
+  html += currentRows + '</div>';
+  if (!count) html = '<div class="empty"><div class="icon">📭</div><div class="text">練習試合・大会試合の日がありません</div></div>';
+  container.innerHTML = html;
+}
+
+async function autoRotateDuty() {
+  if (!state.teams.length) { toast('班を登録してください'); return; }
+  // 開始班を選択するシートを開く
+  closeSheet('settingsSheet');
+  const container = document.getElementById('dutyContent');
+  let html = `<div class="sheet-section">
+    <div class="sheet-label"><span>🚀 開始する班を選んでください</span></div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px">選択した班から順に、練習試合・大会試合の日に割当します。既存の割当は上書きされます。</div>`;
+  state.teams.forEach(t => {
+    html += `<button class="btn full" style="background:${t.color};margin-bottom:6px" 
+      onclick="doAutoRotate('${t.id}')">${escapeHTML(t.name)}から開始</button>`;
+  });
+  html += `</div>
+    <div class="sheet-section">
+      <button class="btn secondary full" onclick="closeSheet('dutySheet')">キャンセル</button>
+    </div>`;
+  container.innerHTML = html;
+  document.getElementById('dutySheet').classList.add('show');
+}
+
+async function doAutoRotate(startTeamId) {
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const startIdx = state.teams.findIndex(t => t.id === startTeamId);
+  if (startIdx < 0) return;
+  let idx = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const key = dateKey(date);
+    if (!hasMatchOrLeague(key)) continue;
+    const team = state.teams[(startIdx + idx) % state.teams.length];
+    state.duty[key] = { teamId: team.id };
+    // 個別オーバーライドは自動割当でリセット
+    delete state.dutyMemberOverrides[key];
+    idx++;
+  }
+  await saveData();
+  closeSheet('dutySheet');
+  render();
+  toast(`${getTeam(startTeamId).name}から自動割当しました`);
+}
+
+function openDutyAssign(key) {
+  const date = parseKey(key);
+  const current = state.duty[key];
+  const container = document.getElementById('dutyContent');
+
+  let html = `<div class="sheet-section">
+    <div class="sheet-label"><span>📅 ${date.getMonth()+1}月${date.getDate()}日 (${DOW[date.getDay()]})</span></div>`;
+  if (current) {
+    const curTeam = getTeam(current.teamId);
+    const eff = getEffectiveDutyMembers(key);
+    html += `<div style="font-size:13px;font-weight:700;color:${curTeam?curTeam.color:'inherit'};margin-bottom:4px">担当: ${curTeam?escapeHTML(curTeam.name):'不明'}</div>`;
+    if (eff.length) {
+      html += `<div style="font-size:12px;color:#555">${formatEffectiveMembers(key)}</div>`;
+    } else {
+      html += `<div style="font-size:12px;color:#888">メンバー未登録</div>`;
+    }
+  } else {
+    html += `<div style="font-size:13px;color:#888">未割当</div>`;
+  }
+  html += `</div>`;
+
+  // 班を割当 / 変更
+  html += `<div class="sheet-section"><div class="sheet-label"><span>👥 班を割当 / 変更</span></div>`;
+  state.teams.forEach(t => {
+    const isCurrent = current && current.teamId === t.id;
+    const memberPreview = t.members.length ? t.members.map(m => escapeHTML(m.name)).join('、') : 'メンバー未登録';
+    html += `<button class="btn full" style="background:${t.color};margin-bottom:6px;opacity:${isCurrent?0.5:1};flex-direction:column;align-items:flex-start;padding:10px 12px" 
+      onclick="assignDutyTeam('${key}','${t.id}')" ${isCurrent?'disabled':''}>
+      <span style="font-weight:800">${escapeHTML(t.name)} ${isCurrent?'(現在)':''}</span>
+      <span style="font-size:10px;font-weight:500;opacity:.9;text-align:left;line-height:1.3">${memberPreview}</span>
+    </button>`;
+  });
+  html += `</div>`;
+
+  // 班同士の入替え
+  if (current) {
+    const y = viewMonth.getFullYear();
+    const m = viewMonth.getMonth();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    let teamSwapHtml = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const other = new Date(y, m, d);
+      const ok = dateKey(other);
+      if (ok === key) continue;
+      if (!hasMatchOrLeague(ok)) continue;
+      const od = state.duty[ok];
+      if (!od) continue;
+      const ot = getTeam(od.teamId);
+      teamSwapHtml += `<div class="swap-target">
+        <div class="date">${other.getMonth()+1}/${other.getDate()} (${DOW[other.getDay()]})</div>
+        <div class="info">担当: ${ot?escapeHTML(ot.name):'不明'}</div>
+        <button class="btn secondary small" onclick="doDutySwap('${key}','${ok}')">この日と班を入替え</button>
+      </div>`;
+    }
+    if (teamSwapHtml) {
+      html += `<div class="sheet-section"><div class="sheet-label"><span>🔁 他の試合日と班同士で入替え</span></div>${teamSwapHtml}</div>`;
+    }
+
+    // 既存のオーバーライド表示
+    const overrides = state.dutyMemberOverrides[key] || [];
+    if (overrides.length) {
+      html += `<div class="sheet-section"><div class="sheet-label"><span>📝 現在の個別交換</span></div>`;
+      overrides.forEach(o => {
+        const outMem = getMember(o.outMemberId);
+        const inMem = getMember(o.inMemberId);
+        html += `<div class="swap-target">
+          <div style="font-size:12px;font-weight:600">
+            ${outMem?escapeHTML(outMem.name):'(削除済)'} → ${inMem?escapeHTML(inMem.name):'(削除済)'}
+          </div>
+          <div class="info">${inMem?escapeHTML(inMem.teamName):''}からの代行</div>
+          <button class="btn secondary small" onclick="clearMemberOverride('${key}','${o.outMemberId}')">この交換を取消</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 人と人の交換 (その日限定・班マスタは変更しない)
+    const eff = getEffectiveDutyMembers(key);
+    if (eff.length) {
+      html += `<div class="sheet-section"><div class="sheet-label"><span>👤 この日だけ人を交換</span></div>`;
+      html += `<div style="font-size:11px;color:#888;margin-bottom:8px">担当メンバーの代わりに、別の人に来てもらう場合に使います。班の構成は変わりません。</div>`;
+      const effIds = new Set(eff.map(m => m.id));
+      const others = state.teams.flatMap(t => t.members.filter(m => !effIds.has(m.id)).map(m => ({...m, teamId: t.id, teamName: t.name, teamColor: t.color})));
+
+      // STEP 1: 外す人
+      html += `<div class="swap-step-label">STEP 1 / 外す人を選ぶ</div>`;
+      html += `<div class="swap-pick-grid">`;
+      eff.forEach(m => {
+        const t = getTeam(m.fromTeamId);
+        const active = swapDraft.outMemberId === m.id;
+        html += `<button class="swap-pick ${active?'active':''}" onclick="selectSwapOut('${key}','${m.id}')">
+          <span class="team-dot" style="background:${t?t.color:'#ccc'}"></span>
+          <span>${escapeHTML(m.name)}</span>
+          <span class="sub">${escapeHTML(t?t.name:'')}</span>
+        </button>`;
+      });
+      html += `</div>`;
+
+      // STEP 2: 入れる人 (外す人が選ばれてから活性化)
+      if (others.length) {
+        const step2Enabled = !!swapDraft.outMemberId;
+        html += `<div class="swap-step-label" style="opacity:${step2Enabled?1:.4}">STEP 2 / 代わりの人を選ぶ</div>`;
+        html += `<div class="swap-pick-grid">`;
+        others.forEach(m => {
+          const active = swapDraft.inMemberId === m.id;
+          const cls = step2Enabled ? (active?'active':'') : 'disabled';
+          html += `<button class="swap-pick ${cls}" onclick="selectSwapIn('${key}','${m.id}')">
+            <span class="team-dot" style="background:${m.teamColor}"></span>
+            <span>${escapeHTML(m.name)}</span>
+            <span class="sub">${escapeHTML(m.teamName)}</span>
+          </button>`;
+        });
+        html += `</div>`;
+
+        // STEP 3: 実行ボタン
+        const ready = swapDraft.outMemberId && swapDraft.inMemberId;
+        html += `<button class="btn full" style="margin-top:10px;opacity:${ready?1:.4}" ${ready?'':'disabled'}
+          onclick="doMemberSwapDirect('${key}','${swapDraft.outMemberId||''}','${swapDraft.inMemberId||''}')">
+          この日だけ交換する
+        </button>`;
+      } else {
+        html += '<div style="font-size:12px;color:#888">他に交換できるメンバーがいません</div>';
+      }
+      html += `</div>`;
+    }
+
+    html += `<div class="sheet-section">
+      <button class="btn danger full" onclick="clearDuty('${key}')">割当を解除</button>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+  closeSheet('eventSheet');
+  document.getElementById('dutySheet').classList.add('show');
+}
+
+async function assignDutyTeam(key, teamId) {
+  // 班を変更した場合、その日のオーバーライドはクリア
+  if (state.duty[key] && state.duty[key].teamId !== teamId) {
+    delete state.dutyMemberOverrides[key];
+  }
+  state.duty[key] = { teamId };
+  await saveData();
+  closeSheet('dutySheet');
+  render();
+  toast('お当番を設定しました');
+}
+
+async function doDutySwap(keyA, keyB) {
+  const a = state.duty[keyA];
+  const b = state.duty[keyB];
+  if (!a || !b) return;
+  state.duty[keyA] = { teamId: b.teamId };
+  state.duty[keyB] = { teamId: a.teamId };
+  // 入替え時はオーバーライドもクリア
+  delete state.dutyMemberOverrides[keyA];
+  delete state.dutyMemberOverrides[keyB];
+  await saveData();
+  closeSheet('dutySheet');
+  render();
+  toast('入替えました');
+}
+
+function selectSwapOut(key, memberId) {
+  swapDraft.outMemberId = (swapDraft.outMemberId === memberId) ? null : memberId;
+  // 外す人を変えたら入れる人はリセット
+  swapDraft.inMemberId = null;
+  openDutyAssign(key);
+}
+
+function selectSwapIn(key, memberId) {
+  if (!swapDraft.outMemberId) return;
+  swapDraft.inMemberId = (swapDraft.inMemberId === memberId) ? null : memberId;
+  // 部分更新: STEP2のactive状態と実行ボタンだけ更新(STEP1は触らない)
+  document.querySelectorAll('#dutyContent .swap-pick-grid')[1]?.querySelectorAll('.swap-pick').forEach(btn => {
+    const onclickAttr = btn.getAttribute('onclick') || '';
+    const m = onclickAttr.match(/selectSwapIn\('[^']+','([^']+)'\)/);
+    if (!m) return;
+    btn.classList.toggle('active', m[1] === swapDraft.inMemberId);
+  });
+  // 実行ボタンの活性更新
+  const execBtn = document.querySelector('#dutyContent button[onclick^="doMemberSwapDirect"]');
+  if (execBtn) {
+    const ready = swapDraft.outMemberId && swapDraft.inMemberId;
+    execBtn.disabled = !ready;
+    execBtn.style.opacity = ready ? 1 : .4;
+    execBtn.setAttribute('onclick', `doMemberSwapDirect('${key}','${swapDraft.outMemberId||''}','${swapDraft.inMemberId||''}')`);
+  }
+}
+
+async function doMemberSwapDirect(key, fromId, toId) {
+  if (!fromId || !toId) return;
+  const fromMem = getMember(fromId);
+  const toMem = getMember(toId);
+  if (!fromMem || !toMem) { toast('メンバーが見つかりません'); return; }
+  if (!confirm(`${fromMem.name}(${fromMem.teamName}) の代わりに ${toMem.name}(${toMem.teamName}) を担当にします。よろしいですか?`)) return;
+
+  if (!state.dutyMemberOverrides[key]) state.dutyMemberOverrides[key] = [];
+  state.dutyMemberOverrides[key] = state.dutyMemberOverrides[key].filter(o => o.outMemberId !== fromId);
+  state.dutyMemberOverrides[key].push({ outMemberId: fromId, inMemberId: toId });
+
+  swapDraft = { outMemberId: null, inMemberId: null };
+  await saveData();
+  closeSheet('dutySheet');
+  render();
+  toast(`${fromMem.name}→${toMem.name} に交換しました`);
+}
+
+async function clearMemberOverride(key, outMemberId) {
+  if (!state.dutyMemberOverrides[key]) return;
+  state.dutyMemberOverrides[key] = state.dutyMemberOverrides[key].filter(o => o.outMemberId !== outMemberId);
+  if (!state.dutyMemberOverrides[key].length) delete state.dutyMemberOverrides[key];
+  await saveData();
+  // 同じシートを再描画
+  openDutyAssign(key);
+  render();
+  toast('交換を解除しました');
+}
+
+async function clearDuty(key) {
+  const date = parseKey(key);
+  const cur = state.duty[key];
+  const teamName = cur ? (getTeam(cur.teamId)?.name || '担当班') : '';
+  const overrides = (state.dutyMemberOverrides[key] || []).length;
+  const extra = overrides ? `\n(個別交換${overrides}件も解除されます)` : '';
+  if (!confirm(`${date.getMonth()+1}月${date.getDate()}日のお当番(${teamName})を解除します。よろしいですか?${extra}`)) return;
+  delete state.duty[key];
+  delete state.dutyMemberOverrides[key];
+  await saveData();
+  closeSheet('dutySheet');
+  render();
+  toast('解除しました');
+}
+
+// ============ TEAM MANAGE ============
+function renderTeams() {
+  const container = document.getElementById('teamList');
+  document.getElementById('teamCountLabel').textContent = `${state.teams.length}班で運用中`;
+  let html = '';
+  state.teams.forEach((t, idx) => {
+    html += `<div class="team-card">
+      <div class="team-head">
+        <div class="team-name">
+          <div class="team-badge" style="background:${t.color}">${escapeHTML(t.id)}</div>
+          <input type="text" value="${escapeHTML(t.name)}" 
+            style="border:none;background:transparent;font-size:16px;font-weight:800;width:100%;min-width:0"
+            onchange="renameTeam(${idx}, this.value)">
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn secondary small" onclick="pickColor(${idx})">🎨</button>
+          <button class="btn danger small" onclick="removeTeam(${idx})">削除</button>
+        </div>
+      </div>
+      <div>
+        ${t.members.map((m, i) => `<span class="member-chip">
+          ${escapeHTML(m.name)}
+          <span class="x" onclick="removeMember(${idx},${i})">×</span>
+        </span>`).join('')}
+        ${!t.members.length ? '<span style="color:#aaa;font-size:12px">メンバー未登録</span>' : ''}
+      </div>
+      <div class="add-input-row">
+        <input type="text" placeholder="メンバー名を入力" id="memInput-${idx}" onkeydown="if(event.key==='Enter')addMember(${idx})">
+        <button class="btn small" onclick="addMember(${idx})">追加</button>
+      </div>
+    </div>`;
+  });
+  if (!html) html = '<div class="empty"><div class="icon">👥</div><div class="text">班を追加してください</div></div>';
+  container.innerHTML = html;
+}
+
+async function addTeam() {
+  const nextChar = String.fromCharCode(65 + state.teams.length);
+  const colors = ['#e74c3c','#3498db','#27ae60','#f39c12','#9b59b6','#1abc9c','#e91e63'];
+  state.teams.push({ id: nextChar, name: `${nextChar}班`, color: colors[state.teams.length % colors.length], members: [] });
+  await saveData();
+  renderTeams();
+}
+
+async function removeTeam(idx) {
+  if (state.teams.length <= 1) { toast('班は最低1つ必要です'); return; }
+  if (!confirm(`${state.teams[idx].name}を削除しますか?`)) return;
+  state.teams.splice(idx, 1);
+  await saveData();
+  renderTeams();
+  render();
+}
+
+async function renameTeam(idx, name) {
+  state.teams[idx].name = name;
+  await saveData();
+  render();
+}
+
+async function pickColor(idx) {
+  const c = prompt('カラーコードを入力 (例: #e74c3c)', state.teams[idx].color);
+  if (!c) return;
+  state.teams[idx].color = c;
+  await saveData();
+  renderTeams();
+  render();
+}
+
+async function addMember(idx) {
+  const input = document.getElementById(`memInput-${idx}`);
+  const name = input.value.trim();
+  if (!name) return;
+  state.teams[idx].members.push({ id: uid(), name });
+  await saveData();
+  renderTeams();
+}
+
+async function removeMember(tIdx, mIdx) {
+  const mem = state.teams[tIdx].members[mIdx];
+  if (!mem) return;
+  // 関連割当の件数をカウント
+  let keyCount = 0;
+  Object.keys(state.keyDuty).forEach(k => {
+    if (state.keyDuty[k].memberId === mem.id) keyCount++;
+  });
+  let overrideCount = 0;
+  Object.keys(state.dutyMemberOverrides).forEach(k => {
+    overrideCount += (state.dutyMemberOverrides[k] || []).filter(
+      o => o.outMemberId === mem.id || o.inMemberId === mem.id
+    ).length;
+  });
+  let msg = `${mem.name} を削除しますか?`;
+  if (keyCount || overrideCount) {
+    const extras = [];
+    if (keyCount) extras.push(`鍵当番 ${keyCount} 件`);
+    if (overrideCount) extras.push(`個別交換 ${overrideCount} 件`);
+    msg += `\n(${extras.join(' / ')} も同時に解除されます)`;
+  }
+  if (!confirm(msg)) return;
+  const memberId = mem.id;
+  state.teams[tIdx].members.splice(mIdx, 1);
+  Object.keys(state.keyDuty).forEach(k => {
+    if (state.keyDuty[k].memberId === memberId) delete state.keyDuty[k];
+  });
+  // dutyMemberOverridesから関連エントリを削除
+  Object.keys(state.dutyMemberOverrides).forEach(k => {
+    state.dutyMemberOverrides[k] = state.dutyMemberOverrides[k].filter(
+      o => o.outMemberId !== memberId && o.inMemberId !== memberId
+    );
+    if (!state.dutyMemberOverrides[k].length) delete state.dutyMemberOverrides[k];
+  });
+  await saveData();
+  renderTeams();
+  render();
+}
+
+// ============ EXPORT ============
+async function exportImage() {
+  closeSheet('settingsSheet');
+  const active = document.querySelector('.tab.active').dataset.tab;
+  const target = document.getElementById('view-' + active);
+  toast('画像を生成中...');
+  try {
+    const canvas = await html2canvas(target, { backgroundColor: '#fff7ec', scale: 2 });
+    const link = document.createElement('a');
+    link.download = `minamigaoka_${active}_${viewMonth.getFullYear()}-${viewMonth.getMonth()+1}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('画像を保存しました');
+  } catch(e) { console.error(e); toast('エラーが発生しました'); }
+}
+
+
+function showSettings() { document.getElementById('settingsSheet').classList.add('show'); }
+
+function render() {
+  renderCalendar();
+  const active = document.querySelector('.tab.active').dataset.tab;
+  if (active === 'key') renderKeyList();
+  if (active === 'duty') renderDutyList();
+  if (active === 'team') renderTeams();
+}
+
+(async function init() {
+  await loadData();
+  render();
+  document.getElementById('loading').style.display = 'none';
+  if (!USE_FIREBASE) {
+    setTimeout(() => toast('💾 ローカル保存モード(Firebase設定を更新してください)'), 500);
+  }
+})();
+</script>
+</body>
+</html>
