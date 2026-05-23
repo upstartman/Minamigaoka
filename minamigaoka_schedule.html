@@ -294,6 +294,75 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .past-collapse[open] > summary::before { transform: rotate(90deg); }
 .past-collapse > summary:active { background: var(--paper); }
+
+.stats-collapse {
+  margin: 200px 16px 16px;
+  background: var(--paper);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.stats-collapse > summary {
+  list-style: none;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.stats-collapse > summary::-webkit-details-marker { display: none; }
+.stats-collapse > summary::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform .15s;
+}
+.stats-collapse[open] > summary::before { transform: rotate(90deg); }
+.stats-collapse > summary:active { background: var(--cream); }
+.stats-collapse > div { padding: 0 14px 14px; }
+
+.stats-team-group { margin-bottom: 10px; }
+.stats-team-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 4px;
+  color: #666;
+}
+.stats-team-head .team-badge-inline { margin-right: 0; font-size: 10px; padding: 1px 6px; }
+.stats-team-head .team-count {
+  margin-left: auto; font-size: 10px; color: #888; font-weight: 600;
+}
+.stats-team-head .team-count b { color: #555; font-weight: 800; }
+.stats-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 2px;
+  font-size: 11px;
+  color: #666;
+}
+.stats-row .name { font-weight: 600; }
+.stats-row .count { font-size: 11px; font-weight: 700; color: #777; }
+.stats-row .count b { font-size: 13px; font-weight: 800; color: var(--ink); margin-right: 1px; }
+.stats-row .count.zero b { color: #ccc; }
+.stats-period {
+  font-size: 10px; color: #888; margin-bottom: 8px;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.stats-period button {
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+  font-family: inherit;
+}
+.stats-period button.active { background: #ddd; color: #333; border-color: #ccc; }
 .duty-row-slim .ev-col {
   flex: 0 0 auto;
   display: flex;
@@ -381,6 +450,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .swap-card > * { pointer-events: none; }
 .swap-card:active { background: var(--cream); border-color: var(--orange); }
+.swap-card.active { background: #fff4e0; border-color: var(--orange); }
+.swap-card.disabled { opacity: .35; pointer-events: none; }
 .swap-card .d { font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1; letter-spacing: .02em; }
 .swap-card .dow { font-size: 10px; font-weight: 700; color: #888; }
 .swap-card.sat .d { color: var(--sat); }
@@ -649,6 +720,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     </div>
     <div id="teamList"></div>
   </div>
+  <details class="stats-collapse">
+    <summary>📊 お当番回数を表示</summary>
+    <div id="dutyStats"></div>
+  </details>
 </div>
 
 <div id="eventSheet" class="bottom-sheet" onclick="if(event.target===this)closeSheet('eventSheet')">
@@ -780,7 +855,7 @@ let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let selectedDate = null;
 let editingEvent = null;
 let editingType = 'practice';
-let swapDraft = { outMemberId: null, inMemberId: null };
+let swapDraft = { outMemberId: null, targetKey: null, inMemberId: null };
 
 const STORAGE_KEY = 'minamigaoka_schedule_v2';
 
@@ -1117,7 +1192,7 @@ function renderDayEvents() {
 
 function closeSheet(id) {
   document.getElementById(id).classList.remove('show');
-  if (id === 'dutySheet') swapDraft = { outMemberId: null, inMemberId: null };
+  if (id === 'dutySheet') swapDraft = { outMemberId: null, targetKey: null, inMemberId: null };
 }
 
 // ============ ADD/EDIT EVENT ============
@@ -1563,34 +1638,36 @@ function openDutyAssign(key) {
         <div class="swap-card-scroll">${teamSwapHtml}</div></div>`;
     }
 
-    // 既存のオーバーライド表示
+    // 既存の個別交換の表示
     const overrides = state.dutyMemberOverrides[key] || [];
     if (overrides.length) {
       html += `<div class="sheet-section"><div class="sheet-label"><span>📝 現在の個別交換</span></div>`;
       overrides.forEach(o => {
         const outMem = getMember(o.outMemberId);
         const inMem = getMember(o.inMemberId);
+        const pairLabel = o.pairKey ? (() => {
+          const p = parseKey(o.pairKey);
+          return `${p.getMonth()+1}/${p.getDate()}(${DOW[p.getDay()]}) と双方向交換`;
+        })() : 'この日のみ代行';
         html += `<div class="swap-target">
-          <div style="font-size:12px;font-weight:600">
-            ${outMem?escapeHTML(outMem.name):'(削除済)'} → ${inMem?escapeHTML(inMem.name):'(削除済)'}
+          <div style="font-size:13px;font-weight:700">
+            ${outMem?escapeHTML(outMem.name):'(削除済)'} ⇄ ${inMem?escapeHTML(inMem.name):'(削除済)'}
           </div>
-          <div class="info">${inMem?escapeHTML(inMem.teamName):''}からの代行</div>
+          <div class="info">${escapeHTML(pairLabel)}</div>
           <button class="btn secondary small" onclick="clearMemberOverride('${key}','${o.outMemberId}')">この交換を取消</button>
         </div>`;
       });
       html += `</div>`;
     }
 
-    // 人と人の交換 (その日限定・班マスタは変更しない)
+    // 他の試合日と双方向で人を交換
     const eff = getEffectiveDutyMembers(key);
     if (eff.length) {
-      html += `<div class="sheet-section"><div class="sheet-label"><span>👤 この日だけ人を交換</span></div>`;
-      html += `<div style="font-size:11px;color:#888;margin-bottom:8px">担当メンバーの代わりに、別の人に来てもらう場合に使います。班の構成は変わりません。</div>`;
-      const effIds = new Set(eff.map(m => m.id));
-      const others = state.teams.flatMap(t => t.members.filter(m => !effIds.has(m.id)).map(m => ({...m, teamId: t.id, teamName: t.name, teamColor: t.color})));
+      html += `<div class="sheet-section"><div class="sheet-label"><span>👤 他の試合日と人を入替え</span><span style="font-size:10px;color:#888;font-weight:500">前後1ヶ月以内</span></div>`;
+      html += `<div style="font-size:11px;color:#888;margin-bottom:8px">この日の担当と、別の試合日の担当を双方向で交換します。班の構成は変わりません。</div>`;
 
-      // STEP 1: 外す人
-      html += `<div class="swap-step-label">STEP 1 / 外す人を選ぶ</div>`;
+      // STEP 1: この日から外す人
+      html += `<div class="swap-step-label">STEP 1 / この日から外す人</div>`;
       html += `<div class="swap-pick-grid">`;
       eff.forEach(m => {
         const t = getTeam(m.fromTeamId);
@@ -1603,30 +1680,64 @@ function openDutyAssign(key) {
       });
       html += `</div>`;
 
-      // STEP 2: 入れる人 (外す人が選ばれてから活性化)
-      if (others.length) {
+      // STEP 2: 交換相手の試合日
+      const baseTime = date.getTime();
+      const RANGE_MS = 30 * 24 * 60 * 60 * 1000;
+      const dayCandidates = Object.keys(state.duty)
+        .filter(ok => ok !== key)
+        .filter(ok => hasMatchOrLeague(ok))
+        .map(ok => ({ ok, d: parseKey(ok) }))
+        .filter(c => Math.abs(c.d.getTime() - baseTime) <= RANGE_MS)
+        .sort((a, b) => a.d - b.d);
+
+      if (dayCandidates.length) {
         const step2Enabled = !!swapDraft.outMemberId;
-        html += `<div class="swap-step-label" style="opacity:${step2Enabled?1:.4}">STEP 2 / 代わりの人を選ぶ</div>`;
-        html += `<div class="swap-pick-grid">`;
-        others.forEach(m => {
-          const active = swapDraft.inMemberId === m.id;
+        html += `<div class="swap-step-label" style="opacity:${step2Enabled?1:.4}">STEP 2 / 交換相手の試合日</div>`;
+        html += `<div class="swap-card-scroll">`;
+        dayCandidates.forEach(({ ok, d: other }) => {
+          const od = state.duty[ok];
+          const ot = getTeam(od.teamId);
+          const dow = other.getDay();
+          const dowCls = dow === 6 ? 'sat' : dow === 0 ? 'sun' : '';
+          const active = swapDraft.targetKey === ok;
           const cls = step2Enabled ? (active?'active':'') : 'disabled';
-          html += `<button class="swap-pick ${cls}" onclick="selectSwapIn('${key}','${m.id}')">
-            <span class="team-dot" style="background:${m.teamColor}"></span>
-            <span>${escapeHTML(m.name)}</span>
-            <span class="sub">${escapeHTML(m.teamName)}</span>
+          html += `<button class="swap-card ${dowCls} ${cls}" onclick="selectSwapTargetDay('${key}','${ok}')">
+            <span class="d">${other.getMonth()+1}/${other.getDate()}</span>
+            <span class="dow">(${DOW[dow]})</span>
+            <span class="team-badge-inline" style="background:${ot?ot.color:'#999'}">${ot?escapeHTML(ot.name):'?'}</span>
           </button>`;
         });
         html += `</div>`;
 
-        // STEP 3: 実行ボタン
-        const ready = swapDraft.outMemberId && swapDraft.inMemberId;
-        html += `<button class="btn full" style="margin-top:10px;opacity:${ready?1:.4}" ${ready?'':'disabled'}
-          onclick="doMemberSwapDirect('${key}','${swapDraft.outMemberId||''}','${swapDraft.inMemberId||''}')">
-          この日だけ交換する
-        </button>`;
+        // STEP 3: 相手日から代わりに来てもらう人
+        if (swapDraft.targetKey) {
+          const targetEff = getEffectiveDutyMembers(swapDraft.targetKey);
+          const thisDayIds = new Set(eff.map(m => m.id));
+          const inCandidates = targetEff.filter(m => !thisDayIds.has(m.id));
+          html += `<div class="swap-step-label">STEP 3 / 代わりに来てもらう人</div>`;
+          if (inCandidates.length) {
+            html += `<div class="swap-pick-grid">`;
+            inCandidates.forEach(m => {
+              const t = getTeam(m.fromTeamId);
+              const active = swapDraft.inMemberId === m.id;
+              html += `<button class="swap-pick ${active?'active':''}" onclick="selectSwapIn('${key}','${m.id}')">
+                <span class="team-dot" style="background:${t?t.color:'#ccc'}"></span>
+                <span>${escapeHTML(m.name)}</span>
+                <span class="sub">${escapeHTML(t?t.name:'')}</span>
+              </button>`;
+            });
+            html += `</div>`;
+            const ready = swapDraft.outMemberId && swapDraft.targetKey && swapDraft.inMemberId;
+            html += `<button class="btn full" style="margin-top:10px;opacity:${ready?1:.4}" ${ready?'':'disabled'}
+              onclick="doMemberSwapDirect('${key}','${swapDraft.outMemberId||''}','${swapDraft.targetKey||''}','${swapDraft.inMemberId||''}')">
+              双方向に交換する
+            </button>`;
+          } else {
+            html += '<div style="font-size:12px;color:#888;padding:8px">交換できる人がいません(この日と相手日に同じ人が含まれています)</div>';
+          }
+        }
       } else {
-        html += '<div style="font-size:12px;color:#888">他に交換できるメンバーがいません</div>';
+        html += `<div style="font-size:11px;color:#888;padding:8px">前後1ヶ月以内に他の試合日がありません</div>`;
       }
       html += `</div>`;
     }
@@ -1670,58 +1781,70 @@ async function doDutySwap(keyA, keyB) {
 
 function selectSwapOut(key, memberId) {
   swapDraft.outMemberId = (swapDraft.outMemberId === memberId) ? null : memberId;
-  // 外す人を変えたら入れる人はリセット
+  // 外す人を変えたら相手日と入れる人はリセット
+  swapDraft.targetKey = null;
+  swapDraft.inMemberId = null;
+  openDutyAssign(key);
+}
+
+function selectSwapTargetDay(key, targetKey) {
+  if (!swapDraft.outMemberId) return;
+  swapDraft.targetKey = (swapDraft.targetKey === targetKey) ? null : targetKey;
+  // 相手日を変えたら入れる人はリセット
   swapDraft.inMemberId = null;
   openDutyAssign(key);
 }
 
 function selectSwapIn(key, memberId) {
-  if (!swapDraft.outMemberId) return;
+  if (!swapDraft.outMemberId || !swapDraft.targetKey) return;
   swapDraft.inMemberId = (swapDraft.inMemberId === memberId) ? null : memberId;
-  // 部分更新: STEP2のactive状態と実行ボタンだけ更新(STEP1は触らない)
-  document.querySelectorAll('#dutyContent .swap-pick-grid')[1]?.querySelectorAll('.swap-pick').forEach(btn => {
-    const onclickAttr = btn.getAttribute('onclick') || '';
-    const m = onclickAttr.match(/selectSwapIn\('[^']+','([^']+)'\)/);
-    if (!m) return;
-    btn.classList.toggle('active', m[1] === swapDraft.inMemberId);
-  });
-  // 実行ボタンの活性更新
-  const execBtn = document.querySelector('#dutyContent button[onclick^="doMemberSwapDirect"]');
-  if (execBtn) {
-    const ready = swapDraft.outMemberId && swapDraft.inMemberId;
-    execBtn.disabled = !ready;
-    execBtn.style.opacity = ready ? 1 : .4;
-    execBtn.setAttribute('onclick', `doMemberSwapDirect('${key}','${swapDraft.outMemberId||''}','${swapDraft.inMemberId||''}')`);
-  }
+  openDutyAssign(key);
 }
 
-async function doMemberSwapDirect(key, fromId, toId) {
-  if (!fromId || !toId) return;
+async function doMemberSwapDirect(key, fromId, targetKey, toId) {
+  if (!fromId || !targetKey || !toId) return;
   const fromMem = getMember(fromId);
   const toMem = getMember(toId);
   if (!fromMem || !toMem) { toast('メンバーが見つかりません'); return; }
-  if (!confirm(`${fromMem.name}(${fromMem.teamName}) の代わりに ${toMem.name}(${toMem.teamName}) を担当にします。よろしいですか?`)) return;
+  const tDate = parseKey(targetKey);
+  const tLabel = `${tDate.getMonth()+1}/${tDate.getDate()}`;
+  const date = parseKey(key);
+  const kLabel = `${date.getMonth()+1}/${date.getDate()}`;
+  if (!confirm(`${kLabel}の${fromMem.name} と ${tLabel}の${toMem.name} を双方向で交換します。よろしいですか?\n\n${kLabel}: ${fromMem.name} → ${toMem.name}\n${tLabel}: ${toMem.name} → ${fromMem.name}`)) return;
 
+  // この日: fromMember を toMember に置換
   if (!state.dutyMemberOverrides[key]) state.dutyMemberOverrides[key] = [];
   state.dutyMemberOverrides[key] = state.dutyMemberOverrides[key].filter(o => o.outMemberId !== fromId);
-  state.dutyMemberOverrides[key].push({ outMemberId: fromId, inMemberId: toId });
+  state.dutyMemberOverrides[key].push({ outMemberId: fromId, inMemberId: toId, pairKey: targetKey });
 
-  swapDraft = { outMemberId: null, inMemberId: null };
+  // 相手日: toMember を fromMember に置換
+  if (!state.dutyMemberOverrides[targetKey]) state.dutyMemberOverrides[targetKey] = [];
+  state.dutyMemberOverrides[targetKey] = state.dutyMemberOverrides[targetKey].filter(o => o.outMemberId !== toId);
+  state.dutyMemberOverrides[targetKey].push({ outMemberId: toId, inMemberId: fromId, pairKey: key });
+
+  swapDraft = { outMemberId: null, targetKey: null, inMemberId: null };
   await saveData();
   closeSheet('dutySheet');
   render();
-  toast(`${fromMem.name}→${toMem.name} に交換しました`);
+  toast(`${kLabel} ${fromMem.name} ⇄ ${tLabel} ${toMem.name}`);
 }
 
 async function clearMemberOverride(key, outMemberId) {
-  if (!state.dutyMemberOverrides[key]) return;
-  state.dutyMemberOverrides[key] = state.dutyMemberOverrides[key].filter(o => o.outMemberId !== outMemberId);
+  const list = state.dutyMemberOverrides[key] || [];
+  const ov = list.find(o => o.outMemberId === outMemberId);
+  if (!ov) return;
+  // 双方向交換の場合は相手日のオーバーライドも解除
+  state.dutyMemberOverrides[key] = list.filter(o => o.outMemberId !== outMemberId);
   if (!state.dutyMemberOverrides[key].length) delete state.dutyMemberOverrides[key];
+  if (ov.pairKey) {
+    const pairList = state.dutyMemberOverrides[ov.pairKey] || [];
+    state.dutyMemberOverrides[ov.pairKey] = pairList.filter(o => !(o.outMemberId === ov.inMemberId && o.inMemberId === ov.outMemberId && o.pairKey === key));
+    if (!state.dutyMemberOverrides[ov.pairKey].length) delete state.dutyMemberOverrides[ov.pairKey];
+  }
   await saveData();
-  // 同じシートを再描画
   openDutyAssign(key);
   render();
-  toast('交換を解除しました');
+  toast(ov.pairKey ? '双方向交換を解除しました' : '交換を解除しました');
 }
 
 async function clearDuty(key) {
@@ -1740,9 +1863,96 @@ async function clearDuty(key) {
 }
 
 // ============ TEAM MANAGE ============
+let statsPeriod = 'all'; // 'all' | 'thisMonth' | 'last3'
+
+function setStatsPeriod(p) {
+  statsPeriod = p;
+  renderDutyStats();
+}
+
+function renderDutyStats() {
+  const container = document.getElementById('dutyStats');
+  if (!container) return;
+
+  // 集計対象の duty キー
+  let dutyKeys = Object.keys(state.duty);
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last3Start = new Date(now.getFullYear(), now.getMonth()-2, 1);
+
+  if (statsPeriod === 'thisMonth') {
+    const end = new Date(now.getFullYear(), now.getMonth()+1, 1);
+    dutyKeys = dutyKeys.filter(k => {
+      const d = parseKey(k);
+      return d >= thisMonthStart && d < end;
+    });
+  } else if (statsPeriod === 'last3') {
+    const end = new Date(now.getFullYear(), now.getMonth()+1, 1);
+    dutyKeys = dutyKeys.filter(k => {
+      const d = parseKey(k);
+      return d >= last3Start && d < end;
+    });
+  }
+
+  // メンバーIDごとに実担当回数を集計 (オーバーライド適用後)
+  const countByMember = {};
+  dutyKeys.forEach(k => {
+    const eff = getEffectiveDutyMembers(k);
+    eff.forEach(m => {
+      countByMember[m.id] = (countByMember[m.id] || 0) + 1;
+    });
+  });
+  // 班ごとの「班としての担当回数」を集計 (raw: state.duty の teamId 一致数)
+  const countByTeam = {};
+  dutyKeys.forEach(k => {
+    const tid = state.duty[k]?.teamId;
+    if (tid) countByTeam[tid] = (countByTeam[tid] || 0) + 1;
+  });
+
+  const periodLabel = statsPeriod === 'thisMonth' ? '今月' : statsPeriod === 'last3' ? '直近3ヶ月' : '全期間';
+
+  let html = `<div class="stats-period">
+    <span style="margin-right:auto;align-self:center">集計範囲:</span>
+    <button class="${statsPeriod==='thisMonth'?'active':''}" onclick="setStatsPeriod('thisMonth')">今月</button>
+    <button class="${statsPeriod==='last3'?'active':''}" onclick="setStatsPeriod('last3')">直近3ヶ月</button>
+    <button class="${statsPeriod==='all'?'active':''}" onclick="setStatsPeriod('all')">全期間</button>
+  </div>`;
+
+  if (!state.teams.length) {
+    html += '<div style="font-size:12px;color:#888;padding:8px">班が登録されていません</div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  state.teams.forEach(t => {
+    const teamRaw = countByTeam[t.id] || 0;
+    html += `<div class="stats-team-group">
+      <div class="stats-team-head">
+        <span class="team-badge-inline" style="background:${t.color}">${escapeHTML(t.name)}</span>
+        <span class="team-count">班担当 <b>${teamRaw}</b>回</span>
+      </div>`;
+    if (!t.members.length) {
+      html += '<div style="font-size:10px;color:#aaa;padding:2px 4px">メンバー未登録</div>';
+    } else {
+      t.members.forEach(m => {
+        const c = countByMember[m.id] || 0;
+        html += `<div class="stats-row">
+          <span class="name">${escapeHTML(m.name)}</span>
+          <span class="count ${c?'':'zero'}"><b>${c}</b>回</span>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+
+  html += `<div style="font-size:9px;color:#bbb;margin-top:4px;line-height:1.4">※「班担当」は班単位の割当回数、各人の回数は個別交換適用後の実担当 / 範囲: ${periodLabel}</div>`;
+  container.innerHTML = html;
+}
+
 function renderTeams() {
   const container = document.getElementById('teamList');
   document.getElementById('teamCountLabel').textContent = `${state.teams.length}班で運用中`;
+  renderDutyStats();
   let html = '';
   state.teams.forEach((t, idx) => {
     html += `<div class="team-card">
