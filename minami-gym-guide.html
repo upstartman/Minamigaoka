@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会場案内 ｜ さくら市立南小学校 体育館</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --court:#c9772f;        /* コート（オレンジブラウン） */
+    --ball:#ee6c2b;         /* バスケットボール */
+    --ball-d:#d2541a;
+    --line:#f4efe6;         /* コートライン（クリーム） */
+    --ink:#2b2118;          /* 文字 */
+    --ink-soft:#7a6b58;
+    --paper:#fbf7ef;        /* 背景 */
+    --card:#ffffff;
+    --shadow:0 6px 22px rgba(120,80,30,.14);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'M PLUS Rounded 1c',system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% -5%, rgba(238,108,43,.10), transparent 40%),
+      radial-gradient(circle at 95% 12%, rgba(201,119,47,.10), transparent 35%),
+      var(--paper);
+    line-height:1.75;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px 64px}
+
+  /* ===== ヘッダー ===== */
+  header{
+    position:relative;
+    background:linear-gradient(135deg,var(--ball) 0%,var(--ball-d) 100%);
+    color:#fff;border-radius:0 0 28px 28px;
+    padding:26px 22px 30px;text-align:center;overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  header::after{ /* バスケットの線イメージ */
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 50% -60%, rgba(255,255,255,.18), transparent 60%);
+    pointer-events:none;
+  }
+  .ball-emoji{font-size:34px;display:block;line-height:1}
+  header h1{font-size:1.35rem;font-weight:800;margin-top:8px;letter-spacing:.02em}
+  header .sub{font-size:.86rem;font-weight:500;opacity:.95;margin-top:4px}
+  header .addr{
+    margin-top:14px;display:inline-block;background:rgba(255,255,255,.18);
+    border-radius:999px;padding:6px 16px;font-size:.82rem;font-weight:500;
+    backdrop-filter:blur(2px);
+  }
+
+  /* ===== セクション共通 ===== */
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-left:2px}
+  .sec-no{
+    flex:none;width:30px;height:30px;border-radius:9px;
+    background:var(--ink);color:#fff;font-weight:800;font-size:.95rem;
+    display:grid;place-items:center;
+  }
+  .sec-head h2{font-size:1.12rem;font-weight:800}
+
+  .card{
+    background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .card .body{padding:16px 18px}
+
+  /* ===== 地図 ===== */
+  .map-frame{width:100%;aspect-ratio:16/11;border:0;display:block;background:#eee}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;border:0;cursor:pointer;text-decoration:none;
+    font-family:inherit;font-weight:800;font-size:1.02rem;
+    padding:15px;border-radius:14px;transition:transform .08s ease,filter .15s ease;
+  }
+  .btn:active{transform:scale(.985)}
+  .btn-nav{background:var(--ball);color:#fff;margin-top:14px}
+  .btn-nav:hover{filter:brightness(1.05)}
+  .btn-line{background:#06c755;color:#fff;margin-top:10px}
+  .hint{font-size:.8rem;color:var(--ink-soft);text-align:center;margin-top:10px}
+
+  /* ===== 写真プレースホルダー ===== */
+  .photo{
+    width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#f0ebe1;
+  }
+  .photo-ph{
+    width:100%;aspect-ratio:4/3;display:grid;place-items:center;gap:6px;
+    background:repeating-linear-gradient(45deg,#f4efe6,#f4efe6 12px,#efe7d8 12px,#efe7d8 24px);
+    color:#b9a98f;text-align:center;
+  }
+  .photo-ph .ic{font-size:30px}
+  .photo-ph .tx{font-size:.78rem;font-weight:700}
+
+  /* ===== 駐車場 ===== */
+  .park-tag{
+    display:inline-flex;align-items:center;gap:6px;background:var(--line);
+    color:var(--court);font-weight:700;font-size:.82rem;
+    padding:5px 12px;border-radius:999px;margin-bottom:10px;
+  }
+  .park-row{display:flex;gap:14px;font-size:.92rem;padding:6px 0;border-top:1px dashed #e7ddca}
+  .park-row:first-of-type{border-top:0}
+  .park-row .k{flex:none;width:64px;color:var(--ink-soft);font-weight:700}
+
+  /* ===== ルートステップ ===== */
+  .step{position:relative;margin-bottom:16px}
+  .step .card{display:flex;flex-direction:column}
+  .step-num{
+    position:absolute;top:-8px;left:-6px;z-index:2;
+    width:34px;height:34px;border-radius:50%;
+    background:var(--ball);color:#fff;font-weight:800;
+    display:grid;place-items:center;box-shadow:0 3px 8px rgba(210,84,26,.4);
+    border:3px solid var(--paper);
+  }
+  .step .body h3{font-size:1.02rem;font-weight:800;margin-bottom:2px}
+  .step .body p{font-size:.9rem;color:#52463a}
+  .step-line{
+    height:22px;width:3px;margin:0 auto -6px;
+    background:linear-gradient(var(--ball),rgba(238,108,43,.25));border-radius:3px;
+  }
+
+  /* ===== 持ち物・お願い ===== */
+  .notes li{
+    list-style:none;display:flex;gap:10px;align-items:flex-start;
+    padding:9px 0;border-top:1px dashed #e7ddca;font-size:.93rem;
+  }
+  .notes li:first-child{border-top:0}
+  .notes .ic{flex:none;font-size:1.05rem;line-height:1.6}
+
+  /* ===== 連絡先 ===== */
+  .tel{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    font-size:1.25rem;font-weight:800;color:var(--court);text-decoration:none;
+    padding:6px 0 2px;
+  }
+  .tel small{display:block;font-size:.72rem;color:var(--ink-soft);font-weight:600;text-align:center}
+
+  footer{text-align:center;color:var(--ink-soft);font-size:.74rem;margin-top:34px;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+  <span class="ball-emoji">🏀</span>
+  <h1 id="venueName">さくら市立南小学校 体育館</h1>
+  <div class="sub" id="eventName">ミニバス大会 会場案内</div>
+  <div class="addr" id="venueAddr">〒329-1311 栃木県さくら市氏家1061-3</div>
+</header>
+
+<div class="wrap">
+
+  <!-- 地図 -->
+  <section id="map">
+    <div class="card">
+      <iframe class="map-frame" id="mapFrame" loading="lazy" allowfullscreen
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="body" style="padding-top:14px">
+        <a class="btn btn-nav" id="navBtn" target="_blank" rel="noopener">🧭 地図アプリでナビ開始</a>
+        <div class="hint">お使いのスマホの地図アプリでルート案内が始まります</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ① 駐車場 -->
+  <section id="parking">
+    <div class="sec-head"><div class="sec-no">1</div><h2>車で来場される方へ</h2></div>
+    <div class="card">
+      <div class="photo-ph"><span class="ic">📷</span><span class="tx">駐車場の写真をここに</span></div>
+      <div class="body">
+        <span class="park-tag">🅿️ 来場者駐車場</span>
+        <div id="parkInfo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 体育館への行き方 -->
+  <section id="route">
+    <div class="sec-head"><div class="sec-no">2</div><h2>体育館への行き方</h2></div>
+    <div id="steps"></div>
+  </section>
+
+  <!-- ③ 持ち物・お願い -->
+  <section id="notes">
+    <div class="sec-head"><div class="sec-no">3</div><h2>持ち物・お願い</h2></div>
+    <div class="card"><div class="body">
+      <ul class="notes" id="noteList"></ul>
+    </div></div>
+  </section>
+
+  <!-- 連絡先 -->
+  <section id="contact">
+    <div class="card"><div class="body" style="text-align:center">
+      <small style="color:var(--ink-soft);font-weight:700;font-size:.8rem">当日のお問い合わせ</small>
+      <a class="tel" id="telLink"></a>
+    </div></div>
+    <a class="btn btn-line" id="lineBtn">💬 LINEでこの案内を共有</a>
+  </section>
+
+  <footer>
+    南ヶ丘MBC 会場案内 ｜ 写真・情報はサンプルです<br>
+    ※下のCONFIGを編集してご利用ください
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   ▼▼▼ ここだけ編集すれば完成します（CONFIG）▼▼▼
+   ========================================================= */
+const CONFIG = {
+  // --- 会場の基本情報 ---
+  venueName : "さくら市立南小学校 体育館",
+  eventName : "ミニバス大会 会場案内",          // 大会名・サブタイトル
+  address   : "〒329-1311 栃木県さくら市氏家1061-3",
+  // ナビ・地図のピン用（学校名＋住所が一番正確に出ます）
+  mapQuery  : "さくら市立南小学校 栃木県さくら市氏家1061-3",
+
+  // --- 当日連絡先 ---
+  tel       : "090-0000-0000",                  // ←実際の番号に
+
+  // --- 駐車場の案内（行は自由に増減OK） ---
+  parking : [
+    { k:"場所",   v:"校庭の指定来場者駐車場（校門を入って右奥）" },
+    { k:"台数",   v:"約30台（チームごとに譲り合い）" },
+    { k:"入口",   v:"正門から入場。徐行でお願いします" },
+    { k:"注意",   v:"児童が通ります。スピードにご注意ください" }
+  ],
+
+  // --- 体育館までの徒歩ステップ（写真は photo に画像URLを入れると差し替わります） ---
+  steps : [
+    { title:"駐車場から正面へ", desc:"駐車場を出て、校舎の正面玄関方向へ進みます。", photo:"" },
+    { title:"昇降口を右へ",     desc:"昇降口の前を通り、案内表示に沿って右へ。",     photo:"" },
+    { title:"渡り廊下を進む",   desc:"校舎と体育館をつなぐ渡り廊下をまっすぐ進みます。", photo:"" },
+    { title:"体育館入口に到着", desc:"こちらが受付です。上履きに履き替えてご入場ください。", photo:"" }
+  ],
+
+  // --- 持ち物・お願い（アイコン＋本文） ---
+  notes : [
+    { ic:"👟", t:"上履き・スリッパ（保護者・選手とも必須）" },
+    { ic:"🗑️", t:"ゴミは各自お持ち帰りください" },
+    { ic:"🚗", t:"校内は徐行運転、児童の安全にご配慮を" },
+    { ic:"📣", t:"応援は譲り合って、マナーよくお願いします" }
+  ]
+};
+/* =========================================================
+   ▲▲▲ 編集はここまで。以下は触らなくてOK ▲▲▲
+   ========================================================= */
+
+// --- 反映処理 ---
+document.getElementById('venueName').textContent = CONFIG.venueName;
+document.getElementById('eventName').textContent = CONFIG.eventName;
+document.getElementById('venueAddr').textContent = CONFIG.address;
+document.title = "会場案内 ｜ " + CONFIG.venueName;
+
+const q = encodeURIComponent(CONFIG.mapQuery);
+document.getElementById('mapFrame').src = "https://maps.google.com/maps?q=" + q + "&z=17&output=embed";
+document.getElementById('navBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + q;
+
+// 連絡先
+const tel = document.getElementById('telLink');
+tel.href = "tel:" + CONFIG.tel.replace(/[^0-9+]/g,'');
+tel.innerHTML = "📞 " + CONFIG.tel;
+
+// 駐車場
+document.getElementById('parkInfo').innerHTML = CONFIG.parking.map(r =>
+  `<div class="park-row"><span class="k">${r.k}</span><span>${r.v}</span></div>`).join('');
+
+// ステップ
+document.getElementById('steps').innerHTML = CONFIG.steps.map((s,i) => {
+  const media = s.photo
+    ? `<img class="photo" src="${s.photo}" alt="${s.title}">`
+    : `<div class="photo-ph"><span class="ic">📷</span><span class="tx">STEP${i+1} の写真をここに</span></div>`;
+  const line = i < CONFIG.steps.length-1 ? `<div class="step-line"></div>` : '';
+  return `<div class="step">
+      <div class="step-num">${i+1}</div>
+      <div class="card">${media}<div class="body"><h3>${s.title}</h3><p>${s.desc}</p></div></div>
+    </div>${line}`;
+}).join('');
+
+// 持ち物
+document.getElementById('noteList').innerHTML = CONFIG.notes.map(n =>
+  `<li><span class="ic">${n.ic}</span><span>${n.t}</span></li>`).join('');
+
+// LINE共有
+document.getElementById('lineBtn').addEventListener('click', () => {
+  const url = location.href.split('#')[0];
+  const text = `【会場案内】${CONFIG.venueName}\n${CONFIG.address}\n${url}`;
+  const share = "https://line.me/R/msg/text/?" + encodeURIComponent(text);
+  if (navigator.share) {
+    navigator.share({ title:CONFIG.venueName, text:`【会場案内】${CONFIG.venueName}`, url }).catch(()=>location.href=share);
+  } else {
+    location.href = share;
+  }
+});
+</script>
+</body>
+</html>
