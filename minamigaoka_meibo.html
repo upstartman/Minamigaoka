@@ -419,6 +419,26 @@
     }
     .jersey-btns button:active { background: var(--primary); color: white; border-color: var(--primary); }
     .jersey-btns button:disabled { opacity: 0.3; }
+    .jersey-row.out-of-roster { opacity: 0.5; }
+    .jersey-divider {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+      padding: 5px 8px;
+      border-top: 2px dashed var(--primary);
+      border-bottom: 2px dashed var(--primary);
+      background: rgba(0,0,0,0.02);
+    }
+    .jersey-divider-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
 
     .empty { text-align: center; padding: 40px 20px; color: var(--text-sub); }
     .empty-icon { font-size: 48px; margin-bottom: 12px; }
@@ -512,7 +532,7 @@
     <div id="jersey-tab" class="tab-content">
       <div class="card">
         <div class="card-title">🎽 背番号割り当て</div>
-        <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">▲▼で並び替え</p>
+        <p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">部員の▲▼で並び替え。点線の<b>記載ライン</b>の▲▼でスコアシートに載せる人数（最大15名）を調整できます。ラインより下の部員には背番号が割り当てられず、スコアシートにも記載されません（例：18番を空欄にしたい場合はラインを14名に設定）。</p>
         <div id="jersey-list"></div>
       </div>
     </div>
@@ -529,8 +549,8 @@
         <div class="card-title">🏀 公式スコアシート出力</div>
         <p class="output-desc">MINIバスケ公式スコアシートに名簿情報（チーム名・選手氏名・ライセンスNo.下3桁・背番号・コーチ）を埋め込んで出力します。</p>
         <p class="output-desc" style="font-size:11px;color:var(--text-sub);margin-top:-4px">
-          ※ <b>① / ③（公式背番号）</b>: 背番号タブの並び順そのままで上位15名を出力。<br>
-          ※ <b>② / ④（リバーシ背番号）</b>: 背番号タブの上位15名を <b>リバーシ背番号の昇順</b>（00 → 0 → 1 → 2 → … → 99）に並べ替えてPDF出力。
+          ※ <b>① / ③（公式背番号）</b>: 背番号タブの並び順そのまま、<b>記載ライン</b>までの人数（最大15名）を出力。<br>
+          ※ <b>② / ④（リバーシ背番号）</b>: 背番号タブの記載ラインまでの人数を <b>リバーシ背番号の昇順</b>（00 → 0 → 1 → 2 → … → 99）に並べ替えてPDF出力。
         </p>
         <div class="output-section" style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-primary" onclick="exportScoresheet('upper','official')">① 上段(白) × 公式背番号</button>
@@ -577,6 +597,7 @@
 
     let families = [];
     let jerseyOrder = [];
+    let jerseyCutoff = 15;   // スコアシートに記載する人数（背番号を割り当てる上限ライン、0〜15）
     let editingFamilyId = null;
     let memberFormCounter = 0;
     let editMemberCounter = 0;
@@ -595,7 +616,9 @@
         const familiesSnapshot = await db.collection('families').get();
         families = familiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const settingsDoc = await db.collection('settings').doc('jerseyOrder').get();
-        jerseyOrder = settingsDoc.exists ? (settingsDoc.data().order || []) : [];
+        const settingsData = settingsDoc.exists ? settingsDoc.data() : {};
+        jerseyOrder = settingsData.order || [];
+        jerseyCutoff = (typeof settingsData.cutoff === 'number') ? settingsData.cutoff : 15;
         isLoading = false;
         setSyncStatus('', '');
         renderFamiliesList();
@@ -639,7 +662,7 @@
 
     async function saveJerseyOrder() {
       try {
-        await db.collection('settings').doc('jerseyOrder').set({ order: jerseyOrder });
+        await db.collection('settings').doc('jerseyOrder').set({ order: jerseyOrder, cutoff: jerseyCutoff });
       } catch (error) {
         console.error('Error saving jersey order:', error);
       }
@@ -1162,11 +1185,16 @@
         container.innerHTML = '<div class="empty"><div class="empty-icon">🎽</div><div class="empty-text">部員がまだいません</div></div>';
         return;
       }
-      const getJerseyNum = i => i < 15 ? i + 4 : '-';
-      container.innerHTML = sortedMembers.map((m, i) => {
+      // スコアシート記載ライン（cutoff）を 0〜15 かつ部員数を上限にクランプ
+      const maxCut = Math.min(15, sortedMembers.length);
+      if (jerseyCutoff > maxCut) jerseyCutoff = maxCut;
+      if (jerseyCutoff < 0) jerseyCutoff = 0;
+      const getJerseyNum = i => i < jerseyCutoff ? i + 4 : '-';
+      const rowsHtml = sortedMembers.map((m, i) => {
         const num = getJerseyNum(i);
+        const outClass = i >= jerseyCutoff ? ' out-of-roster' : '';
         return `
-          <div class="jersey-row" draggable="true" data-index="${i}">
+          <div class="jersey-row${outClass}" draggable="true" data-index="${i}">
             <div class="jersey-num-box ${num==='-'?'no-num':''}">${num}</div>
             <div class="jersey-name">${m.fullName}</div>
             ${m.jbaLicense?`<div class="jersey-jba">${m.jbaLicense}</div>`:''}
@@ -1179,7 +1207,20 @@
             </div>
           </div>
         `;
-      }).join('');
+      });
+      // 記載ライン（cutoff の位置に挿入）。ライン以下の部員はスコアシートに記載されない
+      const numRange = jerseyCutoff > 0 ? `背番号 4〜${jerseyCutoff + 3}` : '記載なし';
+      const dividerHtml = `
+        <div class="jersey-divider">
+          <div class="jersey-divider-label">━ ここまで ${jerseyCutoff} 名がスコアシートに記載（${numRange}）━</div>
+          <div class="jersey-spacer"></div>
+          <div class="jersey-btns">
+            <button onclick="moveCutoff(-1)" ${jerseyCutoff<=0?'disabled':''} title="記載人数を1名減らす">▲</button>
+            <button onclick="moveCutoff(1)" ${jerseyCutoff>=maxCut?'disabled':''} title="記載人数を1名増やす">▼</button>
+          </div>
+        </div>`;
+      rowsHtml.splice(jerseyCutoff, 0, dividerHtml);
+      container.innerHTML = rowsHtml.join('');
       setupDragAndDrop();
     }
 
@@ -1187,6 +1228,15 @@
       const ni = i + dir;
       if (ni < 0 || ni >= jerseyOrder.length) return;
       const temp = jerseyOrder[i]; jerseyOrder[i] = jerseyOrder[ni]; jerseyOrder[ni] = temp;
+      await saveJerseyOrder();
+      renderJerseyTab();
+    }
+
+    // スコアシート記載ラインの上下移動（記載人数を増減、0〜15）
+    async function moveCutoff(dir) {
+      jerseyCutoff += dir;
+      if (jerseyCutoff < 0) jerseyCutoff = 0;
+      if (jerseyCutoff > 15) jerseyCutoff = 15;
       await saveJerseyOrder();
       renderJerseyTab();
     }
@@ -1697,8 +1747,9 @@
       const unordered = allMembers.filter(m => !orderedKeys.includes(`${m.familyId}-${m.name}`));
       const sorted = [...ordered, ...unordered];
 
-      // 上位15名を抽出。公式は jerseyOrder のまま / リバーシは「リバーシ背番号 昇順（00→0→1→…→99、未設定は末尾）」に並び替え
-      let top15 = sorted.slice(0, 15);
+      // 記載ライン（cutoff、最大15名）まで抽出。公式は jerseyOrder のまま / リバーシは「リバーシ背番号 昇順（00→0→1→…→99、未設定は末尾）」に並び替え
+      const cut = Math.max(0, Math.min(jerseyCutoff, 15));
+      let top15 = sorted.slice(0, cut);
       if (jerseyKind === 'reversi') {
         const reversiKey = (v) => {
           if (v == null || v === '') return Infinity; // 未設定は末尾へ
