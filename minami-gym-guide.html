@@ -116,6 +116,13 @@
     font-size:.78rem;color:var(--ink-soft);text-align:center;
     padding:9px 14px 2px;
   }
+  /* 方位記号（コンパス） */
+  .compass{
+    position:absolute;bottom:12px;left:12px;width:52px;height:52px;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.28));pointer-events:none;z-index:2;
+  }
+  .compass svg{display:block;width:100%;height:100%}
+
   /* ライトボックス（拡大表示） */
   .lightbox{
     position:fixed;inset:0;z-index:50;display:none;
@@ -204,22 +211,25 @@
     </div>
   </section>
 
-  <!-- ① 駐車場 -->
+  <!-- ① 会場までの車ルート（チェックポイント） -->
+  <section id="route">
+    <div class="sec-head"><div class="sec-no">1</div><h2>会場までの車ルート</h2></div>
+    <div class="card" style="margin-bottom:16px">
+      <div id="routeMapWrap"></div>
+    </div>
+    <div id="checkpoints"></div>
+  </section>
+
+  <!-- ② 駐車場のご案内 -->
   <section id="parking">
-    <div class="sec-head"><div class="sec-no">1</div><h2>車で来場される方へ</h2></div>
+    <div class="sec-head"><div class="sec-no">2</div><h2>駐車場のご案内</h2></div>
     <div class="card">
       <div id="guideMapWrap"></div>
       <div class="body">
-        <span class="park-tag">🅿️ 来場者駐車場</span>
+        <span class="park-tag">🅿️ 来場チーム用駐車場</span>
         <div id="parkInfo"></div>
       </div>
     </div>
-  </section>
-
-  <!-- ② 体育館への行き方 -->
-  <section id="route">
-    <div class="sec-head"><div class="sec-no">2</div><h2>体育館への行き方</h2></div>
-    <div id="steps"></div>
   </section>
 
   <!-- ③ 持ち物・お願い -->
@@ -245,10 +255,10 @@
   </footer>
 </div>
 
-<!-- 案内図 拡大表示 -->
+<!-- 地図・案内図 拡大表示 -->
 <div class="lightbox" id="lightbox">
   <button class="close" id="lightboxClose" aria-label="閉じる">✕</button>
-  <img id="lightboxImg" src="" alt="会場案内図（拡大）">
+  <img id="lightboxImg" src="" alt="拡大表示">
 </div>
 
 <script>
@@ -266,24 +276,30 @@ const CONFIG = {
   // --- 当日連絡先 ---
   tel       : "090-0000-0000",                  // ←実際の番号に
 
-  // --- 会場案内図（画像URL。タップで拡大表示できます） ---
-  guideMap        : "minami-gym-parking-map.png",
-  guideMapCaption : "赤い枠が来場チーム用の駐車場です。図をタップで拡大できます。",
-
-  // --- 駐車場の案内（行は自由に増減OK） ---
-  parking : [
-    { k:"場所",   v:"校庭の指定来場者駐車場（校門を入って右奥）" },
-    { k:"台数",   v:"約30台（チームごとに譲り合い）" },
-    { k:"入口",   v:"正門から入場。徐行でお願いします" },
-    { k:"注意",   v:"児童が通ります。スピードにご注意ください" }
+  // --- ① 会場までの車ルート ---
+  // ルート地図（①〜⑤を書き込んだ地図画像）。タップで拡大できます。
+  routeMap        : "minami-gym-route-map.jpg",
+  routeMapCaption : "赤い線が来場者の順路です。①〜⑤は下のチェックポイントと対応しています。図はタップで拡大できます。",
+  // 5つのチェックポイント（内容は実際の道順に合わせて自由に編集OK）
+  checkpoints : [
+    { title:"学校の南西の交差点", desc:"会場南側の道路まで来たら、この交差点を目印に道なりへ。ここが順路のスタートです。" },
+    { title:"南東の角を左折",     desc:"突き当りの角を左折し、学校の東側に沿った道路を北へ進みます。" },
+    { title:"東側の道路を北へ",   desc:"東側の道路をそのまま北上します（ゆるやかにカーブします）。" },
+    { title:"学校北東で左へ",     desc:"校舎の北東まで来たら左に入り、正門（校内）方向へ向かいます。" },
+    { title:"正門から場内へ",     desc:"最後に左折して校内へ。係員の誘導に従って来場チーム用駐車場へお進みください。" }
   ],
 
-  // --- 体育館までの徒歩ステップ（写真は photo に画像URLを入れると差し替わります） ---
-  steps : [
-    { title:"駐車場から正面へ", desc:"駐車場を出て、校舎の正面玄関方向へ進みます。", photo:"" },
-    { title:"昇降口を右へ",     desc:"昇降口の前を通り、案内表示に沿って右へ。",     photo:"" },
-    { title:"渡り廊下を進む",   desc:"校舎と体育館をつなぐ渡り廊下をまっすぐ進みます。", photo:"" },
-    { title:"体育館入口に到着", desc:"こちらが受付です。上履きに履き替えてご入場ください。", photo:"" }
+  // --- ② 駐車場のご案内 ---
+  guideMap        : "minami-gym-parking-map.png",
+  guideMapCaption : "赤い枠が来場チーム用の駐車場です。図はタップで拡大できます。",
+  mapNorthDeg     : 0,   // 案内図の北の向き（0=上が北）。実際の向きに合わせて回転できます
+
+  // 駐車場の案内（行は自由に増減OK）
+  parking : [
+    { k:"場所",   v:"体育館まわりの来場チーム用駐車場（案内図の赤枠）" },
+    { k:"台数",   v:"チームごとに譲り合ってご利用ください" },
+    { k:"入口",   v:"正門から入場。徐行でお願いします" },
+    { k:"注意",   v:"児童が通ります。スピードにご注意ください" }
   ],
 
   // --- 持ち物・お願い（アイコン＋本文） ---
@@ -313,61 +329,88 @@ const tel = document.getElementById('telLink');
 tel.href = "tel:" + CONFIG.tel.replace(/[^0-9+]/g,'');
 tel.innerHTML = "📞 " + CONFIG.tel;
 
-// 案内図
+// --- 拡大表示（ライトボックス）共通処理 ---
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lightboxImg');
+function openLightbox(src, alt){
+  lbImg.src = src; lbImg.alt = alt || '拡大表示';
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox();
+});
+
+// タップで拡大できる地図画像を生成（overlay に方位記号などを差し込める）
+function zoomableMap(src, alt, caption, overlay){
+  const cap = caption ? `<div class="map-cap">${caption}</div>` : '';
+  return `<div class="guidemap" role="button" tabindex="0" aria-label="${alt}を拡大"
+             data-full="${src}" data-alt="${alt}">
+            <img src="${src}" alt="${alt}">
+            ${overlay || ''}
+            <span class="zoom-tag">🔍 タップで拡大</span>
+          </div>${cap}`;
+}
+function bindZoom(el){
+  if (!el) return;
+  const open = (e) => { e.preventDefault(); openLightbox(el.dataset.full, el.dataset.alt); };
+  el.addEventListener('click', open);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') open(e); });
+}
+
+// 方位記号（コンパス）SVG
+const COMPASS_SVG = `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="方位">
+  <circle cx="32" cy="32" r="30" fill="#ffffff" fill-opacity="0.93"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#e0d6c4" stroke-width="2"/>
+  <polygon points="32,17 38,34 32,30 26,34" fill="#e5484d"/>
+  <polygon points="32,51 38,34 32,38 26,34" fill="#9a8f7d"/>
+  <circle cx="32" cy="34" r="2.6" fill="#2b2118"/>
+  <text x="32" y="14" text-anchor="middle" font-size="12" font-weight="800" fill="#e5484d">N</text>
+</svg>`;
+
+// ① 車ルート地図＋チェックポイント
+(function(){
+  const wrap = document.getElementById('routeMapWrap');
+  if (CONFIG.routeMap) {
+    wrap.innerHTML = zoomableMap(CONFIG.routeMap, '会場までの車ルート地図', CONFIG.routeMapCaption);
+    bindZoom(wrap.querySelector('.guidemap'));
+  } else {
+    wrap.innerHTML = `<div class="photo-ph"><span class="ic">🗺️</span><span class="tx">ルート地図をここに</span></div>`;
+  }
+  const cps = CONFIG.checkpoints || [];
+  document.getElementById('checkpoints').innerHTML = cps.map((c,i) => {
+    const line = i < cps.length-1 ? `<div class="step-line"></div>` : '';
+    return `<div class="step">
+        <div class="step-num">${i+1}</div>
+        <div class="card"><div class="body"><h3>${c.title}</h3><p>${c.desc}</p></div></div>
+      </div>${line}`;
+  }).join('');
+})();
+
+// ② 駐車場案内図（方位記号つき）
 (function(){
   const wrap = document.getElementById('guideMapWrap');
   if (CONFIG.guideMap) {
-    const cap = CONFIG.guideMapCaption
-      ? `<div class="map-cap">${CONFIG.guideMapCaption}</div>` : '';
-    wrap.innerHTML =
-      `<a class="guidemap" id="guideMapLink" role="button" tabindex="0" aria-label="会場案内図を拡大">
-         <img src="${CONFIG.guideMap}" alt="さくら市立南小学校 体育館周辺 駐車場ご案内図">
-         <span class="zoom-tag">🔍 タップで拡大</span>
-       </a>${cap}`;
-
-    const lightbox = document.getElementById('lightbox');
-    const lbImg = document.getElementById('lightboxImg');
-    const open = (e) => {
-      e.preventDefault();
-      lbImg.src = CONFIG.guideMap;
-      lightbox.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    };
-    const close = () => {
-      lightbox.classList.remove('open');
-      document.body.style.overflow = '';
-    };
-    const link = document.getElementById('guideMapLink');
-    link.addEventListener('click', open);
-    link.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') open(e);
-    });
-    document.getElementById('lightboxClose').addEventListener('click', close);
-    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) close(); });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && lightbox.classList.contains('open')) close();
-    });
+    const deg = Number(CONFIG.mapNorthDeg) || 0;
+    const compass = `<div class="compass" style="transform:rotate(${deg}deg)">${COMPASS_SVG}</div>`;
+    wrap.innerHTML = zoomableMap(CONFIG.guideMap,
+      'さくら市立南小学校 体育館周辺 駐車場ご案内図', CONFIG.guideMapCaption, compass);
+    bindZoom(wrap.querySelector('.guidemap'));
   } else {
-    wrap.innerHTML =
-      `<div class="photo-ph"><span class="ic">📷</span><span class="tx">駐車場の写真をここに</span></div>`;
+    wrap.innerHTML = `<div class="photo-ph"><span class="ic">📷</span><span class="tx">駐車場の写真をここに</span></div>`;
   }
 })();
 
-// 駐車場
+// 駐車場テキスト
 document.getElementById('parkInfo').innerHTML = CONFIG.parking.map(r =>
   `<div class="park-row"><span class="k">${r.k}</span><span>${r.v}</span></div>`).join('');
-
-// ステップ
-document.getElementById('steps').innerHTML = CONFIG.steps.map((s,i) => {
-  const media = s.photo
-    ? `<img class="photo" src="${s.photo}" alt="${s.title}">`
-    : `<div class="photo-ph"><span class="ic">📷</span><span class="tx">STEP${i+1} の写真をここに</span></div>`;
-  const line = i < CONFIG.steps.length-1 ? `<div class="step-line"></div>` : '';
-  return `<div class="step">
-      <div class="step-num">${i+1}</div>
-      <div class="card">${media}<div class="body"><h3>${s.title}</h3><p>${s.desc}</p></div></div>
-    </div>${line}`;
-}).join('');
 
 // 持ち物
 document.getElementById('noteList').innerHTML = CONFIG.notes.map(n =>
