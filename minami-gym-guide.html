@@ -99,6 +99,43 @@
   .photo-ph .ic{font-size:30px}
   .photo-ph .tx{font-size:.78rem;font-weight:700}
 
+  /* ===== 案内図 ===== */
+  .guidemap{
+    position:relative;display:block;width:100%;cursor:zoom-in;
+    background:#f6f1e7;
+  }
+  .guidemap img{width:100%;height:auto;display:block}
+  .guidemap .zoom-tag{
+    position:absolute;right:10px;bottom:10px;
+    background:rgba(43,33,24,.72);color:#fff;
+    font-size:.74rem;font-weight:700;padding:5px 11px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:5px;backdrop-filter:blur(2px);
+    pointer-events:none;
+  }
+  .map-cap{
+    font-size:.78rem;color:var(--ink-soft);text-align:center;
+    padding:9px 14px 2px;
+  }
+  /* ライトボックス（拡大表示） */
+  .lightbox{
+    position:fixed;inset:0;z-index:50;display:none;
+    background:rgba(20,14,8,.9);
+    padding:14px;overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .lightbox.open{display:block}
+  .lightbox img{
+    display:block;margin:0 auto;max-width:100%;height:auto;
+    border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  .lightbox .close{
+    position:fixed;top:12px;right:14px;z-index:51;
+    width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;
+    background:rgba(255,255,255,.92);color:var(--ink);
+    font-size:1.3rem;font-weight:800;line-height:1;
+    display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.35);
+  }
+
   /* ===== 駐車場 ===== */
   .park-tag{
     display:inline-flex;align-items:center;gap:6px;background:var(--line);
@@ -171,7 +208,7 @@
   <section id="parking">
     <div class="sec-head"><div class="sec-no">1</div><h2>車で来場される方へ</h2></div>
     <div class="card">
-      <div class="photo-ph"><span class="ic">📷</span><span class="tx">駐車場の写真をここに</span></div>
+      <div id="guideMapWrap"></div>
       <div class="body">
         <span class="park-tag">🅿️ 来場者駐車場</span>
         <div id="parkInfo"></div>
@@ -208,6 +245,12 @@
   </footer>
 </div>
 
+<!-- 案内図 拡大表示 -->
+<div class="lightbox" id="lightbox">
+  <button class="close" id="lightboxClose" aria-label="閉じる">✕</button>
+  <img id="lightboxImg" src="" alt="会場案内図（拡大）">
+</div>
+
 <script>
 /* =========================================================
    ▼▼▼ ここだけ編集すれば完成します（CONFIG）▼▼▼
@@ -222,6 +265,10 @@ const CONFIG = {
 
   // --- 当日連絡先 ---
   tel       : "090-0000-0000",                  // ←実際の番号に
+
+  // --- 会場案内図（画像URL。タップで拡大表示できます） ---
+  guideMap        : "minami-gym-parking-map.png",
+  guideMapCaption : "赤い枠が来場チーム用の駐車場です。図をタップで拡大できます。",
 
   // --- 駐車場の案内（行は自由に増減OK） ---
   parking : [
@@ -265,6 +312,46 @@ document.getElementById('navBtn').href = "https://www.google.com/maps/dir/?api=1
 const tel = document.getElementById('telLink');
 tel.href = "tel:" + CONFIG.tel.replace(/[^0-9+]/g,'');
 tel.innerHTML = "📞 " + CONFIG.tel;
+
+// 案内図
+(function(){
+  const wrap = document.getElementById('guideMapWrap');
+  if (CONFIG.guideMap) {
+    const cap = CONFIG.guideMapCaption
+      ? `<div class="map-cap">${CONFIG.guideMapCaption}</div>` : '';
+    wrap.innerHTML =
+      `<a class="guidemap" id="guideMapLink" role="button" tabindex="0" aria-label="会場案内図を拡大">
+         <img src="${CONFIG.guideMap}" alt="さくら市立南小学校 体育館周辺 駐車場ご案内図">
+         <span class="zoom-tag">🔍 タップで拡大</span>
+       </a>${cap}`;
+
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightboxImg');
+    const open = (e) => {
+      e.preventDefault();
+      lbImg.src = CONFIG.guideMap;
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+    const close = () => {
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    const link = document.getElementById('guideMapLink');
+    link.addEventListener('click', open);
+    link.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') open(e);
+    });
+    document.getElementById('lightboxClose').addEventListener('click', close);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) close(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && lightbox.classList.contains('open')) close();
+    });
+  } else {
+    wrap.innerHTML =
+      `<div class="photo-ph"><span class="ic">📷</span><span class="tx">駐車場の写真をここに</span></div>`;
+  }
+})();
 
 // 駐車場
 document.getElementById('parkInfo').innerHTML = CONFIG.parking.map(r =>
