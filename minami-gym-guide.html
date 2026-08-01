@@ -122,6 +122,10 @@
     filter:drop-shadow(0 2px 6px rgba(0,0,0,.28));pointer-events:none;z-index:2;
   }
   .compass svg{display:block;width:100%;height:100%}
+  .compass-n{
+    position:absolute;top:1px;left:50%;transform-origin:center;
+    font:800 13px/1 'M PLUS Rounded 1c',system-ui,sans-serif;color:#e5484d;
+  }
 
   /* ライトボックス（拡大表示） */
   .lightbox{
@@ -292,7 +296,7 @@ const CONFIG = {
   // --- ② 駐車場のご案内 ---
   guideMap        : "minami-gym-parking-map.png",
   guideMapCaption : "赤い枠が来場チーム用の駐車場です。図はタップで拡大できます。",
-  mapNorthDeg     : 0,   // 案内図の北の向き（0=上が北）。実際の向きに合わせて回転できます
+  mapNorthDeg     : -90,  // 案内図の北の向き（0=上が北 / -90=左が北 / 90=右が北 / 180=下が北）
 
   // 駐車場の案内（行は自由に増減OK）
   parking : [
@@ -364,15 +368,14 @@ function bindZoom(el){
   el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') open(e); });
 }
 
-// 方位記号（コンパス）SVG
+// 方位記号（コンパス）SVG ※針のみ。北の方角は mapNorthDeg で回転
 const COMPASS_SVG = `
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="方位">
   <circle cx="32" cy="32" r="30" fill="#ffffff" fill-opacity="0.93"/>
   <circle cx="32" cy="32" r="30" fill="none" stroke="#e0d6c4" stroke-width="2"/>
-  <polygon points="32,17 38,34 32,30 26,34" fill="#e5484d"/>
-  <polygon points="32,51 38,34 32,38 26,34" fill="#9a8f7d"/>
+  <polygon points="32,16 38,34 32,30 26,34" fill="#e5484d"/>
+  <polygon points="32,52 38,34 32,38 26,34" fill="#9a8f7d"/>
   <circle cx="32" cy="34" r="2.6" fill="#2b2118"/>
-  <text x="32" y="14" text-anchor="middle" font-size="12" font-weight="800" fill="#e5484d">N</text>
 </svg>`;
 
 // ① 車ルート地図＋チェックポイント
@@ -399,7 +402,8 @@ const COMPASS_SVG = `
   const wrap = document.getElementById('guideMapWrap');
   if (CONFIG.guideMap) {
     const deg = Number(CONFIG.mapNorthDeg) || 0;
-    const compass = `<div class="compass" style="transform:rotate(${deg}deg)">${COMPASS_SVG}</div>`;
+    const compass = `<div class="compass" style="transform:rotate(${deg}deg)">${COMPASS_SVG}` +
+      `<span class="compass-n" style="transform:translateX(-50%) rotate(${-deg}deg)">N</span></div>`;
     wrap.innerHTML = zoomableMap(CONFIG.guideMap,
       'さくら市立南小学校 体育館周辺 駐車場ご案内図', CONFIG.guideMapCaption, compass);
     bindZoom(wrap.querySelector('.guidemap'));
