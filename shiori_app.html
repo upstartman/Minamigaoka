@@ -885,7 +885,7 @@
         
         <h3>🖼️ 表紙画像</h3>
         <div class="form-group">
-          <label>画像を選択（表紙の日程の下に表示、1MB以下）</label>
+          <label>画像を選択（表紙の日程の下に表示。大きい写真は自動で縮小されます）</label>
           <input type="file" id="coverImage" accept="image/*" onchange="handleImageUpload(event)">
           <div id="imagePreview" class="image-preview"></div>
           <button type="button" class="btn btn-secondary btn-small" onclick="clearImage()" style="margin-top: 8px; display: none;" id="clearImageBtn">画像を削除</button>
@@ -1359,24 +1359,96 @@
 
     // 画像データ保持用
     let coverImageData = null;
+    let isImageProcessing = false;
+
+    // 保存できる画像データURLの上限バイト数
+    // Firestoreの1ドキュメント上限は1,048,576バイト。他フィールド分の余裕を残す。
+    // 元ファイルのサイズではなくbase64化後のサイズで判定すること（base64は約4/3倍に膨らむ）
+    const MAX_IMAGE_DATAURL_BYTES = 700 * 1024;
+    // 縮小時の長辺ピクセルと圧縮品質の候補（上限に収まるまで順に試す）
+    const IMAGE_MAX_EDGES = [1200, 900, 600];
+    const IMAGE_QUALITIES = [0.8, 0.6, 0.45];
+    // 読み込み前に弾く元ファイルの上限（端末のメモリ保護用）
+    const MAX_IMAGE_FILE_BYTES = 15 * 1024 * 1024;
+
+    // data URLはASCIIのみなので文字数＝保存されるバイト数
+    function dataURLBytes(dataUrl) {
+      return dataUrl ? dataUrl.length : 0;
+    }
+
+    // 指定の長辺・品質でJPEGに再描画
+    function renderToJPEG(img, maxEdge, quality) {
+      const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+      const width = Math.max(1, Math.round(img.naturalWidth * scale));
+      const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      // JPEGは透過を扱えないため背景を白で塗る（PNGの透過部分が黒くなるのを防ぐ）
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    // 画像を縮小・再圧縮して上限バイト数に収める
+    function shrinkImage(dataUrl, callback) {
+      const img = new Image();
+      img.onerror = function() {
+        callback(null, '画像を読み込めませんでした。別の画像をお試しください');
+      };
+      img.onload = function() {
+        if (!img.naturalWidth || !img.naturalHeight) {
+          callback(null, '画像を読み込めませんでした。別の画像をお試しください');
+          return;
+        }
+        for (const maxEdge of IMAGE_MAX_EDGES) {
+          for (const quality of IMAGE_QUALITIES) {
+            const out = renderToJPEG(img, maxEdge, quality);
+            if (dataURLBytes(out) <= MAX_IMAGE_DATAURL_BYTES) {
+              callback(out, null);
+              return;
+            }
+          }
+        }
+        callback(null, '画像を圧縮しても保存できるサイズになりませんでした。別の画像をお試しください');
+      };
+      img.src = dataUrl;
+    }
 
     // 画像アップロード処理
     function handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
-      // ファイルサイズチェック（1MB以下 - Firebase対応）
-      if (file.size > 1 * 1024 * 1024) {
-        alert('画像サイズは1MB以下にしてください（Firebase保存のため）');
+
+      if (file.size > MAX_IMAGE_FILE_BYTES) {
+        alert('画像ファイルが大きすぎます（15MB以下にしてください）');
         event.target.value = '';
         return;
       }
-      
+
       const reader = new FileReader();
+      isImageProcessing = true;
+      reader.onerror = function() {
+        isImageProcessing = false;
+        alert('画像の読み込みに失敗しました');
+        event.target.value = '';
+      };
       reader.onload = function(e) {
-        coverImageData = e.target.result;
-        displayImagePreview(coverImageData);
-        saveToLocalStorage();
+        // 保存前に必ず縮小する（元ファイルが小さくてもbase64化で上限を超えることがある）
+        shrinkImage(e.target.result, function(shrunk, error) {
+          isImageProcessing = false;
+          if (error) {
+            alert(error);
+            event.target.value = '';
+            return;
+          }
+          coverImageData = shrunk;
+          displayImagePreview(coverImageData);
+          saveToLocalStorage();
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -2086,23 +2158,47 @@
     }
 
     // LocalStorage保存/読込
+    let storageWarned = false;
+
     function saveToLocalStorage() {
       const data = collectData();
-      localStorage.setItem('shiori_current', JSON.stringify(data));
+      try {
+        localStorage.setItem('shiori_current', JSON.stringify(data));
+      } catch (error) {
+        // 容量超過を握りつぶすと保存できたと誤認されるため、最初の1回だけ通知する
+        console.error('自動保存エラー:', error);
+        if (!storageWarned) {
+          storageWarned = true;
+          alert('ブラウザの保存容量が足りず、自動保存できませんでした。\n表紙画像を小さいものに変えるか、履歴タブで不要な履歴を削除してください。');
+        }
+      }
     }
 
     function loadFromLocalStorage() {
-      const saved = localStorage.getItem('shiori_current');
-      if (saved) {
-        restoreData(JSON.parse(saved));
-      } else {
-        defaultSchedule1.forEach(s => addScheduleItem(1, s.time, s.content));
-        defaultSchedule2.forEach(s => addScheduleItem(2, s.time, s.content));
-        for (let i = 1; i <= 4; i++) {
-          defaultItems[`items${i}`].forEach(item => addItem(i, item));
-        }
-        renderMembersTab();
+      let saved = null;
+      try {
+        saved = localStorage.getItem('shiori_current');
+      } catch (error) {
+        console.error('自動保存データの読込エラー:', error);
       }
+      if (saved) {
+        try {
+          restoreData(JSON.parse(saved));
+          return;
+        } catch (error) {
+          console.error('自動保存データが壊れています:', error);
+        }
+      }
+      // 復元に失敗した場合は途中まで描画されている可能性があるため作り直す
+      document.getElementById('schedule1Container').innerHTML = '';
+      document.getElementById('schedule2Container').innerHTML = '';
+      defaultSchedule1.forEach(s => addScheduleItem(1, s.time, s.content));
+      defaultSchedule2.forEach(s => addScheduleItem(2, s.time, s.content));
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`items${i}Container`).innerHTML = '';
+        defaultItems[`items${i}`].forEach(item => addItem(i, item));
+      }
+      renderMembersTab();
     }
 
     // 自動保存（300msデバウンス）
@@ -2119,22 +2215,41 @@
 
     // 履歴管理（Firebase Firestore）
     async function saveToHistory() {
+      if (isImageProcessing) {
+        alert('表紙画像の処理中です。少し待ってからもう一度保存してください');
+        return;
+      }
+
       const data = collectData();
       const name = data.eventName || '無題のしおり';
-      
+
+      // 古い履歴から復元した特大画像などをここで止める
+      // （通り抜けるとFirestoreの1ドキュメント上限を超えて保存自体が失敗する）
+      if (dataURLBytes(data.coverImage) > MAX_IMAGE_DATAURL_BYTES) {
+        const kb = Math.round(dataURLBytes(data.coverImage) / 1024);
+        alert(`表紙画像が大きすぎるため保存できません（${kb}KB）。\n「画像を削除」してから画像を選び直してください。`);
+        return;
+      }
+
       if (!isFirebaseConnected || !db) {
         // オフライン時はLocalStorageに保存
-        const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
-        history.unshift({
-          id: String(Date.now()),
-          name: name,
-          date: new Date().toLocaleString('ja-JP'),
-          data: data
-        });
-        if (history.length > 20) history.pop();
-        localStorage.setItem('shiori_history', JSON.stringify(history));
-        renderHistoryList();
-        alert('ローカルに保存しました（オフライン）');
+        try {
+          const history = JSON.parse(localStorage.getItem('shiori_history') || '[]');
+          history.unshift({
+            id: String(Date.now()),
+            name: name,
+            date: new Date().toLocaleString('ja-JP'),
+            data: data
+          });
+          if (history.length > 20) history.pop();
+          localStorage.setItem('shiori_history', JSON.stringify(history));
+          renderHistoryList();
+          alert('ローカルに保存しました（オフライン）');
+        } catch (error) {
+          // 容量超過で例外が出ても保存できたと誤認されないよう必ず通知する
+          console.error('ローカル保存エラー:', error);
+          alert('ローカル保存に失敗しました（ブラウザの保存容量が上限です）。\n履歴タブで不要な履歴を削除してから、もう一度お試しください。');
+        }
         return;
       }
 
@@ -2240,8 +2355,8 @@
           return `
             <div class="history-item">
               <div class="history-item-info">
-                <div class="history-item-name">${item.name}</div>
-                <div class="history-item-date">${item.date}</div>
+                <div class="history-item-name">${escapeHTML(item.name)}</div>
+                <div class="history-item-date">${escapeHTML(item.date)}</div>
               </div>
               <div class="history-item-buttons">
                 <button class="btn btn-primary btn-small" onclick="loadFromHistory('${doc.id}')">読込</button>
