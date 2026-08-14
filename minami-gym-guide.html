@@ -167,6 +167,7 @@
     display:grid;place-items:center;box-shadow:0 3px 8px rgba(210,84,26,.4);
     border:3px solid var(--paper);
   }
+  .step .cp-photo{width:100%;height:auto;display:block;background:#f0ebe1}
   .step .body h3{font-size:1.02rem;font-weight:800;margin-bottom:2px}
   .step .body p{font-size:.9rem;color:#52463a}
   .step-line{
@@ -283,13 +284,13 @@ const CONFIG = {
   // ルート地図（①〜⑤を書き込んだ地図画像）。タップで拡大できます。
   routeMap        : "minami-gym-route-map.jpg",
   routeMapCaption : "赤い線が来場者の順路です。①〜⑤は下のチェックポイントと対応しています。図はタップで拡大できます。",
-  // 5つのチェックポイント（内容は実際の道順に合わせて自由に編集OK）
+  // 5つのチェックポイント（photo に写真URLを入れると各カードに表示されます）
   checkpoints : [
-    { title:"学校正門前の交差点を右折", desc:"学校正門前の交差点が順路のスタートです。この交差点を右折し道なりに進みます。" },
-    { title:"南東の角を左折",     desc:"突き当りの角を左折し、学校の東側に沿った道路を北へ進みます。" },
-    { title:"学校東側の裏門から左折で校内へ",   desc:"学校東側の裏門から校内に入り、通路に沿って北上します。段差に気をつけてください。" },
-    { title:"校舎北東の通路に沿って左へ",     desc:"校舎の北東まで来たら通路に沿って左に曲がります。" },
-    { title:"体育館周辺の駐車場に到着",     desc:"角を曲がった先が来場チーム用の駐車場です。体育館横の砂利の駐車場と校舎横のアスファルトの駐車場をご使用ください。" }
+    { title:"学校正門前の交差点を右折", desc:"学校正門前の交差点が順路のスタートです。この交差点を右折し道なりに進みます。", photo:"minami-gym-cp1.jpg" },
+    { title:"南東の角を左折",     desc:"突き当りの角を左折し、学校の東側に沿った道路を北へ進みます。", photo:"minami-gym-cp2.jpg" },
+    { title:"学校東側の裏門から左折で校内へ",   desc:"学校東側の裏門から校内に入り、通路に沿って北上します。段差に気をつけてください。", photo:"minami-gym-cp3.jpg" },
+    { title:"校舎北東の通路に沿って左へ",     desc:"校舎の北東まで来たら通路に沿って左に曲がります。", photo:"minami-gym-cp4.jpg" },
+    { title:"体育館周辺の駐車場に到着",     desc:"角を曲がった先が来場チーム用の駐車場です。体育館横の砂利の駐車場と校舎横のアスファルトの駐車場をご使用ください。", photo:"minami-gym-cp5.jpg" }
   ],
 
   // --- ② 駐車場のご案内 ---
@@ -388,9 +389,10 @@ const COMPASS_SVG = `
   const cps = CONFIG.checkpoints || [];
   document.getElementById('checkpoints').innerHTML = cps.map((c,i) => {
     const line = i < cps.length-1 ? `<div class="step-line"></div>` : '';
+    const media = c.photo ? `<img class="cp-photo" src="${c.photo}" alt="${c.title}" loading="lazy">` : '';
     return `<div class="step">
         <div class="step-num">${i+1}</div>
-        <div class="card"><div class="body"><h3>${c.title}</h3><p>${c.desc}</p></div></div>
+        <div class="card">${media}<div class="body"><h3>${c.title}</h3><p>${c.desc}</p></div></div>
       </div>${line}`;
   }).join('');
 })();
