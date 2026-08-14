@@ -245,12 +245,8 @@
     </div></div>
   </section>
 
-  <!-- 連絡先 -->
-  <section id="contact">
-    <div class="card"><div class="body" style="text-align:center">
-      <small style="color:var(--ink-soft);font-weight:700;font-size:.8rem">当日のお問い合わせ</small>
-      <a class="tel" id="telLink"></a>
-    </div></div>
+  <!-- 共有 -->
+  <section id="share">
     <a class="btn btn-line" id="lineBtn">💬 LINEでこの案内を共有</a>
   </section>
 
@@ -276,9 +272,6 @@ const CONFIG = {
   address   : "〒329-1311 栃木県さくら市氏家1061-3",
   // ナビ・地図のピン用（学校名＋住所が一番正確に出ます）
   mapQuery  : "さくら市立南小学校 栃木県さくら市氏家1061-3",
-
-  // --- 当日連絡先 ---
-  tel       : "090-0000-0000",                  // ←実際の番号に
 
   // --- ① 会場までの車ルート ---
   // ルート地図（①〜⑤を書き込んだ地図画像）。タップで拡大できます。
@@ -326,11 +319,6 @@ document.title = "会場案内 ｜ " + CONFIG.venueName;
 const q = encodeURIComponent(CONFIG.mapQuery);
 document.getElementById('mapFrame').src = "https://maps.google.com/maps?q=" + q + "&z=17&output=embed";
 document.getElementById('navBtn').href = "https://www.google.com/maps/dir/?api=1&destination=" + q;
-
-// 連絡先
-const tel = document.getElementById('telLink');
-tel.href = "tel:" + CONFIG.tel.replace(/[^0-9+]/g,'');
-tel.innerHTML = "📞 " + CONFIG.tel;
 
 // --- 拡大表示（ライトボックス）共通処理 ---
 const lightbox = document.getElementById('lightbox');
